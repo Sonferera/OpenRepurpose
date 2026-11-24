@@ -26,11 +26,15 @@ from ml.features import (
     sequence_sha256,
 )
 from ml.models import (
+    CatBoostDTIModel,
     LigandOnlyLightGBMModel,
     MeanBaselineModel,
     OpenRepurposeHybridModel,
     OpenRepurposeLightGBMModel,
+    OpenRepurposeMultiFamilyEnsemble,
     RidgeDTIModel,
+    TwoTowerMLPDTIModel,
+    XGBoostDTIModel,
 )
 
 IMATINIB_SMILES = "Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1"
@@ -108,35 +112,49 @@ def test_models_fit_predict_and_ligand_only_ignores_protein_columns() -> None:
     y_train = 5.5 + 0.8 * X_train[:, 0] + 0.9 * X_train[:, ESM2_EMBEDDING_DIM] + rng.normal(0, 0.1, n_train)
     y_val = 5.5 + 0.8 * X_val[:, 0] + 0.9 * X_val[:, ESM2_EMBEDDING_DIM] + rng.normal(0, 0.1, n_val)
 
-    fast_params = {"n_estimators": 30, "num_leaves": 15, "min_child_samples": 5}
-    models = [
-        MeanBaselineModel(),
-        LigandOnlyLightGBMModel(params=fast_params),
-        RidgeDTIModel(alphas=(10.0, 100.0)),
-        OpenRepurposeLightGBMModel(params=fast_params),
-        OpenRepurposeHybridModel(lgbm_params=fast_params, ridge_alphas=(10.0, 100.0)),
-    ]
+    fast_lgb = {"n_estimators": 30, "num_leaves": 15, "min_child_samples": 5}
+    fast_xgb = {"n_estimators": 30, "max_depth": 4, "min_child_weight": 2.0}
+    fast_cat = {"iterations": 30, "depth": 4, "rsm": 0.5}
 
-    for model in models:
-        model.fit(X_train, y_train, X_val, y_val)
+    m_mean = MeanBaselineModel().fit(X_train, y_train, X_val, y_val)
+    m_lig = LigandOnlyLightGBMModel(params=fast_lgb).fit(X_train, y_train, X_val, y_val)
+    m_ridge = RidgeDTIModel(alphas=(10.0, 100.0)).fit(X_train, y_train, X_val, y_val)
+    m_lgbm = OpenRepurposeLightGBMModel(params=fast_lgb).fit(X_train, y_train, X_val, y_val)
+    m_xgb = XGBoostDTIModel(params=fast_xgb, use_cuda=False).fit(X_train, y_train, X_val, y_val)
+    m_cat = CatBoostDTIModel(params=fast_cat, task_type="CPU").fit(X_train, y_train, X_val, y_val)
+    m_mlp = TwoTowerMLPDTIModel(hidden_dim=32, max_epochs=5, batch_size=32, use_cuda=False).fit(
+        X_train, y_train, X_val, y_val
+    )
+    m_hybrid = OpenRepurposeHybridModel.from_fitted(m_ridge, m_lgbm, X_val, y_val)
+    m_ens = OpenRepurposeMultiFamilyEnsemble.from_fitted(
+        {
+            "baseline_ridge": m_ridge,
+            "model_lgbm": m_lgbm,
+            "model_xgboost": m_xgb,
+            "model_catboost": m_cat,
+            "model_two_tower_mlp": m_mlp,
+        },
+        X_val,
+        y_val,
+    )
+
+    for model in [m_mean, m_lig, m_ridge, m_lgbm, m_xgb, m_cat, m_mlp, m_hybrid, m_ens]:
         preds = model.predict(X_test)
         assert preds.shape == (n_test,)
         assert np.all(np.isfinite(preds))
 
     # Critical ablation invariant: perturbing protein columns must NOT change LigandOnly predictions
-    lig_model = models[1]
     X_test_perturbed = X_test.copy()
     X_test_perturbed[:, :ESM2_EMBEDDING_DIM] += 100.0
-    np.testing.assert_array_equal(lig_model.predict(X_test), lig_model.predict(X_test_perturbed))
+    np.testing.assert_array_equal(m_lig.predict(X_test), m_lig.predict(X_test_perturbed))
 
-    # Standalone LGBM and Hybrid primary model expose 2048 Morgan bit importances
-    lgbm_only = models[3]
-    assert isinstance(lgbm_only, OpenRepurposeLightGBMModel)
-    assert lgbm_only.get_morgan_bit_importances().shape == (MORGAN_NBITS,)
+    # Simplex weights sum to 1.0 and are non-negative; all learners expose 2048 Morgan bit importances
+    assert 0.0 <= m_hybrid.w_lgbm_ <= 1.0
+    w_vals = list(m_ens.weights_.values())
+    assert all(w >= -1e-9 for w in w_vals)
+    assert sum(w_vals) == pytest.approx(1.0, abs=1e-6)
 
-    hybrid = models[4]
-    assert isinstance(hybrid, OpenRepurposeHybridModel)
-    assert 0.0 <= hybrid.w_lgbm_ <= 1.0
-    hybrid_gains = hybrid.get_morgan_bit_importances()
-    assert hybrid_gains.shape == (MORGAN_NBITS,)
-    assert np.all(hybrid_gains >= 0.0)
+    for learner in [m_ridge, m_lgbm, m_xgb, m_cat, m_mlp, m_hybrid, m_ens]:
+        imp = learner.get_morgan_bit_importances()
+        assert imp.shape == (MORGAN_NBITS,)
+        assert np.all(np.isfinite(imp)) and np.all(imp >= 0.0)

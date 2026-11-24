@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-11-24T13:22:35.730767+00:00",
-  "git_commit": "6802106",
+  "generated_at_utc": "2026-11-24T14:10:33.994764+00:00",
+  "git_commit": "7d10845",
   "seed": 42,
   "reproduce_command": "python scripts/reproduce_eval.py",
   "hardware": {
@@ -17,6 +17,8 @@
     "scipy": "1.17.1",
     "scikit-learn": "1.9.1",
     "lightgbm": "4.7.0",
+    "xgboost": "3.2.0",
+    "catboost": "1.2.10",
     "torch": "2.6.0+cu124",
     "transformers": "4.57.6",
     "rdkit": "2026.9.2",
@@ -113,48 +115,122 @@
       }
     }
   },
-  "model_hyperparameters": {
-    "openrepurpose_hybrid_lgbm": {
-      "objective": "regression",
-      "metric": "rmse",
-      "n_estimators": 800,
-      "learning_rate": 0.05,
-      "num_leaves": 63,
-      "subsample": 0.8,
-      "subsample_freq": 1,
-      "colsample_bytree": 0.5,
-      "min_child_samples": 20,
-      "random_state": 42,
-      "n_jobs": -1,
-      "verbose": -1
+  "winner_selection": {
+    "selection_criterion": "Lowest mean validation RMSE across all 6 leakage-hardened splits (zero test-set peeking)",
+    "winner_key": "openrepurpose_ensemble",
+    "validation_rmse_ranking": {
+      "baseline_ridge": {
+        "davis_mean_val_rmse": 0.6729,
+        "bindingdb_mean_val_rmse": 1.1541,
+        "overall_mean_val_rmse": 0.9135
+      },
+      "model_lgbm": {
+        "davis_mean_val_rmse": 0.6197,
+        "bindingdb_mean_val_rmse": 0.9128,
+        "overall_mean_val_rmse": 0.7662
+      },
+      "model_xgboost": {
+        "davis_mean_val_rmse": 0.6138,
+        "bindingdb_mean_val_rmse": 0.9281,
+        "overall_mean_val_rmse": 0.771
+      },
+      "model_catboost": {
+        "davis_mean_val_rmse": 0.6187,
+        "bindingdb_mean_val_rmse": 0.9602,
+        "overall_mean_val_rmse": 0.7895
+      },
+      "model_two_tower_mlp": {
+        "davis_mean_val_rmse": 0.5664,
+        "bindingdb_mean_val_rmse": 0.9721,
+        "overall_mean_val_rmse": 0.7693
+      },
+      "openrepurpose_hybrid": {
+        "davis_mean_val_rmse": 0.6134,
+        "bindingdb_mean_val_rmse": 0.9058,
+        "overall_mean_val_rmse": 0.7596
+      },
+      "openrepurpose_ensemble": {
+        "davis_mean_val_rmse": 0.5475,
+        "bindingdb_mean_val_rmse": 0.8624,
+        "overall_mean_val_rmse": 0.705
+      }
     },
-    "early_stopping_rounds": 50,
-    "final_checkpoint_meta": {
-      "name": "openrepurpose_hybrid",
-      "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-      "w_lgbm": 0.7862,
-      "w_ridge": 0.2138,
-      "ridge_best_alpha": 100.0,
-      "lgbm_best_iteration": 800,
-      "lgbm_params": {
-        "objective": "regression",
-        "metric": "rmse",
-        "n_estimators": 800,
-        "learning_rate": 0.05,
-        "num_leaves": 63,
-        "subsample": 0.8,
-        "subsample_freq": 1,
-        "colsample_bytree": 0.5,
-        "min_child_samples": 20,
-        "random_state": 42,
-        "n_jobs": -1,
-        "verbose": -1
+    "ensemble_vs_hybrid_mean_val_rmse_delta": -0.0546,
+    "ensemble_mean_train_test_rmse_gap": 0.288,
+    "hybrid_mean_train_test_rmse_gap": 0.275,
+    "ensemble_widens_overfit_gap": false
+  },
+  "final_checkpoint_meta": {
+    "name": "openrepurpose_ensemble",
+    "display_name": "OpenRepurpose Cross-Family Ensemble (5-Model Simplex)",
+    "family": "ensemble_multifamily",
+    "simplex_weights": {
+      "baseline_ridge": 0.1065,
+      "model_lgbm": 0.1691,
+      "model_xgboost": 0.453,
+      "model_catboost": 0.0247,
+      "model_two_tower_mlp": 0.2468
+    },
+    "component_meta": {
+      "baseline_ridge": {
+        "name": "baseline_ridge",
+        "display_name": "Ridge Regression (Linear)",
+        "family": "linear",
+        "best_alpha": 100.0
+      },
+      "model_lgbm": {
+        "name": "model_lgbm",
+        "display_name": "LightGBM DTI",
+        "family": "gbdt_leafwise",
+        "best_iteration": 800,
+        "params": {
+          "objective": "regression",
+          "metric": "rmse",
+          "n_estimators": 800,
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5,
+          "min_child_samples": 20,
+          "random_state": 42,
+          "n_jobs": -1,
+          "verbose": -1
+        }
+      },
+      "model_xgboost": {
+        "name": "model_xgboost",
+        "display_name": "XGBoost DTI (CUDA Hist)",
+        "family": "gbdt_depthwise",
+        "device": "cuda",
+        "best_iteration": 800,
+        "max_depth": 6,
+        "reg_lambda": 2.0
+      },
+      "model_catboost": {
+        "name": "model_catboost",
+        "display_name": "CatBoost DTI (Oblivious Trees)",
+        "family": "gbdt_oblivious",
+        "task_type": "CPU",
+        "best_iteration": 1200,
+        "depth": 6,
+        "l2_leaf_reg": 5.0
+      },
+      "model_two_tower_mlp": {
+        "name": "model_two_tower_mlp",
+        "display_name": "Two-Tower Residual MLP (PyTorch GPU)",
+        "family": "neural_two_tower",
+        "device": "cuda",
+        "hidden_dim": 256,
+        "dropout": 0.25,
+        "best_epoch": 43,
+        "best_val_rmse": 0.5399
       }
     }
   },
   "output_artifacts_sha256": {
-    "web/public/data/eval_results.json": "f93840d3653794bcf8531dd3177efb1703fbe9edb21c283ada0d5c0f54e47296",
-    "web/public/data/error_analysis.json": "9b75c258a9443beff5f97497f04ba54b23796c6d1105c8b68086510bbfa91ddf",
-    "web/public/data/scatter_samples.json": "8ad6945016325762e0592361f0bc48625115d9ee655c8a07f6c8614a51a553e3"
+    "web/public/data/eval_results.json": "4d7d7f48cbfd48bb43ff39685404451b4ad52818478727ac8f8fc1db76a9d4cf",
+    "web/public/data/error_analysis.json": "27d0da86322bf0e3f3eee66b77f88e2ab11c368a53342d824eef0a172c02007e",
+    "web/public/data/scatter_samples.json": "e28c40e0c889c6040acc841e7b9f5c74123fdd737fcd9d4112eb7af96bd7a4db"
   }
 }

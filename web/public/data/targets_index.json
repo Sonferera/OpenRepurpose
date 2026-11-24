@@ -1,27 +1,74 @@
 {
-  "generated_at_utc": "2026-11-24T13:25:01.752736+00:00",
+  "generated_at_utc": "2026-11-24T14:14:33.468920+00:00",
   "reproduce_command": "python scripts/precompute_screening.py",
   "seed": 42,
+  "winner_model_key": "openrepurpose_ensemble",
   "checkpoint_meta": {
-    "name": "openrepurpose_hybrid",
-    "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-    "w_lgbm": 0.7862,
-    "w_ridge": 0.2138,
-    "ridge_best_alpha": 100.0,
-    "lgbm_best_iteration": 800,
-    "lgbm_params": {
-      "objective": "regression",
-      "metric": "rmse",
-      "n_estimators": 800,
-      "learning_rate": 0.05,
-      "num_leaves": 63,
-      "subsample": 0.8,
-      "subsample_freq": 1,
-      "colsample_bytree": 0.5,
-      "min_child_samples": 20,
-      "random_state": 42,
-      "n_jobs": -1,
-      "verbose": -1
+    "name": "openrepurpose_ensemble",
+    "display_name": "OpenRepurpose Cross-Family Ensemble (5-Model Simplex)",
+    "family": "ensemble_multifamily",
+    "simplex_weights": {
+      "baseline_ridge": 0.1065,
+      "model_lgbm": 0.1691,
+      "model_xgboost": 0.453,
+      "model_catboost": 0.0247,
+      "model_two_tower_mlp": 0.2468
+    },
+    "component_meta": {
+      "baseline_ridge": {
+        "name": "baseline_ridge",
+        "display_name": "Ridge Regression (Linear)",
+        "family": "linear",
+        "best_alpha": 100.0
+      },
+      "model_lgbm": {
+        "name": "model_lgbm",
+        "display_name": "LightGBM DTI",
+        "family": "gbdt_leafwise",
+        "best_iteration": 800,
+        "params": {
+          "objective": "regression",
+          "metric": "rmse",
+          "n_estimators": 800,
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5,
+          "min_child_samples": 20,
+          "random_state": 42,
+          "n_jobs": -1,
+          "verbose": -1
+        }
+      },
+      "model_xgboost": {
+        "name": "model_xgboost",
+        "display_name": "XGBoost DTI (CUDA Hist)",
+        "family": "gbdt_depthwise",
+        "device": "cuda",
+        "best_iteration": 800,
+        "max_depth": 6,
+        "reg_lambda": 2.0
+      },
+      "model_catboost": {
+        "name": "model_catboost",
+        "display_name": "CatBoost DTI (Oblivious Trees)",
+        "family": "gbdt_oblivious",
+        "task_type": "CPU",
+        "best_iteration": 1200,
+        "depth": 6,
+        "l2_leaf_reg": 5.0
+      },
+      "model_two_tower_mlp": {
+        "name": "model_two_tower_mlp",
+        "display_name": "Two-Tower Residual MLP (PyTorch GPU)",
+        "family": "neural_two_tower",
+        "device": "cuda",
+        "hidden_dim": 256,
+        "dropout": 0.25,
+        "best_epoch": 43,
+        "best_val_rmse": 0.5399
+      }
     }
   },
   "fda_library": {
@@ -38,9 +85,53 @@
     ],
     "clean_csv_sha256": "9a77b66b6d29b020e21d495dd812b925667767f8022b285dda3db0cbbede4241"
   },
-  "top_k_per_target": 50,
-  "unique_molecule_assets_generated": 107,
-  "total_runtime_seconds": 142.52,
+  "background_selectivity_panel": {
+    "n_background_proteins": 32,
+    "target_ids": [
+      "None",
+      "P41586",
+      "P00734",
+      "P56704",
+      "CDK4-cyclinD3",
+      "P15090",
+      "P15379",
+      "P10275",
+      "MINK",
+      "P09429",
+      "P04406",
+      "DDR1",
+      "Q9H665",
+      "P48547",
+      "MET(Y1235D)",
+      "P42260",
+      "Q00194",
+      "P02769",
+      "ERN1",
+      "P21964",
+      "P49763",
+      "TBK1",
+      "Q9Z148",
+      "P17658",
+      "P04578",
+      "None",
+      "Q92831",
+      "GAK",
+      "P0AES6",
+      "Q96LA8",
+      "CSNK1A1L",
+      "Q96RI1"
+    ],
+    "method": "32 cross-family background proteins (5-mer Jaccard < 0.40 from curated targets, clustered at 0.30)",
+    "thresholds": {
+      "high_specificity": "Delta-pKd >= +0.45 and Z >= 1.2",
+      "moderate_specificity": "+0.15 <= Delta-pKd < +0.45",
+      "low_promiscuous_bias": "Delta-pKd < +0.15"
+    }
+  },
+  "top_k_by_pkd": 50,
+  "top_k_by_selectivity": 20,
+  "unique_molecule_assets_generated": 235,
+  "total_runtime_seconds": 203.88,
   "targets": [
     {
       "id": "mtb_pknb",
@@ -66,42 +157,54 @@
           "drug_name": "Mitoxantrone",
           "drug_id": "BRD-K21680192-300-15-1",
           "pubchem_cid": "4212.0",
-          "rank": 745,
+          "rank": 937,
+          "rank_by_selectivity": 261,
           "total_screened": 2249,
-          "top_percentile": 66.92,
-          "predicted_pkd": 5.849,
-          "estimated_kd_nm": 1417.3,
+          "top_percentile": 58.38,
+          "predicted_pkd": 5.528,
+          "target_selectivity_delta": -0.051,
+          "estimated_kd_nm": 2962.95,
           "in_top_k": false
         },
         {
           "drug_name": "Imatinib",
           "drug_id": "BRD-K92723993-001-12-5",
           "pubchem_cid": "5291.0",
-          "rank": 1667,
+          "rank": 1471,
+          "rank_by_selectivity": 1149,
           "total_screened": 2249,
-          "top_percentile": 25.92,
-          "predicted_pkd": 5.043,
-          "estimated_kd_nm": 9061.77,
+          "top_percentile": 34.64,
+          "predicted_pkd": 5.104,
+          "target_selectivity_delta": -0.335,
+          "estimated_kd_nm": 7873.73,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 90,
-        "pkd_max": 8.732,
-        "pkd_p95": 6.916,
-        "pkd_median": 5.51
+        "n_predicted_active_pkd7": 41,
+        "n_high_specificity": 5,
+        "pkd_max": 7.96,
+        "pkd_p95": 6.691,
+        "pkd_median": 5.379,
+        "delta_pkd_max": 0.889
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 17,
-        "emerging": 19,
+      "novelty_breakdown_saved": {
+        "unexplored": 28,
+        "emerging": 24,
         "supported": 14,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
-        "n_in_training_corpus": 1,
-        "n_out_of_training_corpus": 49,
-        "n_pure_novel_clean": 8
+      "specificity_breakdown_saved": {
+        "high": 5,
+        "moderate": 20,
+        "low_promiscuous_bias": 41
+      },
+      "provenance_breakdown_saved": {
+        "n_in_training_corpus": 2,
+        "n_out_of_training_corpus": 64,
+        "n_pure_novel_clean": 17,
+        "n_pure_novel_selective": 8
       },
       "screening_file": "/data/screening/mtb_pknb.json"
     },
@@ -129,53 +232,67 @@
           "drug_name": "Dasatinib",
           "drug_id": "BRD-K49328571-001-19-2",
           "pubchem_cid": "3062316.0",
-          "rank": 1232,
+          "rank": 1307,
+          "rank_by_selectivity": 2193,
           "total_screened": 2249,
-          "top_percentile": 45.26,
-          "predicted_pkd": 5.513,
-          "estimated_kd_nm": 3067.49,
+          "top_percentile": 41.93,
+          "predicted_pkd": 5.412,
+          "target_selectivity_delta": -0.598,
+          "estimated_kd_nm": 3872.14,
           "in_top_k": false
         },
         {
           "drug_name": "Sunitinib",
           "drug_id": "BRD-K42828737-001-03-3",
           "pubchem_cid": "5329102.0",
-          "rank": 746,
+          "rank": 602,
+          "rank_by_selectivity": 1586,
           "total_screened": 2249,
-          "top_percentile": 66.87,
-          "predicted_pkd": 5.922,
-          "estimated_kd_nm": 1196.31,
+          "top_percentile": 73.28,
+          "predicted_pkd": 5.949,
+          "target_selectivity_delta": -0.222,
+          "estimated_kd_nm": 1125.76,
           "in_top_k": false
         },
         {
           "drug_name": "Imatinib",
           "drug_id": "BRD-K92723993-001-12-5",
           "pubchem_cid": "5291.0",
-          "rank": 1694,
+          "rank": 1742,
+          "rank_by_selectivity": 1912,
           "total_screened": 2249,
-          "top_percentile": 24.72,
-          "predicted_pkd": 5.112,
-          "estimated_kd_nm": 7727.13,
+          "top_percentile": 22.59,
+          "predicted_pkd": 5.095,
+          "target_selectivity_delta": -0.344,
+          "estimated_kd_nm": 8040.58,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 114,
-        "pkd_max": 8.954,
-        "pkd_p95": 7.009,
-        "pkd_median": 5.596
+        "n_predicted_active_pkd7": 102,
+        "n_high_specificity": 32,
+        "pkd_max": 8.557,
+        "pkd_p95": 6.936,
+        "pkd_median": 5.535,
+        "delta_pkd_max": 0.834
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 27,
-        "emerging": 15,
-        "supported": 8,
+      "novelty_breakdown_saved": {
+        "unexplored": 34,
+        "emerging": 18,
+        "supported": 10,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 23,
+        "moderate": 20,
+        "low_promiscuous_bias": 19
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 13
+        "n_out_of_training_corpus": 62,
+        "n_pure_novel_clean": 23,
+        "n_pure_novel_selective": 16
       },
       "screening_file": "/data/screening/pf_cdpk1.json"
     },
@@ -203,53 +320,67 @@
           "drug_name": "Sunitinib",
           "drug_id": "BRD-K42828737-001-03-3",
           "pubchem_cid": "5329102.0",
-          "rank": 675,
+          "rank": 610,
+          "rank_by_selectivity": 1588,
           "total_screened": 2249,
-          "top_percentile": 70.03,
-          "predicted_pkd": 5.793,
-          "estimated_kd_nm": 1610.69,
+          "top_percentile": 72.92,
+          "predicted_pkd": 5.687,
+          "target_selectivity_delta": -0.484,
+          "estimated_kd_nm": 2054.39,
           "in_top_k": false
         },
         {
           "drug_name": "Sorafenib",
           "drug_id": "BRD-K23984367-075-15-2",
           "pubchem_cid": "216239.0",
-          "rank": 1432,
+          "rank": 1354,
+          "rank_by_selectivity": 1200,
           "total_screened": 2249,
-          "top_percentile": 36.37,
-          "predicted_pkd": 5.134,
-          "estimated_kd_nm": 7337.3,
+          "top_percentile": 39.84,
+          "predicted_pkd": 5.168,
+          "target_selectivity_delta": -0.356,
+          "estimated_kd_nm": 6789.81,
           "in_top_k": false
         },
         {
           "drug_name": "Lapatinib",
           "drug_id": "BRD-K19687926-001-10-8",
           "pubchem_cid": "208908.0",
-          "rank": 1687,
+          "rank": 1621,
+          "rank_by_selectivity": 1110,
           "total_screened": 2249,
-          "top_percentile": 25.03,
-          "predicted_pkd": 4.911,
-          "estimated_kd_nm": 12286.79,
+          "top_percentile": 27.97,
+          "predicted_pkd": 5.015,
+          "target_selectivity_delta": -0.331,
+          "estimated_kd_nm": 9662.85,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 61,
-        "pkd_max": 8.803,
-        "pkd_p95": 6.754,
-        "pkd_median": 5.364
+        "n_predicted_active_pkd7": 12,
+        "n_high_specificity": 2,
+        "pkd_max": 7.581,
+        "pkd_p95": 6.353,
+        "pkd_median": 5.311,
+        "delta_pkd_max": 0.587
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 31,
-        "emerging": 13,
+      "novelty_breakdown_saved": {
+        "unexplored": 45,
+        "emerging": 16,
         "supported": 6,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 1,
+        "moderate": 19,
+        "low_promiscuous_bias": 47
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 14
+        "n_out_of_training_corpus": 67,
+        "n_pure_novel_clean": 19,
+        "n_pure_novel_selective": 5
       },
       "screening_file": "/data/screening/ld_crk3.json"
     },
@@ -277,53 +408,67 @@
           "drug_name": "Imatinib",
           "drug_id": "BRD-K92723993-001-12-5",
           "pubchem_cid": "5291.0",
-          "rank": 1702,
+          "rank": 1753,
+          "rank_by_selectivity": 1640,
           "total_screened": 2249,
-          "top_percentile": 24.37,
-          "predicted_pkd": 5.118,
-          "estimated_kd_nm": 7620.86,
+          "top_percentile": 22.1,
+          "predicted_pkd": 5.165,
+          "target_selectivity_delta": -0.273,
+          "estimated_kd_nm": 6833.49,
           "in_top_k": false
         },
         {
           "drug_name": "Sorafenib",
           "drug_id": "BRD-K23984367-075-15-2",
           "pubchem_cid": "216239.0",
-          "rank": 1480,
+          "rank": 1528,
+          "rank_by_selectivity": 1461,
           "total_screened": 2249,
-          "top_percentile": 34.24,
-          "predicted_pkd": 5.31,
-          "estimated_kd_nm": 4898.09,
+          "top_percentile": 32.1,
+          "predicted_pkd": 5.317,
+          "target_selectivity_delta": -0.208,
+          "estimated_kd_nm": 4825.0,
           "in_top_k": false
         },
         {
           "drug_name": "Sunitinib",
           "drug_id": "BRD-K42828737-001-03-3",
           "pubchem_cid": "5329102.0",
-          "rank": 774,
+          "rank": 697,
+          "rank_by_selectivity": 1824,
           "total_screened": 2249,
-          "top_percentile": 65.63,
-          "predicted_pkd": 5.834,
-          "estimated_kd_nm": 1466.57,
+          "top_percentile": 69.05,
+          "predicted_pkd": 5.815,
+          "target_selectivity_delta": -0.356,
+          "estimated_kd_nm": 1532.03,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 90,
-        "pkd_max": 8.968,
-        "pkd_p95": 6.897,
-        "pkd_median": 5.565
+        "n_predicted_active_pkd7": 38,
+        "n_high_specificity": 6,
+        "pkd_max": 7.789,
+        "pkd_p95": 6.601,
+        "pkd_median": 5.543,
+        "delta_pkd_max": 0.699
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 36,
-        "emerging": 12,
+      "novelty_breakdown_saved": {
+        "unexplored": 52,
+        "emerging": 13,
         "supported": 2,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 4,
+        "moderate": 22,
+        "low_promiscuous_bias": 41
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 18
+        "n_out_of_training_corpus": 67,
+        "n_pure_novel_clean": 29,
+        "n_pure_novel_selective": 11
       },
       "screening_file": "/data/screening/tc_gsk3.json"
     },
@@ -352,74 +497,92 @@
           "drug_id": "BRD-K49328571-001-19-2",
           "pubchem_cid": "3062316.0",
           "rank": 19,
+          "rank_by_selectivity": 2,
           "total_screened": 2249,
           "top_percentile": 99.2,
-          "predicted_pkd": 7.938,
-          "estimated_kd_nm": 11.53,
+          "predicted_pkd": 8.007,
+          "target_selectivity_delta": 1.997,
+          "estimated_kd_nm": 9.83,
           "in_top_k": true
         },
         {
           "drug_name": "Nilotinib",
           "drug_id": "BRD-K81528515-001-15-9",
           "pubchem_cid": "644241.0",
-          "rank": 530,
+          "rank": 594,
+          "rank_by_selectivity": 20,
           "total_screened": 2249,
-          "top_percentile": 76.48,
-          "predicted_pkd": 6.612,
-          "estimated_kd_nm": 244.13,
+          "top_percentile": 73.63,
+          "predicted_pkd": 6.677,
+          "target_selectivity_delta": 1.164,
+          "estimated_kd_nm": 210.6,
           "in_top_k": false
         },
         {
           "drug_name": "Bosutinib",
           "drug_id": "BRD-K99964838-001-15-9",
           "pubchem_cid": "5328940.0",
-          "rank": 5,
+          "rank": 4,
+          "rank_by_selectivity": 1,
           "total_screened": 2249,
-          "top_percentile": 99.82,
-          "predicted_pkd": 8.375,
-          "estimated_kd_nm": 4.22,
+          "top_percentile": 99.87,
+          "predicted_pkd": 8.477,
+          "target_selectivity_delta": 2.297,
+          "estimated_kd_nm": 3.33,
           "in_top_k": true
         },
         {
           "drug_name": "Ponatinib",
           "drug_id": "BRD-K44227013-001-08-0",
           "pubchem_cid": "24826799.0",
-          "rank": 7,
+          "rank": 6,
+          "rank_by_selectivity": 11,
           "total_screened": 2249,
-          "top_percentile": 99.73,
-          "predicted_pkd": 8.271,
-          "estimated_kd_nm": 5.36,
+          "top_percentile": 99.78,
+          "predicted_pkd": 8.28,
+          "target_selectivity_delta": 1.354,
+          "estimated_kd_nm": 5.25,
           "in_top_k": true
         },
         {
           "drug_name": "Imatinib",
           "drug_id": "BRD-K92723993-001-12-5",
           "pubchem_cid": "5291.0",
-          "rank": 251,
+          "rank": 455,
+          "rank_by_selectivity": 4,
           "total_screened": 2249,
-          "top_percentile": 88.88,
-          "predicted_pkd": 7.002,
-          "estimated_kd_nm": 99.59,
+          "top_percentile": 79.81,
+          "predicted_pkd": 6.849,
+          "target_selectivity_delta": 1.41,
+          "estimated_kd_nm": 141.65,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 253,
-        "pkd_max": 9.009,
-        "pkd_p95": 7.328,
-        "pkd_median": 6.076
+        "n_predicted_active_pkd7": 339,
+        "n_high_specificity": 643,
+        "pkd_max": 8.754,
+        "pkd_p95": 7.429,
+        "pkd_median": 6.171,
+        "delta_pkd_max": 2.297
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 33,
+      "novelty_breakdown_saved": {
+        "unexplored": 42,
         "emerging": 7,
-        "supported": 10,
+        "supported": 12,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
-        "n_in_training_corpus": 2,
-        "n_out_of_training_corpus": 48,
-        "n_pure_novel_clean": 17
+      "specificity_breakdown_saved": {
+        "high": 34,
+        "moderate": 22,
+        "low_promiscuous_bias": 5
+      },
+      "provenance_breakdown_saved": {
+        "n_in_training_corpus": 5,
+        "n_out_of_training_corpus": 56,
+        "n_pure_novel_clean": 28,
+        "n_pure_novel_selective": 27
       },
       "screening_file": "/data/screening/human_abl1.json"
     },
@@ -447,53 +610,67 @@
           "drug_name": "Sunitinib",
           "drug_id": "BRD-K42828737-001-03-3",
           "pubchem_cid": "5329102.0",
-          "rank": 379,
+          "rank": 287,
+          "rank_by_selectivity": 36,
           "total_screened": 2249,
-          "top_percentile": 83.19,
-          "predicted_pkd": 6.21,
-          "estimated_kd_nm": 615.9,
+          "top_percentile": 87.28,
+          "predicted_pkd": 6.319,
+          "target_selectivity_delta": 0.148,
+          "estimated_kd_nm": 480.24,
           "in_top_k": false
         },
         {
           "drug_name": "Erlotinib",
           "drug_id": "BRD-K70401845-001-15-7",
           "pubchem_cid": "176870.0",
-          "rank": 960,
+          "rank": 1085,
+          "rank_by_selectivity": 364,
           "total_screened": 2249,
-          "top_percentile": 57.36,
-          "predicted_pkd": 5.683,
-          "estimated_kd_nm": 2073.42,
+          "top_percentile": 51.8,
+          "predicted_pkd": 5.394,
+          "target_selectivity_delta": -0.112,
+          "estimated_kd_nm": 4034.07,
           "in_top_k": false
         },
         {
           "drug_name": "Dasatinib",
           "drug_id": "BRD-K49328571-001-19-2",
           "pubchem_cid": "3062316.0",
-          "rank": 815,
+          "rank": 977,
+          "rank_by_selectivity": 1932,
           "total_screened": 2249,
-          "top_percentile": 63.81,
-          "predicted_pkd": 5.784,
-          "estimated_kd_nm": 1643.55,
+          "top_percentile": 56.6,
+          "predicted_pkd": 5.497,
+          "target_selectivity_delta": -0.513,
+          "estimated_kd_nm": 3181.24,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 55,
-        "pkd_max": 8.943,
-        "pkd_p95": 6.733,
-        "pkd_median": 5.534
+        "n_predicted_active_pkd7": 60,
+        "n_high_specificity": 1,
+        "pkd_max": 7.941,
+        "pkd_p95": 6.741,
+        "pkd_median": 5.358,
+        "delta_pkd_max": 0.494
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 35,
-        "emerging": 11,
-        "supported": 4,
+      "novelty_breakdown_saved": {
+        "unexplored": 39,
+        "emerging": 21,
+        "supported": 6,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 1,
+        "moderate": 21,
+        "low_promiscuous_bias": 44
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 18
+        "n_out_of_training_corpus": 66,
+        "n_pure_novel_clean": 27,
+        "n_pure_novel_selective": 8
       },
       "screening_file": "/data/screening/denv2_ns3.json"
     },
@@ -521,53 +698,67 @@
           "drug_name": "Pyrimethamine",
           "drug_id": "BRD-K88429204-001-38-5",
           "pubchem_cid": "4993.0",
-          "rank": 1584,
+          "rank": 1294,
+          "rank_by_selectivity": 1118,
           "total_screened": 2249,
-          "top_percentile": 29.61,
-          "predicted_pkd": 5.275,
-          "estimated_kd_nm": 5305.46,
+          "top_percentile": 42.51,
+          "predicted_pkd": 5.466,
+          "target_selectivity_delta": -0.059,
+          "estimated_kd_nm": 3423.21,
           "in_top_k": false
         },
         {
           "drug_name": "Methotrexate",
           "drug_id": "BRD-K59456551-001-22-6",
           "pubchem_cid": "126941.0",
-          "rank": 1185,
+          "rank": 609,
+          "rank_by_selectivity": 501,
           "total_screened": 2249,
-          "top_percentile": 47.35,
-          "predicted_pkd": 5.575,
-          "estimated_kd_nm": 2658.07,
+          "top_percentile": 72.97,
+          "predicted_pkd": 6.043,
+          "target_selectivity_delta": 0.073,
+          "estimated_kd_nm": 904.79,
           "in_top_k": false
         },
         {
           "drug_name": "Trimethoprim",
           "drug_id": "BRD-K07208025-001-31-3",
           "pubchem_cid": "5578.0",
-          "rank": 1321,
+          "rank": 1485,
+          "rank_by_selectivity": 1960,
           "total_screened": 2249,
-          "top_percentile": 41.31,
-          "predicted_pkd": 5.477,
-          "estimated_kd_nm": 3335.66,
+          "top_percentile": 34.02,
+          "predicted_pkd": 5.316,
+          "target_selectivity_delta": -0.265,
+          "estimated_kd_nm": 4835.3,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 67,
-        "pkd_max": 8.554,
-        "pkd_p95": 6.848,
-        "pkd_median": 5.61
+        "n_predicted_active_pkd7": 94,
+        "n_high_specificity": 4,
+        "pkd_max": 7.967,
+        "pkd_p95": 6.907,
+        "pkd_median": 5.6,
+        "delta_pkd_max": 0.641
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 29,
-        "emerging": 18,
-        "supported": 3,
+      "novelty_breakdown_saved": {
+        "unexplored": 40,
+        "emerging": 23,
+        "supported": 7,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 4,
+        "moderate": 25,
+        "low_promiscuous_bias": 41
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 23
+        "n_out_of_training_corpus": 70,
+        "n_pure_novel_clean": 34,
+        "n_pure_novel_selective": 17
       },
       "screening_file": "/data/screening/pf_dhfr.json"
     },
@@ -595,53 +786,67 @@
           "drug_name": "Isoniazid",
           "drug_id": "BRD-K87202646-001-39-9",
           "pubchem_cid": "3767.0",
-          "rank": 2152,
+          "rank": 2110,
+          "rank_by_selectivity": 1457,
           "total_screened": 2249,
-          "top_percentile": 4.36,
-          "predicted_pkd": 4.638,
-          "estimated_kd_nm": 23001.09,
+          "top_percentile": 6.22,
+          "predicted_pkd": 4.529,
+          "target_selectivity_delta": -0.145,
+          "estimated_kd_nm": 29547.63,
           "in_top_k": false
         },
         {
           "drug_name": "Ethionamide",
           "drug_id": "BRD-K33710385-001-05-9",
           "pubchem_cid": "2761171.0",
-          "rank": 2056,
+          "rank": 2173,
+          "rank_by_selectivity": 1624,
           "total_screened": 2249,
-          "top_percentile": 8.63,
-          "predicted_pkd": 4.873,
-          "estimated_kd_nm": 13399.25,
+          "top_percentile": 3.42,
+          "predicted_pkd": 4.37,
+          "target_selectivity_delta": -0.189,
+          "estimated_kd_nm": 42686.19,
           "in_top_k": false
         },
         {
           "drug_name": "Triclosan",
           "drug_id": "BRD-K41731458-001-15-1",
           "pubchem_cid": "5564.0",
-          "rank": 1039,
+          "rank": 522,
+          "rank_by_selectivity": 137,
           "total_screened": 2249,
-          "top_percentile": 53.85,
-          "predicted_pkd": 6.1,
-          "estimated_kd_nm": 794.25,
+          "top_percentile": 76.83,
+          "predicted_pkd": 6.115,
+          "target_selectivity_delta": 0.25,
+          "estimated_kd_nm": 767.84,
           "in_top_k": false
         }
       ],
       "library_stats": {
         "n_drugs_screened": 2249,
-        "n_predicted_active_pkd7": 223,
-        "pkd_max": 9.442,
-        "pkd_p95": 7.297,
-        "pkd_median": 6.03
+        "n_predicted_active_pkd7": 53,
+        "n_high_specificity": 9,
+        "pkd_max": 8.035,
+        "pkd_p95": 6.808,
+        "pkd_median": 5.614,
+        "delta_pkd_max": 0.67
       },
-      "novelty_breakdown_top_k": {
-        "unexplored": 19,
-        "emerging": 18,
-        "supported": 13,
+      "novelty_breakdown_saved": {
+        "unexplored": 30,
+        "emerging": 23,
+        "supported": 16,
         "unavailable": 0
       },
-      "provenance_breakdown_top_k": {
+      "specificity_breakdown_saved": {
+        "high": 7,
+        "moderate": 28,
+        "low_promiscuous_bias": 34
+      },
+      "provenance_breakdown_saved": {
         "n_in_training_corpus": 0,
-        "n_out_of_training_corpus": 50,
-        "n_pure_novel_clean": 8
+        "n_out_of_training_corpus": 69,
+        "n_pure_novel_clean": 14,
+        "n_pure_novel_selective": 8
       },
       "screening_file": "/data/screening/mtb_inha.json"
     }

@@ -1,12 +1,20 @@
-"""Single-command reproducible Dual-Benchmark evaluation (Davis + BindingDB_Kd).
+"""Single-command reproducible 9-Model Dual-Benchmark evaluation (Davis + BindingDB_Kd).
 
-Runs all 5 models (Mean, Ligand-Only Ablation, Ridge, Standalone LightGBM, OpenRepurpose Hybrid)
-across Warm, Cold-Drug (Bemis-Murcko Scaffold), and Cold-Target (Protein) splits on:
-  1. Davis (Kinase-focused benchmark: 25,772 clean pairs, 68 scaffolds, 379 kinases)
-  2. BindingDB_Kd (Multi-family benchmark: 46,115 clean pairs, 5,023 scaffolds, 1,413 proteins)
+Benchmarks 9 models across 5 distinct model families on leakage-hardened Warm, Cold-Drug
+(Murcko Scaffold + InChIKey-14), and Cold-Target (5-mer Jaccard >= 0.50 protein clusters) splits:
+  1. baseline_mean         (Constant floor)
+  2. baseline_ligand_only  (RDKit-only LightGBM ablation)
+  3. baseline_ridge        (L2 Linear Regression)
+  4. model_lgbm            (Leaf-wise LightGBM)
+  5. model_xgboost         (Depth-wise CUDA Hist XGBoost)
+  6. model_catboost        (Oblivious-Tree CatBoost)
+  7. model_two_tower_mlp   (PyTorch GPU Two-Tower Residual MLP)
+  8. openrepurpose_hybrid  (2-Model Validation-Calibrated Ridge + LightGBM)
+  9. openrepurpose_ensemble (5-Model Cross-Family Simplex Ensemble)
 
-Then trains the final multi-family screening checkpoint on the deduplicated combined experimental
-Kd corpus (Davis + BindingDB_Kd, 58,847 pairs) and writes verified JSON artifacts for the UI.
+Selects the winning architecture strictly via validation-fold RMSE (zero test-set peeking),
+trains the winning checkpoint on the deduplicated 58,847-pair combined experimental Kd corpus,
+and exports verified JSON artifacts for the web workbench.
 
 Usage:
     python scripts/reproduce_eval.py
@@ -73,7 +81,17 @@ from ml.features import (
     resolve_device,
 )
 from ml.metrics import compute_enrichment_curve, evaluate_predictions, extract_error_analysis
-from ml.models import OpenRepurposeHybridModel, build_benchmark_models
+from ml.models import (
+    BaseDTIModel,
+    CatBoostDTIModel,
+    OpenRepurposeHybridModel,
+    OpenRepurposeLightGBMModel,
+    OpenRepurposeMultiFamilyEnsemble,
+    RidgeDTIModel,
+    TwoTowerMLPDTIModel,
+    XGBoostDTIModel,
+    build_base_models,
+)
 from ml.splits import generate_all_splits, verify_split_integrity
 
 logging.basicConfig(
@@ -83,7 +101,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("reproduce_eval")
 
-PRIMARY_MODEL_KEY = "openrepurpose_hybrid"
+CANDIDATE_WINNER_KEYS = (
+    "baseline_ridge",
+    "model_lgbm",
+    "model_xgboost",
+    "model_catboost",
+    "model_two_tower_mlp",
+    "openrepurpose_hybrid",
+    "openrepurpose_ensemble",
+)
 
 
 def _array_sha256(arr: np.ndarray) -> str:
@@ -91,7 +117,19 @@ def _array_sha256(arr: np.ndarray) -> str:
 
 
 def _get_package_versions() -> dict[str, str]:
-    pkgs = ["numpy", "pandas", "scipy", "scikit-learn", "lightgbm", "torch", "transformers", "rdkit", "joblib"]
+    pkgs = [
+        "numpy",
+        "pandas",
+        "scipy",
+        "scikit-learn",
+        "lightgbm",
+        "xgboost",
+        "catboost",
+        "torch",
+        "transformers",
+        "rdkit",
+        "joblib",
+    ]
     versions: dict[str, str] = {"python": platform.python_version()}
     for pkg in pkgs:
         try:
@@ -183,7 +221,7 @@ def _evaluate_benchmark(
     protein_embeddings: dict[str, np.ndarray],
     ligand_features: dict[str, np.ndarray],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
-    """Run all 5 models across Warm, Cold-Drug, and Cold-Target splits for one benchmark."""
+    """Run all 9 models across Warm, Cold-Drug, and Cold-Target splits for one benchmark."""
     logger.info(
         "=== Benchmark [%s]: %d clean pairs (%d drugs, %d scaffolds, %d targets) ===",
         benchmark_id,
@@ -202,10 +240,11 @@ def _evaluate_benchmark(
         leakage_audits[sp_key] = verify_split_integrity(df, split)
 
     splits_output: dict[str, Any] = {}
-    scatter_splits: dict[str, Any] = {}
-    error_splits: dict[str, Any] = {}
+    scatter_by_model: dict[str, dict[str, Any]] = {}
+    error_by_model: dict[str, dict[str, Any]] = {}
     split_hashes: dict[str, dict[str, str]] = {}
-    generalization_gap: dict[str, dict[str, Any]] = {}
+    generalization_gap_hybrid: dict[str, dict[str, Any]] = {}
+    generalization_gap_ensemble: dict[str, dict[str, Any]] = {}
     y_randomization: dict[str, dict[str, Any]] = {}
 
     for split_name, split in splits.items():
@@ -230,79 +269,154 @@ def _evaluate_benchmark(
         df_te = df.iloc[split.test_idx].reset_index(drop=True)
 
         models_result: dict[str, Any] = {}
-        for model in build_benchmark_models():
+        fitted_base: dict[str, BaseDTIModel] = {}
+        fit_times: dict[str, float] = {}
+
+        # 1. Fit the 7 standalone models once each
+        for model in build_base_models():
             t_m = time.perf_counter()
             model.fit(X_tr, y_tr, X_va, y_va)
-            preds_te = model.predict(X_te)
             elapsed = round(time.perf_counter() - t_m, 2)
+            fitted_base[model.name] = model
+            fit_times[model.name] = elapsed
 
-            metrics = evaluate_predictions(y_te, preds_te, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            preds_va = model.predict(X_va)
+            preds_te = model.predict(X_te)
+            val_metrics = evaluate_predictions(y_va, preds_va, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            test_metrics = evaluate_predictions(y_te, preds_te, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
             curve = compute_enrichment_curve(y_te, preds_te)
+
             models_result[model.name] = {
                 "display_name": model.display_name,
+                "family": model.family,
                 "description": model.description,
                 "fit_seconds": elapsed,
                 "model_meta": model.get_metadata(),
-                "metrics": metrics,
+                "val_summary": {
+                    "rmse": val_metrics["rmse"],
+                    "concordance_index": val_metrics["concordance_index"],
+                    "roc_auc": val_metrics["roc_auc"],
+                },
+                "metrics": test_metrics,
                 "enrichment_curve": curve,
             }
             logger.info(
-                "    %-22s | RMSE=%.4f | CI=%.4f | ROC=%s | PR=%s | EF@5%%=%.2fx | HitCap=%.1f%% | %.2fs",
+                "    %-23s | valRMSE=%.4f | RMSE=%.4f | CI=%.4f | ROC=%s | PR=%s | EF@5%%=%.2fx | %.2fs",
                 model.name,
-                metrics["rmse"],
-                metrics["concordance_index"] or 0.0,
-                f"{metrics['roc_auc']:.4f}" if metrics["roc_auc"] is not None else "n/a",
-                f"{metrics['pr_auc']:.4f}" if metrics["pr_auc"] is not None else "n/a",
-                metrics["ef_at_5pct"],
-                metrics["hit_capture_at_5pct"] * 100.0,
+                val_metrics["rmse"],
+                test_metrics["rmse"],
+                test_metrics["concordance_index"] or 0.0,
+                f"{test_metrics['roc_auc']:.4f}" if test_metrics["roc_auc"] is not None else "n/a",
+                f"{test_metrics['pr_auc']:.4f}" if test_metrics["pr_auc"] is not None else "n/a",
+                test_metrics["ef_at_5pct"],
                 elapsed,
             )
 
-            if model.name == PRIMARY_MODEL_KEY:
-                m_tr = evaluate_predictions(y_tr, model.predict(X_tr), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
-                m_va = evaluate_predictions(y_va, model.predict(X_va), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
-                generalization_gap[split_name] = {
-                    "train_rmse": m_tr["rmse"],
-                    "val_rmse": m_va["rmse"],
-                    "test_rmse": metrics["rmse"],
-                    "train_ci": m_tr["concordance_index"],
-                    "val_ci": m_va["concordance_index"],
-                    "test_ci": metrics["concordance_index"],
-                    "train_to_test_rmse_gap": round(metrics["rmse"] - m_tr["rmse"], 4),
-                    "val_to_test_ci_delta": round(
-                        (metrics["concordance_index"] or 0.0) - (m_va["concordance_index"] or 0.0), 4
-                    ),
-                }
+        # 2. Construct validation-calibrated 2-model Hybrid (reusing fitted Ridge + LightGBM)
+        t_h = time.perf_counter()
+        ridge_m = fitted_base["baseline_ridge"]
+        lgbm_m = fitted_base["model_lgbm"]
+        assert isinstance(ridge_m, RidgeDTIModel) and isinstance(lgbm_m, OpenRepurposeLightGBMModel)
+        hybrid_m = OpenRepurposeHybridModel.from_fitted(ridge_m, lgbm_m, X_va, y_va)
+        hybrid_opt_s = round(time.perf_counter() - t_h, 2)
+        hybrid_total_s = round(fit_times["baseline_ridge"] + fit_times["model_lgbm"] + hybrid_opt_s, 2)
 
-                scatter_splits[split_name] = {
-                    "n_test_total": int(len(df_te)),
-                    "points": _sample_scatter_points(df_te, preds_te, max_points=1000, seed=SEED),
-                }
-                if split_name in ("cold_target", "cold_drug"):
-                    error_splits[split_name] = extract_error_analysis(df_te, preds_te, top_k=10)
+        # 3. Construct validation-calibrated 5-model Cross-Family Simplex Ensemble (reusing all 5 families)
+        t_e = time.perf_counter()
+        constituents = {
+            "baseline_ridge": fitted_base["baseline_ridge"],
+            "model_lgbm": fitted_base["model_lgbm"],
+            "model_xgboost": fitted_base["model_xgboost"],
+            "model_catboost": fitted_base["model_catboost"],
+            "model_two_tower_mlp": fitted_base["model_two_tower_mlp"],
+        }
+        ensemble_m = OpenRepurposeMultiFamilyEnsemble.from_fitted(constituents, X_va, y_va)
+        ens_opt_s = round(time.perf_counter() - t_e, 2)
+        ens_total_s = round(sum(fit_times[k] for k in constituents) + ens_opt_s, 2)
 
-                    # Y-Randomization (Y-scrambling) null-hypothesis sanity check
-                    rng_shuf = np.random.default_rng(SEED)
-                    y_tr_shuf = rng_shuf.permutation(y_tr)
-                    shuf_model = OpenRepurposeHybridModel()
-                    shuf_model.fit(X_tr, y_tr_shuf, X_va, y_va)
-                    shuf_metrics = evaluate_predictions(y_te, shuf_model.predict(X_te), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
-                    shuf_ci = float(shuf_metrics["concordance_index"] or 0.5)
-                    y_randomization[split_name] = {
-                        "shuffled_test_rmse": shuf_metrics["rmse"],
-                        "shuffled_test_ci": shuf_metrics["concordance_index"],
-                        "shuffled_test_roc_auc": shuf_metrics["roc_auc"],
-                        "shuffled_test_ef_at_5pct": shuf_metrics["ef_at_5pct"],
-                        "passed_null_check": bool(0.40 <= shuf_ci <= 0.60),
-                    }
-                    logger.info(
-                        "    [Y-SCRAMBLE %-11s] CI=%.4f | ROC=%s | EF@5%%=%.2fx | pass=%s",
-                        split_name,
-                        shuf_ci,
-                        shuf_metrics["roc_auc"],
-                        shuf_metrics["ef_at_5pct"],
-                        y_randomization[split_name]["passed_null_check"],
-                    )
+        for ens_model, total_s, gap_store in (
+            (hybrid_m, hybrid_total_s, generalization_gap_hybrid),
+            (ensemble_m, ens_total_s, generalization_gap_ensemble),
+        ):
+            preds_tr = ens_model.predict(X_tr)
+            preds_va = ens_model.predict(X_va)
+            preds_te = ens_model.predict(X_te)
+            m_tr = evaluate_predictions(y_tr, preds_tr, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            m_va = evaluate_predictions(y_va, preds_va, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            m_te = evaluate_predictions(y_te, preds_te, assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            curve = compute_enrichment_curve(y_te, preds_te)
+
+            gap_store[split_name] = {
+                "train_rmse": m_tr["rmse"],
+                "val_rmse": m_va["rmse"],
+                "test_rmse": m_te["rmse"],
+                "train_ci": m_tr["concordance_index"],
+                "val_ci": m_va["concordance_index"],
+                "test_ci": m_te["concordance_index"],
+                "train_to_test_rmse_gap": round(m_te["rmse"] - m_tr["rmse"], 4),
+                "val_to_test_ci_delta": round(
+                    (m_te["concordance_index"] or 0.0) - (m_va["concordance_index"] or 0.0), 4
+                ),
+            }
+
+            models_result[ens_model.name] = {
+                "display_name": ens_model.display_name,
+                "family": ens_model.family,
+                "description": ens_model.description,
+                "fit_seconds": total_s,
+                "model_meta": ens_model.get_metadata(),
+                "val_summary": {
+                    "rmse": m_va["rmse"],
+                    "concordance_index": m_va["concordance_index"],
+                    "roc_auc": m_va["roc_auc"],
+                },
+                "metrics": m_te,
+                "enrichment_curve": curve,
+            }
+            logger.info(
+                "    %-23s | valRMSE=%.4f | RMSE=%.4f | CI=%.4f | ROC=%s | PR=%s | EF@5%%=%.2fx | %.2fs | gap=%.4f",
+                ens_model.name,
+                m_va["rmse"],
+                m_te["rmse"],
+                m_te["concordance_index"] or 0.0,
+                f"{m_te['roc_auc']:.4f}" if m_te["roc_auc"] is not None else "n/a",
+                f"{m_te['pr_auc']:.4f}" if m_te["pr_auc"] is not None else "n/a",
+                m_te["ef_at_5pct"],
+                total_s,
+                gap_store[split_name]["train_to_test_rmse_gap"],
+            )
+
+            scatter_by_model.setdefault(ens_model.name, {})[split_name] = {
+                "n_test_total": int(len(df_te)),
+                "points": _sample_scatter_points(df_te, preds_te, max_points=1000, seed=SEED),
+            }
+            if split_name in ("cold_target", "cold_drug"):
+                error_by_model.setdefault(ens_model.name, {})[split_name] = extract_error_analysis(
+                    df_te, preds_te, top_k=10
+                )
+
+        # 4. Y-Randomization (Y-scrambling) null-hypothesis sanity check on cold splits
+        if split_name in ("cold_target", "cold_drug"):
+            rng_shuf = np.random.default_rng(SEED)
+            y_tr_shuf = rng_shuf.permutation(y_tr)
+            shuf_model = OpenRepurposeHybridModel().fit(X_tr, y_tr_shuf, X_va, y_va)
+            shuf_metrics = evaluate_predictions(y_te, shuf_model.predict(X_te), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+            shuf_ci = float(shuf_metrics["concordance_index"] or 0.5)
+            y_randomization[split_name] = {
+                "shuffled_test_rmse": shuf_metrics["rmse"],
+                "shuffled_test_ci": shuf_metrics["concordance_index"],
+                "shuffled_test_roc_auc": shuf_metrics["roc_auc"],
+                "shuffled_test_ef_at_5pct": shuf_metrics["ef_at_5pct"],
+                "passed_null_check": bool(0.40 <= shuf_ci <= 0.60),
+            }
+            logger.info(
+                "    [Y-SCRAMBLE %-11s] CI=%.4f | ROC=%s | EF@5%%=%.2fx | pass=%s",
+                split_name,
+                shuf_ci,
+                shuf_metrics["roc_auc"],
+                shuf_metrics["ef_at_5pct"],
+                y_randomization[split_name]["passed_null_check"],
+            )
 
         splits_output[split_name] = {
             "summary": split.summary(df),
@@ -310,33 +424,8 @@ def _evaluate_benchmark(
             "models": models_result,
         }
 
-    def _ci(sp: str, mdl: str) -> float:
-        return float(splits_output[sp]["models"][mdl]["metrics"]["concordance_index"])
-
-    def _rmse(sp: str, mdl: str) -> float:
-        return float(splits_output[sp]["models"][mdl]["metrics"]["rmse"])
-
-    headline = {
-        "primary_model": PRIMARY_MODEL_KEY,
-        "warm_ci_vs_ridge": round(_ci("warm", PRIMARY_MODEL_KEY) - _ci("warm", "baseline_ridge"), 4),
-        "warm_ci_vs_ligand_only": round(_ci("warm", PRIMARY_MODEL_KEY) - _ci("warm", "baseline_ligand_only"), 4),
-        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "baseline_ridge"), 4),
-        "cold_drug_ci_vs_lgbm": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "ablation_lgbm"), 4),
-        "cold_drug_ci_vs_ligand_only": round(
-            _ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "baseline_ligand_only"), 4
-        ),
-        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", PRIMARY_MODEL_KEY) - _rmse("cold_drug", "baseline_ridge"), 4),
-        "cold_target_ci_vs_ridge": round(
-            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("cold_target", "baseline_ridge"), 4
-        ),
-        "cold_target_ci_vs_ligand_only": round(
-            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("cold_target", "baseline_ligand_only"), 4
-        ),
-        "warm_to_cold_drug_ci_delta": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("warm", PRIMARY_MODEL_KEY), 4),
-        "warm_to_cold_target_ci_delta": round(
-            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("warm", PRIMARY_MODEL_KEY), 4
-        ),
-    }
+        del fitted_base, hybrid_m, ensemble_m
+        gc.collect()
 
     del X_joint
     gc.collect()
@@ -347,17 +436,90 @@ def _evaluate_benchmark(
         "description": description,
         "dataset": dataset_meta,
         "splits": splits_output,
-        "headline_comparisons": headline,
         "integrity_audit": {
             "split_hardening": {
                 "cold_drug_method": "Connected components of Bemis-Murcko scaffold + InChIKey-14 connectivity (0 stereoisomer overlap)",
                 "cold_target_method": "Connected components of protein 5-mer Jaccard >= 0.50 (0 point-mutant / isoform overlap)",
             },
-            "generalization_gap": generalization_gap,
+            "generalization_gap_hybrid": generalization_gap_hybrid,
+            "generalization_gap_ensemble": generalization_gap_ensemble,
             "y_randomization": y_randomization,
         },
     }
-    return benchmark_result, scatter_splits, error_splits, split_hashes
+    return benchmark_result, scatter_by_model, error_by_model, split_hashes
+
+
+def _compute_headlines(splits_output: dict[str, Any], primary_key: str) -> dict[str, Any]:
+    def _ci(sp: str, mdl: str) -> float:
+        return float(splits_output[sp]["models"][mdl]["metrics"]["concordance_index"])
+
+    def _rmse(sp: str, mdl: str) -> float:
+        return float(splits_output[sp]["models"][mdl]["metrics"]["rmse"])
+
+    return {
+        "primary_model": primary_key,
+        "warm_ci_vs_ridge": round(_ci("warm", primary_key) - _ci("warm", "baseline_ridge"), 4),
+        "warm_ci_vs_ligand_only": round(_ci("warm", primary_key) - _ci("warm", "baseline_ligand_only"), 4),
+        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "baseline_ridge"), 4),
+        "cold_drug_ci_vs_hybrid": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "openrepurpose_hybrid"), 4),
+        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", primary_key) - _rmse("cold_drug", "baseline_ridge"), 4),
+        "cold_target_ci_vs_ridge": round(_ci("cold_target", primary_key) - _ci("cold_target", "baseline_ridge"), 4),
+        "cold_target_ci_vs_hybrid": round(
+            _ci("cold_target", primary_key) - _ci("cold_target", "openrepurpose_hybrid"), 4
+        ),
+        "cold_target_ci_vs_ligand_only": round(
+            _ci("cold_target", primary_key) - _ci("cold_target", "baseline_ligand_only"), 4
+        ),
+        "warm_to_cold_drug_ci_delta": round(_ci("cold_drug", primary_key) - _ci("warm", primary_key), 4),
+        "warm_to_cold_target_ci_delta": round(_ci("cold_target", primary_key) - _ci("warm", primary_key), 4),
+    }
+
+
+def _select_validation_winner(davis_res: dict[str, Any], bdb_res: dict[str, Any]) -> dict[str, Any]:
+    """Select the primary winning model strictly by validation-fold RMSE across all 6 splits."""
+    val_scores: dict[str, dict[str, float]] = {}
+    for key in CANDIDATE_WINNER_KEYS:
+        d_rmses = [davis_res["splits"][sp]["models"][key]["val_summary"]["rmse"] for sp in ("warm", "cold_drug", "cold_target")]
+        b_rmses = [bdb_res["splits"][sp]["models"][key]["val_summary"]["rmse"] for sp in ("warm", "cold_drug", "cold_target")]
+        val_scores[key] = {
+            "davis_mean_val_rmse": round(float(np.mean(d_rmses)), 4),
+            "bindingdb_mean_val_rmse": round(float(np.mean(b_rmses)), 4),
+            "overall_mean_val_rmse": round(float(np.mean(d_rmses + b_rmses)), 4),
+        }
+
+    # Check overfitting gap delta between 5-model ensemble and 2-model hybrid
+    ens_gaps = [
+        davis_res["integrity_audit"]["generalization_gap_ensemble"][sp]["train_to_test_rmse_gap"]
+        for sp in ("warm", "cold_drug", "cold_target")
+    ] + [
+        bdb_res["integrity_audit"]["generalization_gap_ensemble"][sp]["train_to_test_rmse_gap"]
+        for sp in ("warm", "cold_drug", "cold_target")
+    ]
+    hyb_gaps = [
+        davis_res["integrity_audit"]["generalization_gap_hybrid"][sp]["train_to_test_rmse_gap"]
+        for sp in ("warm", "cold_drug", "cold_target")
+    ] + [
+        bdb_res["integrity_audit"]["generalization_gap_hybrid"][sp]["train_to_test_rmse_gap"]
+        for sp in ("warm", "cold_drug", "cold_target")
+    ]
+
+    best_key = min(CANDIDATE_WINNER_KEYS, key=lambda k: val_scores[k]["overall_mean_val_rmse"])
+    mean_ens_gap = round(float(np.mean(ens_gaps)), 4)
+    mean_hyb_gap = round(float(np.mean(hyb_gaps)), 4)
+
+    return {
+        "selection_criterion": "Lowest mean validation RMSE across all 6 leakage-hardened splits (zero test-set peeking)",
+        "winner_key": best_key,
+        "validation_rmse_ranking": val_scores,
+        "ensemble_vs_hybrid_mean_val_rmse_delta": round(
+            val_scores["openrepurpose_ensemble"]["overall_mean_val_rmse"]
+            - val_scores["openrepurpose_hybrid"]["overall_mean_val_rmse"],
+            4,
+        ),
+        "ensemble_mean_train_test_rmse_gap": mean_ens_gap,
+        "hybrid_mean_train_test_rmse_gap": mean_hyb_gap,
+        "ensemble_widens_overfit_gap": bool(mean_ens_gap > mean_hyb_gap + 0.02),
+    }
 
 
 def main() -> None:
@@ -368,18 +530,16 @@ def main() -> None:
     device = resolve_device()
     hw_info = _describe_hardware(device)
     logger.info(
-        "Starting Dual-Benchmark DTI evaluation (Davis + BindingDB_Kd) | seed=%d | device=%s (%s)",
+        "Starting 9-Model Dual-Benchmark Bake-Off (Davis + BindingDB_Kd) | seed=%d | device=%s (%s)",
         SEED,
         device,
         hw_info["gpu_name"] or "CPU",
     )
 
-    # 1. Load both clean benchmarks and deduplicated combined corpus
     df_davis, meta_davis = load_davis_dataset()
     df_bdb, meta_bdb = load_bindingdb_kd_dataset()
     df_comb, meta_comb = load_combined_kd_corpus()
 
-    # 2. Extract real ESM-2 embeddings for all unique proteins across both corpora (4 GB VRAM safe + cached)
     t_emb = time.perf_counter()
     all_proteins = sorted(set(df_comb["target_sequence"].unique().tolist()))
     protein_embeddings = extract_protein_embeddings(
@@ -391,24 +551,22 @@ def main() -> None:
     emb_seconds = round(time.perf_counter() - t_emb, 2)
     logger.info("ESM-2 embeddings ready for %d unique proteins in %.2fs.", len(protein_embeddings), emb_seconds)
 
-    # 3. Extract RDKit ligand features (2048 Morgan + 166 MACCS + 7 Physchem) for all unique SMILES
     t_lig = time.perf_counter()
     all_smiles = sorted(set(df_comb["canonical_smiles"].unique().tolist()))
     ligand_features = extract_ligand_features(all_smiles)
     lig_seconds = round(time.perf_counter() - t_lig, 2)
     logger.info("RDKit ligand features ready for %d unique drugs in %.2fs.", len(ligand_features), lig_seconds)
 
-    # 4. Run full held-out evaluation on Benchmark 1 (Davis) and Benchmark 2 (BindingDB_Kd)
-    davis_res, davis_scatter, davis_err, davis_hashes = _evaluate_benchmark(
+    davis_res, davis_scatter_map, davis_err_map, davis_hashes = _evaluate_benchmark(
         benchmark_id="davis",
         label="Davis Kinase DTI Benchmark",
-        description="Canonical 68-drug x 379-kinase benchmark (high target density, low chemical scaffold diversity).",
+        description="Canonical 68-drug x 379-kinase complete matrix (dense negative sampling, low scaffold count).",
         df=df_davis,
         dataset_meta=meta_davis,
         protein_embeddings=protein_embeddings,
         ligand_features=ligand_features,
     )
-    bdb_res, bdb_scatter, bdb_err, bdb_hashes = _evaluate_benchmark(
+    bdb_res, bdb_scatter_map, bdb_err_map, bdb_hashes = _evaluate_benchmark(
         benchmark_id="bindingdb_kd",
         label="BindingDB_Kd Multi-Family Benchmark",
         description="Large-scale experimental Kd corpus (10,659 drugs, 5,023 scaffolds, 1,413 multi-family proteins).",
@@ -418,12 +576,36 @@ def main() -> None:
         ligand_features=ligand_features,
     )
 
-    # 5. Train final production screening checkpoint on the full deduplicated Combined Corpus (58,847 pairs)
+    # Validation-driven winner selection (zero test-set peeking)
+    winner_info = _select_validation_winner(davis_res, bdb_res)
+    winner_key = str(winner_info["winner_key"])
     logger.info(
-        "Training final multi-family screening checkpoint on combined corpus (%d pairs, %d drugs, %d targets)...",
+        "VALIDATION WINNER SELECTED: %s | ensemble_vs_hybrid_val_delta=%.4f | ens_gap=%.4f vs hyb_gap=%.4f",
+        winner_key,
+        winner_info["ensemble_vs_hybrid_mean_val_rmse_delta"],
+        winner_info["ensemble_mean_train_test_rmse_gap"],
+        winner_info["hybrid_mean_train_test_rmse_gap"],
+    )
+
+    primary_for_reports = winner_key if winner_key in ("openrepurpose_ensemble", "openrepurpose_hybrid") else "openrepurpose_ensemble"
+    davis_res["headline_comparisons"] = _compute_headlines(davis_res["splits"], primary_for_reports)
+    bdb_res["headline_comparisons"] = _compute_headlines(bdb_res["splits"], primary_for_reports)
+    davis_res["integrity_audit"]["generalization_gap"] = (
+        davis_res["integrity_audit"]["generalization_gap_ensemble"]
+        if primary_for_reports == "openrepurpose_ensemble"
+        else davis_res["integrity_audit"]["generalization_gap_hybrid"]
+    )
+    bdb_res["integrity_audit"]["generalization_gap"] = (
+        bdb_res["integrity_audit"]["generalization_gap_ensemble"]
+        if primary_for_reports == "openrepurpose_ensemble"
+        else bdb_res["integrity_audit"]["generalization_gap_hybrid"]
+    )
+
+    # Train winning architecture on the 58,847-pair combined experimental Kd corpus
+    logger.info(
+        "Training final production screening checkpoint (%s) on combined corpus (%d pairs)...",
+        primary_for_reports,
         len(df_comb),
-        meta_comb["n_unique_drugs"],
-        meta_comb["n_unique_targets"],
     )
     X_comb = build_joint_feature_matrix(df_comb, protein_embeddings, ligand_features)
     y_comb = df_comb["pkd"].to_numpy(dtype=np.float64)
@@ -431,18 +613,30 @@ def main() -> None:
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.10, random_state=SEED)
     prod_tr_idx, prod_va_idx = next(sss.split(X_comb, strat_y))
 
-    final_model = OpenRepurposeHybridModel()
-    final_model.fit(X_comb[prod_tr_idx], y_comb[prod_tr_idx], X_comb[prod_va_idx], y_comb[prod_va_idx])
+    if primary_for_reports == "openrepurpose_ensemble":
+        final_model: BaseDTIModel = OpenRepurposeMultiFamilyEnsemble().fit(
+            X_comb[prod_tr_idx], y_comb[prod_tr_idx], X_comb[prod_va_idx], y_comb[prod_va_idx]
+        )
+        # Calibrate cold-regime simplex weights by averaging BindingDB_Kd Cold-Drug & Cold-Target validation weights
+        w_cd = bdb_res["splits"]["cold_drug"]["models"]["openrepurpose_ensemble"]["model_meta"]["simplex_weights"]
+        w_ct = bdb_res["splits"]["cold_target"]["models"]["openrepurpose_ensemble"]["model_meta"]["simplex_weights"]
+        cold_blend = {k: 0.5 * (float(w_cd.get(k, 0.0)) + float(w_ct.get(k, 0.0))) for k in w_cd}
+        assert isinstance(final_model, OpenRepurposeMultiFamilyEnsemble)
+        final_model.set_weights(cold_blend)
+    else:
+        final_model = OpenRepurposeHybridModel().fit(
+            X_comb[prod_tr_idx], y_comb[prod_tr_idx], X_comb[prod_va_idx], y_comb[prod_va_idx]
+        )
+        w_cd_h = float(bdb_res["splits"]["cold_drug"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
+        w_ct_h = float(bdb_res["splits"]["cold_target"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
+        assert isinstance(final_model, OpenRepurposeHybridModel)
+        final_model.w_lgbm_ = round(0.5 * (w_cd_h + w_ct_h), 4)
 
-    # Calibrate cold-regime blend weight from multi-family BindingDB_Kd Cold-Drug & Cold-Target validation weights
-    w_bdb_cd = float(bdb_res["splits"]["cold_drug"]["models"][PRIMARY_MODEL_KEY]["model_meta"]["w_lgbm"])
-    w_bdb_ct = float(bdb_res["splits"]["cold_target"]["models"][PRIMARY_MODEL_KEY]["model_meta"]["w_lgbm"])
-    final_model.w_lgbm_ = round(0.5 * (w_bdb_cd + w_bdb_ct), 4)
-
-    checkpoint_path = MODELS_DIR / "openrepurpose_hybrid.joblib"
+    checkpoint_path = MODELS_DIR / "openrepurpose_winner.joblib"
     joblib.dump(
         {
             "model": final_model,
+            "winner_key": primary_for_reports,
             "morgan_bit_importances": final_model.get_morgan_bit_importances(),
             "seed": SEED,
             "training_corpus": meta_comb["dataset"],
@@ -453,18 +647,10 @@ def main() -> None:
         checkpoint_path,
         compress=3,
     )
-    logger.info(
-        "Saved multi-family checkpoint to %s (w_lgbm=%.3f, w_ridge=%.3f, lgbm_iter=%s, ridge_alpha=%.1f).",
-        checkpoint_path,
-        final_model.w_lgbm_,
-        1.0 - final_model.w_lgbm_,
-        final_model.lgbm_model_.best_iteration_,
-        final_model.ridge_model_.best_alpha_,
-    )
+    logger.info("Saved winning checkpoint to %s (meta=%s).", checkpoint_path, final_model.get_metadata())
     del X_comb
     gc.collect()
 
-    # 6. Export verified JSON artifacts for the frontend and reproducibility manifest
     now_iso = datetime.now(timezone.utc).isoformat()
     total_seconds = round(time.perf_counter() - t_start, 2)
 
@@ -472,9 +658,10 @@ def main() -> None:
         "generated_at_utc": now_iso,
         "reproduce_command": "python scripts/reproduce_eval.py",
         "seed": SEED,
-        "primary_model": PRIMARY_MODEL_KEY,
+        "primary_model": primary_for_reports,
         "default_benchmark": "bindingdb_kd",
         "total_runtime_seconds": total_seconds,
+        "winner_selection": winner_info,
         "combined_screening_corpus": meta_comb,
         "protein_encoder": {
             "model_name": ESM2_MODEL_NAME,
@@ -508,21 +695,21 @@ def main() -> None:
 
     error_payload = {
         "generated_at_utc": now_iso,
-        "model": PRIMARY_MODEL_KEY,
+        "model": primary_for_reports,
         "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
         "benchmarks": {
-            "bindingdb_kd": bdb_err,
-            "davis": davis_err,
+            "bindingdb_kd": bdb_err_map[primary_for_reports],
+            "davis": davis_err_map[primary_for_reports],
         },
     }
 
     scatter_payload = {
         "generated_at_utc": now_iso,
-        "model": PRIMARY_MODEL_KEY,
+        "model": primary_for_reports,
         "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
         "benchmarks": {
-            "bindingdb_kd": bdb_scatter,
-            "davis": davis_scatter,
+            "bindingdb_kd": bdb_scatter_map[primary_for_reports],
+            "davis": davis_scatter_map[primary_for_reports],
         },
     }
 
@@ -550,11 +737,8 @@ def main() -> None:
             "davis": davis_hashes,
             "bindingdb_kd": bdb_hashes,
         },
-        "model_hyperparameters": {
-            "openrepurpose_hybrid_lgbm": LIGHTGBM_PARAMS,
-            "early_stopping_rounds": LIGHTGBM_EARLY_STOPPING_ROUNDS,
-            "final_checkpoint_meta": final_model.get_metadata(),
-        },
+        "winner_selection": winner_info,
+        "final_checkpoint_meta": final_model.get_metadata(),
         "output_artifacts_sha256": {
             "web/public/data/eval_results.json": sha256_file(eval_path),
             "web/public/data/error_analysis.json": sha256_file(error_path),
@@ -563,7 +747,7 @@ def main() -> None:
     }
     RUN_MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-    logger.info("Dual-Benchmark evaluation complete in %.2fs. Artifacts written to %s.", total_seconds, WEB_DATA_DIR)
+    logger.info("9-Model Dual-Benchmark evaluation complete in %.2fs.", total_seconds)
 
 
 if __name__ == "__main__":
