@@ -10,10 +10,12 @@ from ml.chem_filters import get_bemis_murcko_scaffold, parse_and_canonicalize
 from ml.config import SEED
 from ml.splits import (
     SplitIndices,
+    count_cross_split_near_identical_targets,
     generate_all_splits,
     make_cold_drug_split,
     make_cold_target_split,
     make_warm_split,
+    smiles_to_inchikey14,
     verify_split_integrity,
 )
 
@@ -134,3 +136,85 @@ def test_verify_split_integrity_catches_scaffold_leakage() -> None:
     )
     with pytest.raises(AssertionError, match="scaffold leakage"):
         verify_split_integrity(df, leaked)
+
+
+def test_cold_target_clusters_point_mutants_and_blocks_isoform_leakage() -> None:
+    df = _build_synthetic_dti_df()
+    # Add a 1-amino-acid point mutant of T1 (analogous to ABL1 WT vs ABL1 T315I)
+    wt_seq = SAMPLE_TARGETS[0][1]
+    mutant_seq = wt_seq[:10] + ("W" if wt_seq[10] != "W" else "Y") + wt_seq[11:]
+    mutant_rows = df[df["target_sequence"] == wt_seq].copy()
+    mutant_rows["target_id"] = "T1_MUT"
+    mutant_rows["target_sequence"] = mutant_seq
+    df_with_mut = pd.concat([df, mutant_rows], ignore_index=True)
+
+    split = make_cold_target_split(df_with_mut, seed=SEED)
+    tr_seqs = set(df_with_mut.iloc[split.train_idx]["target_sequence"])
+    va_seqs = set(df_with_mut.iloc[split.val_idx]["target_sequence"])
+    te_seqs = set(df_with_mut.iloc[split.test_idx]["target_sequence"])
+
+    # WT and point mutant MUST reside in the exact same partition
+    assert (wt_seq in tr_seqs) == (mutant_seq in tr_seqs)
+    assert (wt_seq in va_seqs) == (mutant_seq in va_seqs)
+    assert (wt_seq in te_seqs) == (mutant_seq in te_seqs)
+    assert count_cross_split_near_identical_targets(list(tr_seqs), list(te_seqs)) == 0
+
+    # Negative check: deliberately moving only the mutant to test must trigger AssertionError
+    mut_indices = df_with_mut.index[df_with_mut["target_sequence"] == mutant_seq].to_numpy()
+    wt_in_train = wt_seq in tr_seqs
+    if wt_in_train:
+        bad_train = np.setdiff1d(split.train_idx, mut_indices)
+        bad_test = np.union1d(split.test_idx, mut_indices)
+        bad_val = split.val_idx
+    else:
+        bad_train = np.union1d(split.train_idx, mut_indices)
+        bad_test = np.setdiff1d(split.test_idx, mut_indices)
+        bad_val = np.setdiff1d(split.val_idx, mut_indices)
+    bad_split = SplitIndices(name="cold_target", train_idx=bad_train, val_idx=bad_val, test_idx=bad_test)
+    with pytest.raises(AssertionError, match="near-identical mutant/isoform"):
+        verify_split_integrity(df_with_mut, bad_split)
+
+
+def test_cold_drug_clusters_acyclic_stereoisomers_by_inchikey14() -> None:
+    df = _build_synthetic_dti_df()
+    # Add (R) and (S) acyclic stereoisomers (L-alanine and D-alanine -> identical InChIKey-14!)
+    extra_rows = []
+    for name, smi in [("L_alanine", "C[C@H](N)C(=O)O"), ("D_alanine", "C[C@@H](N)C(=O)O")]:
+        _, canon = parse_and_canonicalize(smi)
+        assert canon is not None
+        scaf = get_bemis_murcko_scaffold(canon)
+        for tid, seq in SAMPLE_TARGETS[:4]:
+            extra_rows.append(
+                {
+                    "drug_id": name,
+                    "target_id": tid,
+                    "canonical_smiles": canon,
+                    "scaffold_smiles": scaf,
+                    "target_sequence": seq,
+                    "pkd": 5.5,
+                }
+            )
+    df_stereo = pd.concat([df, pd.DataFrame(extra_rows)], ignore_index=True)
+    split = make_cold_drug_split(df_stereo, seed=SEED)
+
+    tr_ik14 = {smiles_to_inchikey14(s) for s in df_stereo.iloc[split.train_idx]["canonical_smiles"].unique()}
+    va_ik14 = {smiles_to_inchikey14(s) for s in df_stereo.iloc[split.val_idx]["canonical_smiles"].unique()}
+    te_ik14 = {smiles_to_inchikey14(s) for s in df_stereo.iloc[split.test_idx]["canonical_smiles"].unique()}
+    assert tr_ik14.isdisjoint(va_ik14)
+    assert tr_ik14.isdisjoint(te_ik14)
+    assert va_ik14.isdisjoint(te_ik14)
+
+    # Negative check: splitting L_alanine and D_alanine across train/test must fail InChIKey-14 assertion
+    d_ala_idx = df_stereo.index[df_stereo["drug_id"] == "D_alanine"].to_numpy()
+    l_ala_in_train = "L_alanine" in set(df_stereo.iloc[split.train_idx]["drug_id"])
+    if l_ala_in_train:
+        bad_tr = np.setdiff1d(split.train_idx, d_ala_idx)
+        bad_te = np.union1d(split.test_idx, d_ala_idx)
+        bad_va = split.val_idx
+    else:
+        bad_tr = np.union1d(split.train_idx, d_ala_idx)
+        bad_te = np.setdiff1d(split.test_idx, d_ala_idx)
+        bad_va = np.setdiff1d(split.val_idx, d_ala_idx)
+    bad_split = SplitIndices(name="cold_drug", train_idx=bad_tr, val_idx=bad_va, test_idx=bad_te)
+    with pytest.raises(AssertionError, match="InChIKey-14 stereoisomer leakage"):
+        verify_split_integrity(df_stereo, bad_split)

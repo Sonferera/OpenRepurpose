@@ -197,22 +197,26 @@ def _evaluate_benchmark(
     y_all = df["pkd"].to_numpy(dtype=np.float64)
 
     splits = generate_all_splits(df, seed=SEED)
-    for split in splits.values():
-        verify_split_integrity(df, split)
+    leakage_audits: dict[str, dict[str, int]] = {}
+    for sp_key, split in splits.items():
+        leakage_audits[sp_key] = verify_split_integrity(df, split)
 
     splits_output: dict[str, Any] = {}
     scatter_splits: dict[str, Any] = {}
     error_splits: dict[str, Any] = {}
     split_hashes: dict[str, dict[str, str]] = {}
+    generalization_gap: dict[str, dict[str, Any]] = {}
+    y_randomization: dict[str, dict[str, Any]] = {}
 
     for split_name, split in splits.items():
         logger.info(
-            "  [%s/%s] train=%d, val=%d, test=%d",
+            "  [%s/%s] train=%d, val=%d, test=%d | leakage_audit=%s",
             benchmark_id,
             split_name,
             len(split.train_idx),
             len(split.val_idx),
             len(split.test_idx),
+            leakage_audits[split_name],
         )
         split_hashes[split_name] = {
             "train_idx_sha256": _array_sha256(split.train_idx),
@@ -255,6 +259,21 @@ def _evaluate_benchmark(
             )
 
             if model.name == PRIMARY_MODEL_KEY:
+                m_tr = evaluate_predictions(y_tr, model.predict(X_tr), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+                m_va = evaluate_predictions(y_va, model.predict(X_va), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+                generalization_gap[split_name] = {
+                    "train_rmse": m_tr["rmse"],
+                    "val_rmse": m_va["rmse"],
+                    "test_rmse": metrics["rmse"],
+                    "train_ci": m_tr["concordance_index"],
+                    "val_ci": m_va["concordance_index"],
+                    "test_ci": metrics["concordance_index"],
+                    "train_to_test_rmse_gap": round(metrics["rmse"] - m_tr["rmse"], 4),
+                    "val_to_test_ci_delta": round(
+                        (metrics["concordance_index"] or 0.0) - (m_va["concordance_index"] or 0.0), 4
+                    ),
+                }
+
                 scatter_splits[split_name] = {
                     "n_test_total": int(len(df_te)),
                     "points": _sample_scatter_points(df_te, preds_te, max_points=1000, seed=SEED),
@@ -262,8 +281,32 @@ def _evaluate_benchmark(
                 if split_name in ("cold_target", "cold_drug"):
                     error_splits[split_name] = extract_error_analysis(df_te, preds_te, top_k=10)
 
+                    # Y-Randomization (Y-scrambling) null-hypothesis sanity check
+                    rng_shuf = np.random.default_rng(SEED)
+                    y_tr_shuf = rng_shuf.permutation(y_tr)
+                    shuf_model = OpenRepurposeHybridModel()
+                    shuf_model.fit(X_tr, y_tr_shuf, X_va, y_va)
+                    shuf_metrics = evaluate_predictions(y_te, shuf_model.predict(X_te), assay_cost_usd=DEFAULT_ASSAY_COST_USD)
+                    shuf_ci = float(shuf_metrics["concordance_index"] or 0.5)
+                    y_randomization[split_name] = {
+                        "shuffled_test_rmse": shuf_metrics["rmse"],
+                        "shuffled_test_ci": shuf_metrics["concordance_index"],
+                        "shuffled_test_roc_auc": shuf_metrics["roc_auc"],
+                        "shuffled_test_ef_at_5pct": shuf_metrics["ef_at_5pct"],
+                        "passed_null_check": bool(0.40 <= shuf_ci <= 0.60),
+                    }
+                    logger.info(
+                        "    [Y-SCRAMBLE %-11s] CI=%.4f | ROC=%s | EF@5%%=%.2fx | pass=%s",
+                        split_name,
+                        shuf_ci,
+                        shuf_metrics["roc_auc"],
+                        shuf_metrics["ef_at_5pct"],
+                        y_randomization[split_name]["passed_null_check"],
+                    )
+
         splits_output[split_name] = {
             "summary": split.summary(df),
+            "leakage_audit": leakage_audits[split_name],
             "models": models_result,
         }
 
@@ -305,6 +348,14 @@ def _evaluate_benchmark(
         "dataset": dataset_meta,
         "splits": splits_output,
         "headline_comparisons": headline,
+        "integrity_audit": {
+            "split_hardening": {
+                "cold_drug_method": "Connected components of Bemis-Murcko scaffold + InChIKey-14 connectivity (0 stereoisomer overlap)",
+                "cold_target_method": "Connected components of protein 5-mer Jaccard >= 0.50 (0 point-mutant / isoform overlap)",
+            },
+            "generalization_gap": generalization_gap,
+            "y_randomization": y_randomization,
+        },
     }
     return benchmark_result, scatter_splits, error_splits, split_hashes
 

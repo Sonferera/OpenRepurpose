@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-11-24T12:26:01.702722+00:00",
+  "generated_at_utc": "2026-11-24T13:22:35.730767+00:00",
   "reproduce_command": "python scripts/reproduce_eval.py",
   "seed": 42,
   "primary_model": "openrepurpose_hybrid",
   "default_benchmark": "bindingdb_kd",
-  "total_runtime_seconds": 363.35,
+  "total_runtime_seconds": 388.52,
   "combined_screening_corpus": {
     "dataset": "DAVIS + BindingDB_Kd (Deduplicated Experimental Kd Corpus)",
     "sources": [
@@ -29,7 +29,7 @@
     "max_length": 1022,
     "batch_size": 4,
     "n_unique_proteins_encoded": 1449,
-    "extraction_seconds": 13.31,
+    "extraction_seconds": 0.16,
     "device": "cuda",
     "precision": "fp16",
     "cuda_available": true,
@@ -49,7 +49,7 @@
     ],
     "feature_dim": 2221,
     "n_unique_drugs_encoded": 10686,
-    "extraction_seconds": 109.46
+    "extraction_seconds": 106.2
   },
   "cost_assumptions": {
     "default_assay_cost_usd": 150.0,
@@ -98,6 +98,12 @@
             "n_test_scaffolds": 1497,
             "n_train_targets": 1299,
             "n_test_targets": 891
+          },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
           },
           "models": {
             "baseline_mean": {
@@ -290,7 +296,7 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 4.81,
+              "fit_seconds": 4.29,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
@@ -477,7 +483,7 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 5.26,
+              "fit_seconds": 4.83,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
@@ -664,7 +670,7 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 22.87,
+              "fit_seconds": 22.02,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
@@ -865,7 +871,7 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 27.7,
+              "fit_seconds": 26.71,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
@@ -1074,12 +1080,18 @@
             "n_train": 32280,
             "n_val": 6918,
             "n_test": 6917,
-            "n_train_drugs": 7284,
-            "n_test_drugs": 1780,
-            "n_train_scaffolds": 3521,
-            "n_test_scaffolds": 750,
-            "n_train_targets": 1240,
-            "n_test_targets": 892
+            "n_train_drugs": 7216,
+            "n_test_drugs": 1821,
+            "n_train_scaffolds": 3520,
+            "n_test_scaffolds": 751,
+            "n_train_targets": 1286,
+            "n_test_targets": 872
+          },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
           },
           "models": {
             "baseline_mean": {
@@ -1089,33 +1101,33 @@
               "model_meta": {
                 "name": "baseline_mean",
                 "display_name": "Mean Predictor",
-                "train_mean_pkd": 5.7794
+                "train_mean_pkd": 5.7767
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1219,
-                "active_prevalence_pct": 17.623,
-                "rmse": 1.3005,
-                "mae": 1.045,
+                "n_actives": 1231,
+                "active_prevalence_pct": 17.797,
+                "rmse": 1.3068,
+                "mae": 1.038,
                 "pearson_r": 0.0,
                 "spearman_rho": 0.0,
                 "concordance_index": 0.5,
                 "roc_auc": 0.5,
-                "pr_auc": 0.1762,
+                "pr_auc": 0.178,
                 "ef_at_5pct": 1.0,
                 "hit_capture_at_5pct": 0.05,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1219,
-                  "hits_captured_top5": 60.98,
+                  "total_true_hits": 1231,
+                  "hits_captured_top5": 61.58,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 851.15,
-                  "model_cost_per_hit_usd": 851.15,
+                  "random_cost_per_hit_usd": 842.85,
+                  "model_cost_per_hit_usd": 842.85,
                   "cost_per_hit_reduction_pct": 0.0,
                   "cost_effective": false,
                   "boundary_condition_note": "BOUNDARY CONDITION REACHED: EF@5% = 1.00x (< 1.5x). Top-5% computational triage no longer delivers meaningful cost-per-hit savings over random screening."
@@ -1272,40 +1284,40 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 1.45,
+              "fit_seconds": 1.34,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
-                "best_iteration": 14
+                "best_iteration": 17
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1219,
-                "active_prevalence_pct": 17.623,
-                "rmse": 1.2373,
-                "mae": 1.0308,
-                "pearson_r": 0.3763,
-                "spearman_rho": 0.3429,
-                "concordance_index": 0.6405,
-                "roc_auc": 0.6787,
-                "pr_auc": 0.3545,
-                "ef_at_5pct": 2.5657,
-                "hit_capture_at_5pct": 0.1283,
+                "n_actives": 1231,
+                "active_prevalence_pct": 17.797,
+                "rmse": 1.1999,
+                "mae": 0.9912,
+                "pearson_r": 0.4653,
+                "spearman_rho": 0.3707,
+                "concordance_index": 0.649,
+                "roc_auc": 0.7377,
+                "pr_auc": 0.4764,
+                "ef_at_5pct": 4.2386,
+                "hit_capture_at_5pct": 0.212,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1219,
-                  "hits_captured_top5": 156.44,
+                  "total_true_hits": 1231,
+                  "hits_captured_top5": 261.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 851.15,
-                  "model_cost_per_hit_usd": 331.75,
-                  "cost_per_hit_reduction_pct": 61.02,
+                  "random_cost_per_hit_usd": 842.85,
+                  "model_cost_per_hit_usd": 198.85,
+                  "cost_per_hit_reduction_pct": 76.41,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 2.57x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.24x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -1316,137 +1328,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 5.17,
+                  "model_recall_pct": 5.36,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 9.93,
+                  "model_recall_pct": 10.64,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 12.69,
+                  "model_recall_pct": 19.03,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 12.83,
+                  "model_recall_pct": 21.2,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 13.44,
+                  "model_recall_pct": 31.73,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 20.34,
+                  "model_recall_pct": 32.2,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 28.06,
+                  "model_recall_pct": 32.91,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 29.19,
+                  "model_recall_pct": 40.34,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 34.99,
+                  "model_recall_pct": 44.57,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 44.22,
+                  "model_recall_pct": 50.69,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 52.49,
+                  "model_recall_pct": 55.58,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 58.74,
+                  "model_recall_pct": 59.5,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 64.97,
+                  "model_recall_pct": 64.56,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 67.75,
+                  "model_recall_pct": 68.07,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 69.31,
+                  "model_recall_pct": 72.1,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 72.03,
+                  "model_recall_pct": 75.76,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 78.01,
+                  "model_recall_pct": 80.21,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 79.38,
+                  "model_recall_pct": 80.83,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 81.56,
+                  "model_recall_pct": 85.95,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 81.62,
+                  "model_recall_pct": 88.27,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 83.13,
+                  "model_recall_pct": 89.93,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 84.59,
+                  "model_recall_pct": 92.96,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 85.15,
+                  "model_recall_pct": 95.33,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 89.3,
+                  "model_recall_pct": 96.02,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 94.75,
+                  "model_recall_pct": 96.76,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 97.63,
+                  "model_recall_pct": 97.6,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 98.37,
+                  "model_recall_pct": 98.29,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -1459,7 +1471,7 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 4.52,
+              "fit_seconds": 4.47,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
@@ -1467,32 +1479,32 @@
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1219,
-                "active_prevalence_pct": 17.623,
-                "rmse": 1.2945,
-                "mae": 1.0867,
-                "pearson_r": 0.4718,
-                "spearman_rho": 0.4107,
-                "concordance_index": 0.6709,
-                "roc_auc": 0.7332,
-                "pr_auc": 0.4466,
-                "ef_at_5pct": 3.4276,
-                "hit_capture_at_5pct": 0.1715,
+                "n_actives": 1231,
+                "active_prevalence_pct": 17.797,
+                "rmse": 1.1819,
+                "mae": 0.9892,
+                "pearson_r": 0.5085,
+                "spearman_rho": 0.3888,
+                "concordance_index": 0.6558,
+                "roc_auc": 0.7466,
+                "pr_auc": 0.5421,
+                "ef_at_5pct": 4.7096,
+                "hit_capture_at_5pct": 0.2356,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1219,
-                  "hits_captured_top5": 209.0,
+                  "total_true_hits": 1231,
+                  "hits_captured_top5": 290.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 851.15,
-                  "model_cost_per_hit_usd": 248.33,
-                  "cost_per_hit_reduction_pct": 70.82,
+                  "random_cost_per_hit_usd": 842.85,
+                  "model_cost_per_hit_usd": 178.97,
+                  "cost_per_hit_reduction_pct": 78.77,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 3.43x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.71x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -1503,137 +1515,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 5.58,
+                  "model_recall_pct": 5.44,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 9.52,
+                  "model_recall_pct": 10.97,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 15.5,
+                  "model_recall_pct": 20.88,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 17.15,
+                  "model_recall_pct": 23.56,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 23.22,
+                  "model_recall_pct": 33.23,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 27.81,
+                  "model_recall_pct": 37.29,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 36.1,
+                  "model_recall_pct": 42.97,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 46.6,
+                  "model_recall_pct": 48.17,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 51.11,
+                  "model_recall_pct": 52.64,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 53.73,
+                  "model_recall_pct": 56.86,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 56.36,
+                  "model_recall_pct": 60.68,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 60.3,
+                  "model_recall_pct": 64.01,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 63.58,
+                  "model_recall_pct": 66.13,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 67.19,
+                  "model_recall_pct": 68.72,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 69.89,
+                  "model_recall_pct": 71.73,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 74.82,
+                  "model_recall_pct": 74.33,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 78.75,
+                  "model_recall_pct": 76.85,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 80.97,
+                  "model_recall_pct": 79.69,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 83.43,
+                  "model_recall_pct": 82.05,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 85.64,
+                  "model_recall_pct": 84.32,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 88.19,
+                  "model_recall_pct": 86.6,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 91.22,
+                  "model_recall_pct": 89.6,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 93.68,
+                  "model_recall_pct": 91.55,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 95.98,
+                  "model_recall_pct": 94.31,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 97.29,
+                  "model_recall_pct": 95.21,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 97.87,
+                  "model_recall_pct": 96.18,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 98.61,
+                  "model_recall_pct": 98.05,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -1646,11 +1658,11 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 8.19,
+              "fit_seconds": 4.3,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
-                "best_iteration": 176,
+                "best_iteration": 44,
                 "params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -1668,32 +1680,32 @@
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1219,
-                "active_prevalence_pct": 17.623,
-                "rmse": 0.9977,
-                "mae": 0.7855,
-                "pearson_r": 0.6845,
-                "spearman_rho": 0.6075,
-                "concordance_index": 0.7645,
-                "roc_auc": 0.8548,
-                "pr_auc": 0.684,
-                "ef_at_5pct": 5.1823,
-                "hit_capture_at_5pct": 0.2592,
+                "n_actives": 1231,
+                "active_prevalence_pct": 17.797,
+                "rmse": 1.0153,
+                "mae": 0.8034,
+                "pearson_r": 0.6457,
+                "spearman_rho": 0.5373,
+                "concordance_index": 0.7203,
+                "roc_auc": 0.8155,
+                "pr_auc": 0.6248,
+                "ef_at_5pct": 4.9532,
+                "hit_capture_at_5pct": 0.2478,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1219,
-                  "hits_captured_top5": 316.0,
+                  "total_true_hits": 1231,
+                  "hits_captured_top5": 305.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 851.15,
-                  "model_cost_per_hit_usd": 164.24,
-                  "cost_per_hit_reduction_pct": 80.7,
+                  "random_cost_per_hit_usd": 842.85,
+                  "model_cost_per_hit_usd": 170.16,
+                  "cost_per_hit_reduction_pct": 79.81,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 5.18x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.95x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -1704,137 +1716,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 5.74,
+                  "model_recall_pct": 5.61,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 11.07,
+                  "model_recall_pct": 10.97,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 21.82,
+                  "model_recall_pct": 21.45,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 25.92,
+                  "model_recall_pct": 24.78,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 40.69,
+                  "model_recall_pct": 35.5,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 45.69,
+                  "model_recall_pct": 40.45,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 52.54,
+                  "model_recall_pct": 47.03,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 59.47,
+                  "model_recall_pct": 56.13,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 65.38,
+                  "model_recall_pct": 62.14,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 70.22,
+                  "model_recall_pct": 67.26,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 74.0,
+                  "model_recall_pct": 71.81,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 76.95,
+                  "model_recall_pct": 74.09,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 80.56,
+                  "model_recall_pct": 76.52,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 83.1,
+                  "model_recall_pct": 78.96,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 85.32,
+                  "model_recall_pct": 80.42,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 87.94,
+                  "model_recall_pct": 82.7,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 89.99,
+                  "model_recall_pct": 85.38,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 91.3,
+                  "model_recall_pct": 87.65,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 93.11,
+                  "model_recall_pct": 89.36,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 94.34,
+                  "model_recall_pct": 90.58,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 95.49,
+                  "model_recall_pct": 92.04,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 96.31,
+                  "model_recall_pct": 92.93,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 96.96,
+                  "model_recall_pct": 93.58,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 97.46,
+                  "model_recall_pct": 94.56,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 98.28,
+                  "model_recall_pct": 95.29,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 99.26,
+                  "model_recall_pct": 96.34,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 99.43,
+                  "model_recall_pct": 99.03,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -1847,14 +1859,14 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 12.47,
+              "fit_seconds": 8.79,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
                 "w_lgbm": 1.0,
                 "w_ridge": 0.0,
                 "ridge_best_alpha": 20000.0,
-                "lgbm_best_iteration": 176,
+                "lgbm_best_iteration": 44,
                 "lgbm_params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -1872,32 +1884,32 @@
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1219,
-                "active_prevalence_pct": 17.623,
-                "rmse": 0.9977,
-                "mae": 0.7855,
-                "pearson_r": 0.6845,
-                "spearman_rho": 0.6075,
-                "concordance_index": 0.7645,
-                "roc_auc": 0.8548,
-                "pr_auc": 0.684,
-                "ef_at_5pct": 5.1823,
-                "hit_capture_at_5pct": 0.2592,
+                "n_actives": 1231,
+                "active_prevalence_pct": 17.797,
+                "rmse": 1.0153,
+                "mae": 0.8034,
+                "pearson_r": 0.6457,
+                "spearman_rho": 0.5373,
+                "concordance_index": 0.7203,
+                "roc_auc": 0.8155,
+                "pr_auc": 0.6248,
+                "ef_at_5pct": 4.9532,
+                "hit_capture_at_5pct": 0.2478,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1219,
-                  "hits_captured_top5": 316.0,
+                  "total_true_hits": 1231,
+                  "hits_captured_top5": 305.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 851.15,
-                  "model_cost_per_hit_usd": 164.24,
-                  "cost_per_hit_reduction_pct": 80.7,
+                  "random_cost_per_hit_usd": 842.85,
+                  "model_cost_per_hit_usd": 170.16,
+                  "cost_per_hit_reduction_pct": 79.81,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 5.18x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.95x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -1908,137 +1920,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 5.74,
+                  "model_recall_pct": 5.61,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 11.07,
+                  "model_recall_pct": 10.97,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 21.82,
+                  "model_recall_pct": 21.45,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 25.92,
+                  "model_recall_pct": 24.78,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 40.69,
+                  "model_recall_pct": 35.5,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 45.69,
+                  "model_recall_pct": 40.45,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 52.54,
+                  "model_recall_pct": 47.03,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 59.47,
+                  "model_recall_pct": 56.13,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 65.38,
+                  "model_recall_pct": 62.14,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 70.22,
+                  "model_recall_pct": 67.26,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 74.0,
+                  "model_recall_pct": 71.81,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 76.95,
+                  "model_recall_pct": 74.09,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 80.56,
+                  "model_recall_pct": 76.52,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 83.1,
+                  "model_recall_pct": 78.96,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 85.32,
+                  "model_recall_pct": 80.42,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 87.94,
+                  "model_recall_pct": 82.7,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 89.99,
+                  "model_recall_pct": 85.38,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 91.3,
+                  "model_recall_pct": 87.65,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 93.11,
+                  "model_recall_pct": 89.36,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 94.34,
+                  "model_recall_pct": 90.58,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 95.49,
+                  "model_recall_pct": 92.04,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 96.31,
+                  "model_recall_pct": 92.93,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 96.96,
+                  "model_recall_pct": 93.58,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 97.46,
+                  "model_recall_pct": 94.56,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 98.28,
+                  "model_recall_pct": 95.29,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 99.26,
+                  "model_recall_pct": 96.34,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 99.43,
+                  "model_recall_pct": 99.03,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -2056,12 +2068,18 @@
             "n_train": 32280,
             "n_val": 6918,
             "n_test": 6917,
-            "n_train_drugs": 8065,
-            "n_test_drugs": 2514,
-            "n_train_scaffolds": 3836,
-            "n_test_scaffolds": 1314,
-            "n_train_targets": 992,
-            "n_test_targets": 210
+            "n_train_drugs": 7721,
+            "n_test_drugs": 2499,
+            "n_train_scaffolds": 3743,
+            "n_test_scaffolds": 1206,
+            "n_train_targets": 1026,
+            "n_test_targets": 195
+          },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
           },
           "models": {
             "baseline_mean": {
@@ -2071,33 +2089,33 @@
               "model_meta": {
                 "name": "baseline_mean",
                 "display_name": "Mean Predictor",
-                "train_mean_pkd": 5.7696
+                "train_mean_pkd": 5.7997
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1446,
-                "active_prevalence_pct": 20.905,
-                "rmse": 1.3554,
-                "mae": 1.0753,
+                "n_actives": 1078,
+                "active_prevalence_pct": 15.585,
+                "rmse": 1.2394,
+                "mae": 1.0015,
                 "pearson_r": 0.0,
                 "spearman_rho": 0.0,
                 "concordance_index": 0.5,
                 "roc_auc": 0.5,
-                "pr_auc": 0.2091,
+                "pr_auc": 0.1558,
                 "ef_at_5pct": 1.0,
                 "hit_capture_at_5pct": 0.05,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1446,
-                  "hits_captured_top5": 72.33,
+                  "total_true_hits": 1078,
+                  "hits_captured_top5": 53.92,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 717.53,
-                  "model_cost_per_hit_usd": 717.53,
+                  "random_cost_per_hit_usd": 962.48,
+                  "model_cost_per_hit_usd": 962.48,
                   "cost_per_hit_reduction_pct": 0.0,
                   "cost_effective": false,
                   "boundary_condition_note": "BOUNDARY CONDITION REACHED: EF@5% = 1.00x (< 1.5x). Top-5% computational triage no longer delivers meaningful cost-per-hit savings over random screening."
@@ -2254,40 +2272,40 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 3.6,
+              "fit_seconds": 3.92,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
-                "best_iteration": 284
+                "best_iteration": 331
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1446,
-                "active_prevalence_pct": 20.905,
-                "rmse": 1.0783,
-                "mae": 0.7409,
-                "pearson_r": 0.6056,
-                "spearman_rho": 0.59,
-                "concordance_index": 0.7478,
-                "roc_auc": 0.8319,
-                "pr_auc": 0.574,
-                "ef_at_5pct": 3.3813,
-                "hit_capture_at_5pct": 0.1691,
+                "n_actives": 1078,
+                "active_prevalence_pct": 15.585,
+                "rmse": 0.9279,
+                "mae": 0.6269,
+                "pearson_r": 0.663,
+                "spearman_rho": 0.641,
+                "concordance_index": 0.7766,
+                "roc_auc": 0.8547,
+                "pr_auc": 0.5616,
+                "ef_at_5pct": 4.7081,
+                "hit_capture_at_5pct": 0.2355,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1446,
-                  "hits_captured_top5": 244.57,
+                  "total_true_hits": 1078,
+                  "hits_captured_top5": 253.88,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 717.53,
-                  "model_cost_per_hit_usd": 212.21,
-                  "cost_per_hit_reduction_pct": 70.43,
+                  "random_cost_per_hit_usd": 962.48,
+                  "model_cost_per_hit_usd": 204.43,
+                  "cost_per_hit_reduction_pct": 78.76,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 3.38x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.71x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -2298,137 +2316,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 4.36,
+                  "model_recall_pct": 5.66,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 8.06,
+                  "model_recall_pct": 10.48,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 14.11,
+                  "model_recall_pct": 19.76,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 16.91,
+                  "model_recall_pct": 23.55,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 26.28,
+                  "model_recall_pct": 35.06,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 30.71,
+                  "model_recall_pct": 40.17,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 36.03,
+                  "model_recall_pct": 46.57,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 46.27,
+                  "model_recall_pct": 57.42,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 57.05,
+                  "model_recall_pct": 63.64,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 64.55,
+                  "model_recall_pct": 70.04,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 70.72,
+                  "model_recall_pct": 75.42,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 75.58,
+                  "model_recall_pct": 80.42,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 79.81,
+                  "model_recall_pct": 84.23,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 83.13,
+                  "model_recall_pct": 87.4,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 86.48,
+                  "model_recall_pct": 89.56,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 89.65,
+                  "model_recall_pct": 91.54,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 90.94,
+                  "model_recall_pct": 93.09,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 92.17,
+                  "model_recall_pct": 94.01,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 93.21,
+                  "model_recall_pct": 94.82,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 94.1,
+                  "model_recall_pct": 95.97,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 94.71,
+                  "model_recall_pct": 96.51,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 95.56,
+                  "model_recall_pct": 97.03,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 96.12,
+                  "model_recall_pct": 97.68,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 97.0,
+                  "model_recall_pct": 98.33,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 97.57,
+                  "model_recall_pct": 98.52,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 98.2,
+                  "model_recall_pct": 98.89,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 98.48,
+                  "model_recall_pct": 98.98,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -2441,40 +2459,40 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 4.51,
+              "fit_seconds": 4.46,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
-                "best_alpha": 20000.0
+                "best_alpha": 5000.0
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1446,
-                "active_prevalence_pct": 20.905,
-                "rmse": 1.122,
-                "mae": 0.7703,
-                "pearson_r": 0.5599,
-                "spearman_rho": 0.5786,
-                "concordance_index": 0.7428,
-                "roc_auc": 0.8219,
-                "pr_auc": 0.5451,
-                "ef_at_5pct": 3.3181,
-                "hit_capture_at_5pct": 0.166,
+                "n_actives": 1078,
+                "active_prevalence_pct": 15.585,
+                "rmse": 0.9839,
+                "mae": 0.683,
+                "pearson_r": 0.6117,
+                "spearman_rho": 0.5913,
+                "concordance_index": 0.752,
+                "roc_auc": 0.8025,
+                "pr_auc": 0.4954,
+                "ef_at_5pct": 4.358,
+                "hit_capture_at_5pct": 0.218,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1446,
-                  "hits_captured_top5": 240.0,
+                  "total_true_hits": 1078,
+                  "hits_captured_top5": 235.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 717.53,
-                  "model_cost_per_hit_usd": 216.25,
-                  "cost_per_hit_reduction_pct": 69.86,
+                  "random_cost_per_hit_usd": 962.48,
+                  "model_cost_per_hit_usd": 220.85,
+                  "cost_per_hit_reduction_pct": 77.05,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 3.32x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.36x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -2485,137 +2503,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 3.6,
+                  "model_recall_pct": 4.55,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 7.26,
+                  "model_recall_pct": 9.0,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 14.11,
+                  "model_recall_pct": 18.37,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 16.6,
+                  "model_recall_pct": 21.8,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 25.93,
+                  "model_recall_pct": 34.69,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 30.01,
+                  "model_recall_pct": 39.15,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 36.1,
+                  "model_recall_pct": 43.23,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 45.71,
+                  "model_recall_pct": 51.95,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 54.29,
+                  "model_recall_pct": 58.35,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 61.76,
+                  "model_recall_pct": 63.36,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 68.67,
+                  "model_recall_pct": 68.27,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 73.17,
+                  "model_recall_pct": 72.45,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 77.32,
+                  "model_recall_pct": 77.27,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 81.47,
+                  "model_recall_pct": 80.06,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 84.79,
+                  "model_recall_pct": 83.4,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 87.48,
+                  "model_recall_pct": 85.16,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 89.83,
+                  "model_recall_pct": 87.38,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 91.91,
+                  "model_recall_pct": 89.15,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 93.15,
+                  "model_recall_pct": 90.26,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 94.05,
+                  "model_recall_pct": 91.47,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 94.88,
+                  "model_recall_pct": 92.76,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 95.64,
+                  "model_recall_pct": 93.78,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 96.61,
+                  "model_recall_pct": 94.43,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 97.16,
+                  "model_recall_pct": 95.45,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 97.93,
+                  "model_recall_pct": 96.2,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 98.69,
+                  "model_recall_pct": 96.94,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 99.1,
+                  "model_recall_pct": 97.5,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -2628,11 +2646,11 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 14.77,
+              "fit_seconds": 17.18,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
-                "best_iteration": 464,
+                "best_iteration": 563,
                 "params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -2650,32 +2668,32 @@
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1446,
-                "active_prevalence_pct": 20.905,
-                "rmse": 1.0437,
-                "mae": 0.7089,
-                "pearson_r": 0.6355,
-                "spearman_rho": 0.6371,
-                "concordance_index": 0.7678,
-                "roc_auc": 0.8596,
-                "pr_auc": 0.6074,
-                "ef_at_5pct": 3.7605,
-                "hit_capture_at_5pct": 0.1881,
+                "n_actives": 1078,
+                "active_prevalence_pct": 15.585,
+                "rmse": 0.9505,
+                "mae": 0.6616,
+                "pearson_r": 0.642,
+                "spearman_rho": 0.634,
+                "concordance_index": 0.7686,
+                "roc_auc": 0.8483,
+                "pr_auc": 0.5392,
+                "ef_at_5pct": 4.4878,
+                "hit_capture_at_5pct": 0.2245,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1446,
-                  "hits_captured_top5": 272.0,
+                  "total_true_hits": 1078,
+                  "hits_captured_top5": 242.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 717.53,
-                  "model_cost_per_hit_usd": 190.81,
-                  "cost_per_hit_reduction_pct": 73.41,
+                  "random_cost_per_hit_usd": 962.48,
+                  "model_cost_per_hit_usd": 214.46,
+                  "cost_per_hit_reduction_pct": 77.72,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 3.76x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.49x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -2686,137 +2704,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 3.53,
+                  "model_recall_pct": 5.47,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 8.02,
+                  "model_recall_pct": 10.02,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 15.77,
+                  "model_recall_pct": 19.11,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 18.81,
+                  "model_recall_pct": 22.45,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 28.49,
+                  "model_recall_pct": 34.42,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 32.43,
+                  "model_recall_pct": 39.89,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 39.42,
+                  "model_recall_pct": 46.38,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 50.48,
+                  "model_recall_pct": 55.75,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 58.85,
+                  "model_recall_pct": 62.43,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 66.18,
+                  "model_recall_pct": 66.6,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 72.41,
+                  "model_recall_pct": 71.06,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 77.59,
+                  "model_recall_pct": 76.07,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 82.5,
+                  "model_recall_pct": 80.06,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 86.79,
+                  "model_recall_pct": 85.06,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 89.97,
+                  "model_recall_pct": 88.31,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 92.74,
+                  "model_recall_pct": 92.12,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 94.12,
+                  "model_recall_pct": 94.43,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 95.02,
+                  "model_recall_pct": 95.55,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 96.2,
+                  "model_recall_pct": 96.75,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 96.82,
+                  "model_recall_pct": 97.5,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 97.37,
+                  "model_recall_pct": 97.77,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 97.99,
+                  "model_recall_pct": 98.24,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 98.13,
+                  "model_recall_pct": 98.52,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 98.48,
+                  "model_recall_pct": 98.89,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 98.76,
+                  "model_recall_pct": 98.98,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 99.03,
+                  "model_recall_pct": 99.35,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 99.24,
+                  "model_recall_pct": 99.63,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -2829,14 +2847,14 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 19.23,
+              "fit_seconds": 22.33,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-                "w_lgbm": 0.8927,
-                "w_ridge": 0.1073,
-                "ridge_best_alpha": 20000.0,
-                "lgbm_best_iteration": 464,
+                "w_lgbm": 0.5723,
+                "w_ridge": 0.4277,
+                "ridge_best_alpha": 5000.0,
+                "lgbm_best_iteration": 563,
                 "lgbm_params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -2854,32 +2872,32 @@
               },
               "metrics": {
                 "n_samples": 6917,
-                "n_actives": 1446,
-                "active_prevalence_pct": 20.905,
-                "rmse": 1.0442,
-                "mae": 0.7105,
-                "pearson_r": 0.6356,
-                "spearman_rho": 0.6384,
-                "concordance_index": 0.7685,
-                "roc_auc": 0.8594,
-                "pr_auc": 0.6057,
-                "ef_at_5pct": 3.7605,
-                "hit_capture_at_5pct": 0.1881,
+                "n_actives": 1078,
+                "active_prevalence_pct": 15.585,
+                "rmse": 0.9379,
+                "mae": 0.6561,
+                "pearson_r": 0.6546,
+                "spearman_rho": 0.6453,
+                "concordance_index": 0.7749,
+                "roc_auc": 0.842,
+                "pr_auc": 0.5338,
+                "ef_at_5pct": 4.5991,
+                "hit_capture_at_5pct": 0.2301,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 6917,
                   "n_top_screened": 346,
-                  "total_true_hits": 1446,
-                  "hits_captured_top5": 272.0,
+                  "total_true_hits": 1078,
+                  "hits_captured_top5": 248.0,
                   "exhaustive_screening_cost_usd": 1037550.0,
                   "triage_screening_cost_usd": 51900.0,
                   "assay_cost_saved_usd": 985650.0,
                   "assay_cost_saved_pct": 95.0,
-                  "random_cost_per_hit_usd": 717.53,
-                  "model_cost_per_hit_usd": 190.81,
-                  "cost_per_hit_reduction_pct": 73.41,
+                  "random_cost_per_hit_usd": 962.48,
+                  "model_cost_per_hit_usd": 209.27,
+                  "cost_per_hit_reduction_pct": 78.26,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 3.76x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 4.60x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -2890,137 +2908,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 3.6,
+                  "model_recall_pct": 4.92,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 7.81,
+                  "model_recall_pct": 9.74,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 15.77,
+                  "model_recall_pct": 18.92,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.0,
-                  "model_recall_pct": 18.81,
+                  "model_recall_pct": 23.01,
                   "random_recall_pct": 5.0
                 },
                 {
                   "screened_pct": 8.34,
-                  "model_recall_pct": 28.22,
+                  "model_recall_pct": 33.95,
                   "random_recall_pct": 8.34
                 },
                 {
                   "screened_pct": 10.0,
-                  "model_recall_pct": 32.23,
+                  "model_recall_pct": 39.52,
                   "random_recall_pct": 10.0
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 39.35,
+                  "model_recall_pct": 47.68,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 50.45,
+                  "model_recall_pct": 56.59,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 59.2,
+                  "model_recall_pct": 62.8,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.01,
-                  "model_recall_pct": 66.25,
+                  "model_recall_pct": 66.98,
                   "random_recall_pct": 25.01
                 },
                 {
                   "screened_pct": 29.17,
-                  "model_recall_pct": 72.2,
+                  "model_recall_pct": 71.24,
                   "random_recall_pct": 29.17
                 },
                 {
                   "screened_pct": 33.34,
-                  "model_recall_pct": 77.46,
+                  "model_recall_pct": 75.88,
                   "random_recall_pct": 33.34
                 },
                 {
                   "screened_pct": 37.5,
-                  "model_recall_pct": 82.02,
+                  "model_recall_pct": 79.96,
                   "random_recall_pct": 37.5
                 },
                 {
                   "screened_pct": 41.68,
-                  "model_recall_pct": 86.72,
+                  "model_recall_pct": 83.95,
                   "random_recall_pct": 41.68
                 },
                 {
                   "screened_pct": 45.84,
-                  "model_recall_pct": 89.97,
+                  "model_recall_pct": 86.73,
                   "random_recall_pct": 45.84
                 },
                 {
                   "screened_pct": 50.01,
-                  "model_recall_pct": 92.6,
+                  "model_recall_pct": 89.15,
                   "random_recall_pct": 50.01
                 },
                 {
                   "screened_pct": 54.17,
-                  "model_recall_pct": 94.19,
+                  "model_recall_pct": 91.93,
                   "random_recall_pct": 54.17
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 95.09,
+                  "model_recall_pct": 93.51,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 96.2,
+                  "model_recall_pct": 94.9,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.68,
-                  "model_recall_pct": 96.54,
+                  "model_recall_pct": 96.38,
                   "random_recall_pct": 66.68
                 },
                 {
                   "screened_pct": 70.84,
-                  "model_recall_pct": 97.23,
+                  "model_recall_pct": 97.22,
                   "random_recall_pct": 70.84
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 97.99,
+                  "model_recall_pct": 97.68,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.17,
-                  "model_recall_pct": 98.34,
+                  "model_recall_pct": 97.77,
                   "random_recall_pct": 79.17
                 },
                 {
                   "screened_pct": 83.35,
-                  "model_recall_pct": 98.55,
+                  "model_recall_pct": 98.33,
                   "random_recall_pct": 83.35
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 98.76,
+                  "model_recall_pct": 98.98,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 99.03,
+                  "model_recall_pct": 99.44,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.84,
-                  "model_recall_pct": 99.17,
+                  "model_recall_pct": 99.72,
                   "random_recall_pct": 95.84
                 },
                 {
@@ -3037,14 +3055,68 @@
         "primary_model": "openrepurpose_hybrid",
         "warm_ci_vs_ridge": 0.0704,
         "warm_ci_vs_ligand_only": 0.0643,
-        "cold_drug_ci_vs_ridge": 0.0936,
+        "cold_drug_ci_vs_ridge": 0.0645,
         "cold_drug_ci_vs_lgbm": 0.0,
-        "cold_drug_ci_vs_ligand_only": 0.124,
-        "cold_drug_rmse_vs_ridge": -0.2968,
-        "cold_target_ci_vs_ridge": 0.0257,
-        "cold_target_ci_vs_ligand_only": 0.0207,
-        "warm_to_cold_drug_ci_delta": -0.0979,
-        "warm_to_cold_target_ci_delta": -0.0939
+        "cold_drug_ci_vs_ligand_only": 0.0713,
+        "cold_drug_rmse_vs_ridge": -0.1666,
+        "cold_target_ci_vs_ridge": 0.0229,
+        "cold_target_ci_vs_ligand_only": -0.0017,
+        "warm_to_cold_drug_ci_delta": -0.1421,
+        "warm_to_cold_target_ci_delta": -0.0875
+      },
+      "integrity_audit": {
+        "split_hardening": {
+          "cold_drug_method": "Connected components of Bemis-Murcko scaffold + InChIKey-14 connectivity (0 stereoisomer overlap)",
+          "cold_target_method": "Connected components of protein 5-mer Jaccard >= 0.50 (0 point-mutant / isoform overlap)"
+        },
+        "generalization_gap": {
+          "warm": {
+            "train_rmse": 0.3791,
+            "val_rmse": 0.6796,
+            "test_rmse": 0.6676,
+            "train_ci": 0.9318,
+            "val_ci": 0.8609,
+            "test_ci": 0.8624,
+            "train_to_test_rmse_gap": 0.2885,
+            "val_to_test_ci_delta": 0.0015
+          },
+          "cold_drug": {
+            "train_rmse": 0.8066,
+            "val_rmse": 0.9952,
+            "test_rmse": 1.0153,
+            "train_ci": 0.8274,
+            "val_ci": 0.7241,
+            "test_ci": 0.7203,
+            "train_to_test_rmse_gap": 0.2087,
+            "val_to_test_ci_delta": -0.0038
+          },
+          "cold_target": {
+            "train_rmse": 0.5696,
+            "val_rmse": 1.0425,
+            "test_rmse": 0.9379,
+            "train_ci": 0.8892,
+            "val_ci": 0.7397,
+            "test_ci": 0.7749,
+            "train_to_test_rmse_gap": 0.3683,
+            "val_to_test_ci_delta": 0.0352
+          }
+        },
+        "y_randomization": {
+          "cold_drug": {
+            "shuffled_test_rmse": 1.3227,
+            "shuffled_test_ci": 0.4753,
+            "shuffled_test_roc_auc": 0.4544,
+            "shuffled_test_ef_at_5pct": 1.0069,
+            "passed_null_check": true
+          },
+          "cold_target": {
+            "shuffled_test_rmse": 1.248,
+            "shuffled_test_ci": 0.4432,
+            "shuffled_test_roc_auc": 0.4314,
+            "shuffled_test_ef_at_5pct": 0.8531,
+            "passed_null_check": true
+          }
+        }
       }
     },
     "davis": {
@@ -3081,6 +3153,12 @@
             "n_test_scaffolds": 68,
             "n_train_targets": 379,
             "n_test_targets": 379
+          },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
           },
           "models": {
             "baseline_mean": {
@@ -3273,7 +3351,7 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 1.08,
+              "fit_seconds": 0.96,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
@@ -3460,7 +3538,7 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 3.99,
+              "fit_seconds": 2.91,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
@@ -3647,7 +3725,7 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 11.19,
+              "fit_seconds": 9.37,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
@@ -3848,7 +3926,7 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 14.84,
+              "fit_seconds": 12.15,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
@@ -4064,6 +4142,12 @@
             "n_train_targets": 379,
             "n_test_targets": 379
           },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
+          },
           "models": {
             "baseline_mean": {
               "display_name": "Mean Predictor",
@@ -4255,7 +4339,7 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 1.1,
+              "fit_seconds": 1.06,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
@@ -4442,7 +4526,7 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 2.95,
+              "fit_seconds": 2.74,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
@@ -4629,7 +4713,7 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 4.76,
+              "fit_seconds": 4.31,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
@@ -4830,7 +4914,7 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 7.15,
+              "fit_seconds": 7.07,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
@@ -5046,6 +5130,12 @@
             "n_train_targets": 265,
             "n_test_targets": 57
           },
+          "leakage_audit": {
+            "scaffold_overlap_train_test": 0,
+            "inchikey14_overlap_train_test": 0,
+            "target_exact_overlap_train_test": 0,
+            "target_near_identical_overlap_train_test": 0
+          },
           "models": {
             "baseline_mean": {
               "display_name": "Mean Predictor",
@@ -5054,34 +5144,34 @@
               "model_meta": {
                 "name": "baseline_mean",
                 "display_name": "Mean Predictor",
-                "train_mean_pkd": 5.3839
+                "train_mean_pkd": 5.4065
               },
               "metrics": {
                 "n_samples": 3876,
-                "n_actives": 297,
-                "active_prevalence_pct": 7.663,
-                "rmse": 0.8722,
-                "mae": 0.5991,
+                "n_actives": 233,
+                "active_prevalence_pct": 6.011,
+                "rmse": 0.7657,
+                "mae": 0.5582,
                 "pearson_r": 0.0,
                 "spearman_rho": 0.0,
                 "concordance_index": 0.5,
                 "roc_auc": 0.5,
-                "pr_auc": 0.0766,
+                "pr_auc": 0.0601,
                 "ef_at_5pct": 1.0,
                 "hit_capture_at_5pct": 0.0501,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 3876,
                   "n_top_screened": 194,
-                  "total_true_hits": 297,
-                  "hits_captured_top5": 14.87,
+                  "total_true_hits": 233,
+                  "hits_captured_top5": 11.66,
                   "exhaustive_screening_cost_usd": 581400.0,
                   "triage_screening_cost_usd": 29100.0,
                   "assay_cost_saved_usd": 552300.0,
                   "assay_cost_saved_pct": 94.99,
-                  "random_cost_per_hit_usd": 1957.58,
-                  "model_cost_per_hit_usd": 1957.58,
-                  "cost_per_hit_reduction_pct": -0.0,
+                  "random_cost_per_hit_usd": 2495.28,
+                  "model_cost_per_hit_usd": 2495.28,
+                  "cost_per_hit_reduction_pct": 0.0,
                   "cost_effective": false,
                   "boundary_condition_note": "BOUNDARY CONDITION REACHED: EF@5% = 1.00x (< 1.5x). Top-5% computational triage no longer delivers meaningful cost-per-hit savings over random screening."
                 }
@@ -5237,40 +5327,40 @@
             "baseline_ligand_only": {
               "display_name": "Ligand-Only LightGBM (Ablation)",
               "description": "Ablation trained strictly on RDKit ligand features without protein embeddings.",
-              "fit_seconds": 0.99,
+              "fit_seconds": 1.39,
               "model_meta": {
                 "name": "baseline_ligand_only",
                 "display_name": "Ligand-Only LightGBM (Ablation)",
-                "best_iteration": 153
+                "best_iteration": 243
               },
               "metrics": {
                 "n_samples": 3876,
-                "n_actives": 297,
-                "active_prevalence_pct": 7.663,
-                "rmse": 0.7638,
-                "mae": 0.4596,
-                "pearson_r": 0.4841,
-                "spearman_rho": 0.4788,
-                "concordance_index": 0.7503,
-                "roc_auc": 0.7881,
-                "pr_auc": 0.2852,
-                "ef_at_5pct": 5.2625,
-                "hit_capture_at_5pct": 0.2634,
+                "n_actives": 233,
+                "active_prevalence_pct": 6.011,
+                "rmse": 0.6597,
+                "mae": 0.419,
+                "pearson_r": 0.5101,
+                "spearman_rho": 0.484,
+                "concordance_index": 0.7749,
+                "roc_auc": 0.8124,
+                "pr_auc": 0.2653,
+                "ef_at_5pct": 6.1257,
+                "hit_capture_at_5pct": 0.3066,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 3876,
                   "n_top_screened": 194,
-                  "total_true_hits": 297,
-                  "hits_captured_top5": 78.23,
+                  "total_true_hits": 233,
+                  "hits_captured_top5": 71.44,
                   "exhaustive_screening_cost_usd": 581400.0,
                   "triage_screening_cost_usd": 29100.0,
                   "assay_cost_saved_usd": 552300.0,
                   "assay_cost_saved_pct": 94.99,
-                  "random_cost_per_hit_usd": 1957.58,
-                  "model_cost_per_hit_usd": 371.99,
-                  "cost_per_hit_reduction_pct": 81.0,
+                  "random_cost_per_hit_usd": 2495.28,
+                  "model_cost_per_hit_usd": 407.34,
+                  "cost_per_hit_reduction_pct": 83.68,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 5.26x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 6.13x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -5281,132 +5371,132 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 6.68,
+                  "model_recall_pct": 8.22,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 13.11,
+                  "model_recall_pct": 15.65,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 24.24,
+                  "model_recall_pct": 27.67,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.01,
-                  "model_recall_pct": 26.34,
+                  "model_recall_pct": 30.66,
                   "random_recall_pct": 5.01
                 },
                 {
                   "screened_pct": 8.33,
-                  "model_recall_pct": 36.48,
+                  "model_recall_pct": 38.63,
                   "random_recall_pct": 8.33
                 },
                 {
                   "screened_pct": 10.01,
-                  "model_recall_pct": 40.49,
+                  "model_recall_pct": 43.56,
                   "random_recall_pct": 10.01
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 47.34,
+                  "model_recall_pct": 50.03,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 53.87,
+                  "model_recall_pct": 56.51,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 61.52,
+                  "model_recall_pct": 62.43,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.0,
-                  "model_recall_pct": 65.99,
+                  "model_recall_pct": 74.68,
                   "random_recall_pct": 25.0
                 },
                 {
                   "screened_pct": 29.18,
-                  "model_recall_pct": 71.5,
+                  "model_recall_pct": 77.19,
                   "random_recall_pct": 29.18
                 },
                 {
                   "screened_pct": 33.33,
-                  "model_recall_pct": 74.86,
+                  "model_recall_pct": 79.11,
                   "random_recall_pct": 33.33
                 },
                 {
                   "screened_pct": 37.51,
-                  "model_recall_pct": 78.13,
+                  "model_recall_pct": 81.33,
                   "random_recall_pct": 37.51
                 },
                 {
                   "screened_pct": 41.67,
-                  "model_recall_pct": 80.13,
+                  "model_recall_pct": 82.4,
                   "random_recall_pct": 41.67
                 },
                 {
                   "screened_pct": 45.85,
-                  "model_recall_pct": 82.49,
+                  "model_recall_pct": 85.84,
                   "random_recall_pct": 45.85
                 },
                 {
                   "screened_pct": 50.0,
-                  "model_recall_pct": 84.51,
+                  "model_recall_pct": 87.12,
                   "random_recall_pct": 50.0
                 },
                 {
                   "screened_pct": 54.18,
-                  "model_recall_pct": 85.19,
+                  "model_recall_pct": 88.41,
                   "random_recall_pct": 54.18
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 87.54,
+                  "model_recall_pct": 89.99,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 88.22,
+                  "model_recall_pct": 91.64,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.67,
-                  "model_recall_pct": 89.34,
+                  "model_recall_pct": 93.28,
                   "random_recall_pct": 66.67
                 },
                 {
                   "screened_pct": 70.85,
-                  "model_recall_pct": 90.75,
+                  "model_recall_pct": 94.5,
                   "random_recall_pct": 70.85
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 92.93,
+                  "model_recall_pct": 95.71,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.18,
-                  "model_recall_pct": 94.61,
+                  "model_recall_pct": 97.79,
                   "random_recall_pct": 79.18
                 },
                 {
                   "screened_pct": 83.33,
-                  "model_recall_pct": 97.64,
+                  "model_recall_pct": 98.86,
                   "random_recall_pct": 83.33
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 99.33,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 99.78,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 91.67
                 },
                 {
@@ -5424,7 +5514,7 @@
             "baseline_ridge": {
               "display_name": "Ridge Regression (Linear)",
               "description": "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem).",
-              "fit_seconds": 2.83,
+              "fit_seconds": 3.0,
               "model_meta": {
                 "name": "baseline_ridge",
                 "display_name": "Ridge Regression (Linear)",
@@ -5432,32 +5522,32 @@
               },
               "metrics": {
                 "n_samples": 3876,
-                "n_actives": 297,
-                "active_prevalence_pct": 7.663,
-                "rmse": 0.753,
-                "mae": 0.4548,
-                "pearson_r": 0.5126,
-                "spearman_rho": 0.4859,
-                "concordance_index": 0.7537,
-                "roc_auc": 0.821,
-                "pr_auc": 0.338,
-                "ef_at_5pct": 5.718,
-                "hit_capture_at_5pct": 0.2862,
+                "n_actives": 233,
+                "active_prevalence_pct": 6.011,
+                "rmse": 0.6467,
+                "mae": 0.4341,
+                "pearson_r": 0.5434,
+                "spearman_rho": 0.507,
+                "concordance_index": 0.7882,
+                "roc_auc": 0.8532,
+                "pr_auc": 0.3245,
+                "ef_at_5pct": 6.9456,
+                "hit_capture_at_5pct": 0.3476,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 3876,
                   "n_top_screened": 194,
-                  "total_true_hits": 297,
-                  "hits_captured_top5": 85.0,
+                  "total_true_hits": 233,
+                  "hits_captured_top5": 81.0,
                   "exhaustive_screening_cost_usd": 581400.0,
                   "triage_screening_cost_usd": 29100.0,
                   "assay_cost_saved_usd": 552300.0,
                   "assay_cost_saved_pct": 94.99,
-                  "random_cost_per_hit_usd": 1957.58,
-                  "model_cost_per_hit_usd": 342.35,
-                  "cost_per_hit_reduction_pct": 82.51,
+                  "random_cost_per_hit_usd": 2495.28,
+                  "model_cost_per_hit_usd": 359.26,
+                  "cost_per_hit_reduction_pct": 85.6,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 5.72x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 6.95x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -5468,137 +5558,137 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 7.07,
+                  "model_recall_pct": 8.58,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 12.46,
+                  "model_recall_pct": 15.02,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 25.25,
+                  "model_recall_pct": 30.9,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.01,
-                  "model_recall_pct": 28.62,
+                  "model_recall_pct": 34.76,
                   "random_recall_pct": 5.01
                 },
                 {
                   "screened_pct": 8.33,
-                  "model_recall_pct": 41.41,
+                  "model_recall_pct": 43.78,
                   "random_recall_pct": 8.33
                 },
                 {
                   "screened_pct": 10.01,
-                  "model_recall_pct": 46.13,
+                  "model_recall_pct": 47.21,
                   "random_recall_pct": 10.01
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 50.51,
+                  "model_recall_pct": 51.93,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 60.61,
+                  "model_recall_pct": 64.38,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 66.33,
+                  "model_recall_pct": 71.67,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.0,
-                  "model_recall_pct": 70.71,
+                  "model_recall_pct": 81.97,
                   "random_recall_pct": 25.0
                 },
                 {
                   "screened_pct": 29.18,
-                  "model_recall_pct": 74.41,
+                  "model_recall_pct": 84.12,
                   "random_recall_pct": 29.18
                 },
                 {
                   "screened_pct": 33.33,
-                  "model_recall_pct": 77.78,
+                  "model_recall_pct": 85.84,
                   "random_recall_pct": 33.33
                 },
                 {
                   "screened_pct": 37.51,
-                  "model_recall_pct": 81.82,
+                  "model_recall_pct": 87.12,
                   "random_recall_pct": 37.51
                 },
                 {
                   "screened_pct": 41.67,
-                  "model_recall_pct": 84.85,
+                  "model_recall_pct": 89.27,
                   "random_recall_pct": 41.67
                 },
                 {
                   "screened_pct": 45.85,
-                  "model_recall_pct": 87.54,
+                  "model_recall_pct": 90.56,
                   "random_recall_pct": 45.85
                 },
                 {
                   "screened_pct": 50.0,
-                  "model_recall_pct": 88.89,
+                  "model_recall_pct": 91.85,
                   "random_recall_pct": 50.0
                 },
                 {
                   "screened_pct": 54.18,
-                  "model_recall_pct": 90.24,
+                  "model_recall_pct": 92.7,
                   "random_recall_pct": 54.18
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 91.58,
+                  "model_recall_pct": 94.85,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 92.26,
+                  "model_recall_pct": 96.57,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.67,
-                  "model_recall_pct": 94.28,
+                  "model_recall_pct": 97.0,
                   "random_recall_pct": 66.67
                 },
                 {
                   "screened_pct": 70.85,
-                  "model_recall_pct": 94.61,
+                  "model_recall_pct": 97.0,
                   "random_recall_pct": 70.85
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 94.95,
+                  "model_recall_pct": 97.42,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.18,
-                  "model_recall_pct": 96.97,
+                  "model_recall_pct": 98.28,
                   "random_recall_pct": 79.18
                 },
                 {
                   "screened_pct": 83.33,
-                  "model_recall_pct": 97.98,
+                  "model_recall_pct": 98.71,
                   "random_recall_pct": 83.33
                 },
                 {
                   "screened_pct": 87.51,
-                  "model_recall_pct": 98.32,
+                  "model_recall_pct": 99.14,
                   "random_recall_pct": 87.51
                 },
                 {
                   "screened_pct": 91.67,
-                  "model_recall_pct": 98.99,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 91.67
                 },
                 {
                   "screened_pct": 95.85,
-                  "model_recall_pct": 99.66,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 95.85
                 },
                 {
@@ -5611,11 +5701,11 @@
             "ablation_lgbm": {
               "display_name": "LightGBM DTI (Standalone)",
               "description": "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization.",
-              "fit_seconds": 5.29,
+              "fit_seconds": 3.01,
               "model_meta": {
                 "name": "ablation_lgbm",
                 "display_name": "LightGBM DTI (Standalone)",
-                "best_iteration": 354,
+                "best_iteration": 145,
                 "params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -5633,32 +5723,32 @@
               },
               "metrics": {
                 "n_samples": 3876,
-                "n_actives": 297,
-                "active_prevalence_pct": 7.663,
-                "rmse": 0.6892,
-                "mae": 0.4053,
-                "pearson_r": 0.6205,
-                "spearman_rho": 0.5571,
-                "concordance_index": 0.794,
-                "roc_auc": 0.8829,
-                "pr_auc": 0.4343,
-                "ef_at_5pct": 6.5925,
-                "hit_capture_at_5pct": 0.33,
+                "n_actives": 233,
+                "active_prevalence_pct": 6.011,
+                "rmse": 0.5908,
+                "mae": 0.3793,
+                "pearson_r": 0.6437,
+                "spearman_rho": 0.5499,
+                "concordance_index": 0.8152,
+                "roc_auc": 0.8934,
+                "pr_auc": 0.4688,
+                "ef_at_5pct": 9.0036,
+                "hit_capture_at_5pct": 0.4506,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 3876,
                   "n_top_screened": 194,
-                  "total_true_hits": 297,
-                  "hits_captured_top5": 98.0,
+                  "total_true_hits": 233,
+                  "hits_captured_top5": 105.0,
                   "exhaustive_screening_cost_usd": 581400.0,
                   "triage_screening_cost_usd": 29100.0,
                   "assay_cost_saved_usd": 552300.0,
                   "assay_cost_saved_pct": 94.99,
-                  "random_cost_per_hit_usd": 1957.58,
-                  "model_cost_per_hit_usd": 296.94,
-                  "cost_per_hit_reduction_pct": 84.83,
+                  "random_cost_per_hit_usd": 2495.28,
+                  "model_cost_per_hit_usd": 277.14,
+                  "cost_per_hit_reduction_pct": 88.89,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 6.59x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 9.00x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -5669,122 +5759,122 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 8.75,
+                  "model_recall_pct": 13.3,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 16.16,
+                  "model_recall_pct": 22.75,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 27.95,
+                  "model_recall_pct": 39.48,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.01,
-                  "model_recall_pct": 33.0,
+                  "model_recall_pct": 45.06,
                   "random_recall_pct": 5.01
                 },
                 {
                   "screened_pct": 8.33,
-                  "model_recall_pct": 49.16,
+                  "model_recall_pct": 58.37,
                   "random_recall_pct": 8.33
                 },
                 {
                   "screened_pct": 10.01,
-                  "model_recall_pct": 55.22,
+                  "model_recall_pct": 60.94,
                   "random_recall_pct": 10.01
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 60.94,
+                  "model_recall_pct": 66.95,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 68.01,
+                  "model_recall_pct": 75.97,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 75.76,
+                  "model_recall_pct": 79.83,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.0,
-                  "model_recall_pct": 82.49,
+                  "model_recall_pct": 82.83,
                   "random_recall_pct": 25.0
                 },
                 {
                   "screened_pct": 29.18,
-                  "model_recall_pct": 86.53,
+                  "model_recall_pct": 86.7,
                   "random_recall_pct": 29.18
                 },
                 {
                   "screened_pct": 33.33,
-                  "model_recall_pct": 88.89,
+                  "model_recall_pct": 89.7,
                   "random_recall_pct": 33.33
                 },
                 {
                   "screened_pct": 37.51,
-                  "model_recall_pct": 89.9,
+                  "model_recall_pct": 91.85,
                   "random_recall_pct": 37.51
                 },
                 {
                   "screened_pct": 41.67,
-                  "model_recall_pct": 91.25,
+                  "model_recall_pct": 92.27,
                   "random_recall_pct": 41.67
                 },
                 {
                   "screened_pct": 45.85,
-                  "model_recall_pct": 92.59,
+                  "model_recall_pct": 92.7,
                   "random_recall_pct": 45.85
                 },
                 {
                   "screened_pct": 50.0,
-                  "model_recall_pct": 94.28,
+                  "model_recall_pct": 93.99,
                   "random_recall_pct": 50.0
                 },
                 {
                   "screened_pct": 54.18,
-                  "model_recall_pct": 95.62,
+                  "model_recall_pct": 95.28,
                   "random_recall_pct": 54.18
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 96.97,
+                  "model_recall_pct": 95.71,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 97.98,
+                  "model_recall_pct": 97.0,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.67,
-                  "model_recall_pct": 98.65,
+                  "model_recall_pct": 97.85,
                   "random_recall_pct": 66.67
                 },
                 {
                   "screened_pct": 70.85,
-                  "model_recall_pct": 98.99,
+                  "model_recall_pct": 99.14,
                   "random_recall_pct": 70.85
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 99.33,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.18,
-                  "model_recall_pct": 99.33,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 79.18
                 },
                 {
                   "screened_pct": 83.33,
-                  "model_recall_pct": 99.66,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 83.33
                 },
                 {
@@ -5812,14 +5902,14 @@
             "openrepurpose_hybrid": {
               "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
               "description": "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity.",
-              "fit_seconds": 8.27,
+              "fit_seconds": 6.99,
               "model_meta": {
                 "name": "openrepurpose_hybrid",
                 "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-                "w_lgbm": 1.0,
-                "w_ridge": 0.0,
+                "w_lgbm": 0.9374,
+                "w_ridge": 0.0626,
                 "ridge_best_alpha": 20000.0,
-                "lgbm_best_iteration": 354,
+                "lgbm_best_iteration": 145,
                 "lgbm_params": {
                   "objective": "regression",
                   "metric": "rmse",
@@ -5837,32 +5927,32 @@
               },
               "metrics": {
                 "n_samples": 3876,
-                "n_actives": 297,
-                "active_prevalence_pct": 7.663,
-                "rmse": 0.6892,
-                "mae": 0.4053,
-                "pearson_r": 0.6205,
-                "spearman_rho": 0.5571,
-                "concordance_index": 0.794,
-                "roc_auc": 0.8829,
-                "pr_auc": 0.4343,
-                "ef_at_5pct": 6.5925,
-                "hit_capture_at_5pct": 0.33,
+                "n_actives": 233,
+                "active_prevalence_pct": 6.011,
+                "rmse": 0.5911,
+                "mae": 0.3814,
+                "pearson_r": 0.6427,
+                "spearman_rho": 0.5507,
+                "concordance_index": 0.8156,
+                "roc_auc": 0.893,
+                "pr_auc": 0.4652,
+                "ef_at_5pct": 9.0036,
+                "hit_capture_at_5pct": 0.4506,
                 "cost_impact": {
                   "assay_cost_usd": 150.0,
                   "n_library_evaluated": 3876,
                   "n_top_screened": 194,
-                  "total_true_hits": 297,
-                  "hits_captured_top5": 98.0,
+                  "total_true_hits": 233,
+                  "hits_captured_top5": 105.0,
                   "exhaustive_screening_cost_usd": 581400.0,
                   "triage_screening_cost_usd": 29100.0,
                   "assay_cost_saved_usd": 552300.0,
                   "assay_cost_saved_pct": 94.99,
-                  "random_cost_per_hit_usd": 1957.58,
-                  "model_cost_per_hit_usd": 296.94,
-                  "cost_per_hit_reduction_pct": 84.83,
+                  "random_cost_per_hit_usd": 2495.28,
+                  "model_cost_per_hit_usd": 277.14,
+                  "cost_per_hit_reduction_pct": 88.89,
                   "cost_effective": true,
-                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 6.59x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
+                  "boundary_condition_note": "Cost-effective triage regime (EF@5% = 9.00x >= 1.5x). Stops being cost-effective if out-of-domain shift degrades EF@5% toward 1.0x."
                 }
               },
               "enrichment_curve": [
@@ -5873,122 +5963,122 @@
                 },
                 {
                   "screened_pct": 1.01,
-                  "model_recall_pct": 8.75,
+                  "model_recall_pct": 13.3,
                   "random_recall_pct": 1.01
                 },
                 {
                   "screened_pct": 2.01,
-                  "model_recall_pct": 16.16,
+                  "model_recall_pct": 22.32,
                   "random_recall_pct": 2.01
                 },
                 {
                   "screened_pct": 4.18,
-                  "model_recall_pct": 27.95,
+                  "model_recall_pct": 38.63,
                   "random_recall_pct": 4.18
                 },
                 {
                   "screened_pct": 5.01,
-                  "model_recall_pct": 33.0,
+                  "model_recall_pct": 45.06,
                   "random_recall_pct": 5.01
                 },
                 {
                   "screened_pct": 8.33,
-                  "model_recall_pct": 49.16,
+                  "model_recall_pct": 58.8,
                   "random_recall_pct": 8.33
                 },
                 {
                   "screened_pct": 10.01,
-                  "model_recall_pct": 55.22,
+                  "model_recall_pct": 60.94,
                   "random_recall_pct": 10.01
                 },
                 {
                   "screened_pct": 12.51,
-                  "model_recall_pct": 60.94,
+                  "model_recall_pct": 67.81,
                   "random_recall_pct": 12.51
                 },
                 {
                   "screened_pct": 16.67,
-                  "model_recall_pct": 68.01,
+                  "model_recall_pct": 75.54,
                   "random_recall_pct": 16.67
                 },
                 {
                   "screened_pct": 20.85,
-                  "model_recall_pct": 75.76,
+                  "model_recall_pct": 79.83,
                   "random_recall_pct": 20.85
                 },
                 {
                   "screened_pct": 25.0,
-                  "model_recall_pct": 82.49,
+                  "model_recall_pct": 82.4,
                   "random_recall_pct": 25.0
                 },
                 {
                   "screened_pct": 29.18,
-                  "model_recall_pct": 86.53,
+                  "model_recall_pct": 85.84,
                   "random_recall_pct": 29.18
                 },
                 {
                   "screened_pct": 33.33,
-                  "model_recall_pct": 88.89,
+                  "model_recall_pct": 89.27,
                   "random_recall_pct": 33.33
                 },
                 {
                   "screened_pct": 37.51,
-                  "model_recall_pct": 89.9,
+                  "model_recall_pct": 91.85,
                   "random_recall_pct": 37.51
                 },
                 {
                   "screened_pct": 41.67,
-                  "model_recall_pct": 91.25,
+                  "model_recall_pct": 92.27,
                   "random_recall_pct": 41.67
                 },
                 {
                   "screened_pct": 45.85,
-                  "model_recall_pct": 92.59,
+                  "model_recall_pct": 93.13,
                   "random_recall_pct": 45.85
                 },
                 {
                   "screened_pct": 50.0,
-                  "model_recall_pct": 94.28,
+                  "model_recall_pct": 93.99,
                   "random_recall_pct": 50.0
                 },
                 {
                   "screened_pct": 54.18,
-                  "model_recall_pct": 95.62,
+                  "model_recall_pct": 95.28,
                   "random_recall_pct": 54.18
                 },
                 {
                   "screened_pct": 58.33,
-                  "model_recall_pct": 96.97,
+                  "model_recall_pct": 95.71,
                   "random_recall_pct": 58.33
                 },
                 {
                   "screened_pct": 62.51,
-                  "model_recall_pct": 97.98,
+                  "model_recall_pct": 97.42,
                   "random_recall_pct": 62.51
                 },
                 {
                   "screened_pct": 66.67,
-                  "model_recall_pct": 98.65,
+                  "model_recall_pct": 97.42,
                   "random_recall_pct": 66.67
                 },
                 {
                   "screened_pct": 70.85,
-                  "model_recall_pct": 98.99,
+                  "model_recall_pct": 99.14,
                   "random_recall_pct": 70.85
                 },
                 {
                   "screened_pct": 75.0,
-                  "model_recall_pct": 99.33,
+                  "model_recall_pct": 99.14,
                   "random_recall_pct": 75.0
                 },
                 {
                   "screened_pct": 79.18,
-                  "model_recall_pct": 99.33,
+                  "model_recall_pct": 99.57,
                   "random_recall_pct": 79.18
                 },
                 {
                   "screened_pct": 83.33,
-                  "model_recall_pct": 99.66,
+                  "model_recall_pct": 100.0,
                   "random_recall_pct": 83.33
                 },
                 {
@@ -6024,10 +6114,64 @@
         "cold_drug_ci_vs_lgbm": 0.0054,
         "cold_drug_ci_vs_ligand_only": 0.1088,
         "cold_drug_rmse_vs_ridge": 0.0317,
-        "cold_target_ci_vs_ridge": 0.0403,
-        "cold_target_ci_vs_ligand_only": 0.0437,
+        "cold_target_ci_vs_ridge": 0.0274,
+        "cold_target_ci_vs_ligand_only": 0.0407,
         "warm_to_cold_drug_ci_delta": -0.2589,
-        "warm_to_cold_target_ci_delta": -0.0776
+        "warm_to_cold_target_ci_delta": -0.056
+      },
+      "integrity_audit": {
+        "split_hardening": {
+          "cold_drug_method": "Connected components of Bemis-Murcko scaffold + InChIKey-14 connectivity (0 stereoisomer overlap)",
+          "cold_target_method": "Connected components of protein 5-mer Jaccard >= 0.50 (0 point-mutant / isoform overlap)"
+        },
+        "generalization_gap": {
+          "warm": {
+            "train_rmse": 0.1816,
+            "val_rmse": 0.5247,
+            "test_rmse": 0.5115,
+            "train_ci": 0.9755,
+            "val_ci": 0.8647,
+            "test_ci": 0.8716,
+            "train_to_test_rmse_gap": 0.3299,
+            "val_to_test_ci_delta": 0.0069
+          },
+          "cold_drug": {
+            "train_rmse": 0.4862,
+            "val_rmse": 0.7,
+            "test_rmse": 0.7672,
+            "train_ci": 0.8904,
+            "val_ci": 0.7712,
+            "test_ci": 0.6127,
+            "train_to_test_rmse_gap": 0.281,
+            "val_to_test_ci_delta": -0.1585
+          },
+          "cold_target": {
+            "train_rmse": 0.4178,
+            "val_rmse": 0.6154,
+            "test_rmse": 0.5911,
+            "train_ci": 0.9119,
+            "val_ci": 0.8035,
+            "test_ci": 0.8156,
+            "train_to_test_rmse_gap": 0.1733,
+            "val_to_test_ci_delta": 0.0121
+          }
+        },
+        "y_randomization": {
+          "cold_drug": {
+            "shuffled_test_rmse": 0.7487,
+            "shuffled_test_ci": 0.5384,
+            "shuffled_test_roc_auc": 0.5382,
+            "shuffled_test_ef_at_5pct": 1.4164,
+            "passed_null_check": true
+          },
+          "cold_target": {
+            "shuffled_test_rmse": 0.7659,
+            "shuffled_test_ci": 0.5118,
+            "shuffled_test_roc_auc": 0.5142,
+            "shuffled_test_ef_at_5pct": 0.5145,
+            "passed_null_check": true
+          }
+        }
       }
     }
   }

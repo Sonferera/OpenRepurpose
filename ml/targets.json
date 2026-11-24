@@ -125,7 +125,7 @@
     "protein_family": "Non-receptor tyrosine-protein kinase",
     "in_domain": true,
     "is_positive_control": true,
-    "domain_label": "In-Domain (Human Positive Control)",
+    "domain_label": "In-Corpus Positive Control (Pipeline Verification)",
     "domain_rationale": "Canonical human tyrosine kinase included as ground-truth positive control to verify recovery of clinical FDA BCR-ABL inhibitors.",
     "disease_burden": "Reference validation benchmark \u2014 confirms end-to-end screening sanity before trusting NTD prioritization rankings.",
     "target_biology": "Tyrosine-protein kinase ABL1; validated clinical target of FDA-approved inhibitors Dasatinib, Nilotinib, Bosutinib, Ponatinib, and Imatinib.",

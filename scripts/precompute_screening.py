@@ -43,7 +43,7 @@ from ml.config import (
     ensure_directories,
     seed_everything,
 )
-from ml.data_loader import load_fda_approved_library
+from ml.data_loader import load_combined_kd_corpus, load_fda_approved_library
 from ml.explain import render_attributed_2d_svg
 from ml.features import (
     assemble_single_target_matrix,
@@ -52,6 +52,7 @@ from ml.features import (
     resolve_device,
 )
 from ml.novelty import PubMedNoveltyChecker
+from ml.splits import smiles_to_inchikey14
 
 logging.basicConfig(
     level=logging.INFO,
@@ -112,12 +113,31 @@ def main() -> None:
     targets: list[dict[str, Any]] = json.loads(TARGETS_PATH.read_text(encoding="utf-8"))
     logger.info("Loaded %d curated targets from %s.", len(targets), TARGETS_PATH.name)
 
-    # 3. Fetch & clean FDA-approved small-molecule drug library
+    # 3. Fetch & clean FDA-approved small-molecule drug library + load training corpus for provenance audit
     fda_df, fda_meta = load_fda_approved_library(force_rebuild=args.force_rebuild_fda)
     logger.info(
         "Loaded %d clean approved small-molecule drugs (source=%s).",
         len(fda_df),
         fda_meta["source"],
+    )
+
+    comb_df, _ = load_combined_kd_corpus()
+    comb_unique_smi = comb_df["canonical_smiles"].astype(str).unique().tolist()
+    comb_smi_to_ik14 = {s: smiles_to_inchikey14(s) for s in comb_unique_smi}
+    training_drugs_ik14: set[str] = set(comb_smi_to_ik14.values())
+    training_targets_seq: set[str] = set(comb_df["target_sequence"].astype(str).str.strip().str.upper().unique())
+    training_pairs_ik14: set[tuple[str, str]] = {
+        (comb_smi_to_ik14[s], seq)
+        for s, seq in zip(
+            comb_df["canonical_smiles"].astype(str).tolist(),
+            comb_df["target_sequence"].astype(str).str.strip().str.upper().tolist(),
+        )
+    }
+    logger.info(
+        "Built training-corpus provenance index: %d exact (InChIKey14, target) pairs across %d drugs and %d targets.",
+        len(training_pairs_ik14),
+        len(training_drugs_ik14),
+        len(training_targets_seq),
     )
 
     # 4. Extract ESM-2 protein embeddings for all 8 targets (4 GB VRAM safe + disk cache)
@@ -263,6 +283,12 @@ def main() -> None:
             )
 
             is_ref = drug_name.strip().lower() in ref_names_lower
+            drug_ik14 = smiles_to_inchikey14(smi)
+            target_seq_norm = str(target["sequence"]).strip().upper()
+            pair_in_training = (drug_ik14, target_seq_norm) in training_pairs_ik14
+            drug_seen_in_training = drug_ik14 in training_drugs_ik14
+            target_seen_in_training = target_seq_norm in training_targets_seq
+
             candidates.append(
                 {
                     "rank": int(row["rank"]),
@@ -270,6 +296,9 @@ def main() -> None:
                     "pubchem_cid": pubchem_cid,
                     "drug_name": drug_name,
                     "is_reference_control": is_ref,
+                    "in_training_corpus": bool(pair_in_training),
+                    "drug_seen_in_training": bool(drug_seen_in_training),
+                    "target_seen_in_training": bool(target_seen_in_training),
                     "canonical_smiles": smi,
                     "scaffold_smiles": str(row["scaffold_smiles"]),
                     "moa": str(row["moa"]) if pd.notna(row["moa"]) else "",
@@ -324,6 +353,20 @@ def main() -> None:
             "supported": sum(1 for c in candidates if c["novelty"]["novelty_tier"] == "supported"),
             "unavailable": sum(1 for c in candidates if c["novelty"]["novelty_tier"] == "unavailable"),
         }
+        provenance_breakdown = {
+            "n_in_training_corpus": sum(1 for c in candidates if c["in_training_corpus"]),
+            "n_out_of_training_corpus": sum(1 for c in candidates if not c["in_training_corpus"]),
+            "n_pure_novel_clean": sum(
+                1
+                for c in candidates
+                if (
+                    c["novelty"]["pubmed_count"] == 0
+                    and c["medchem"]["lipinski_compliant"]
+                    and not c["medchem"]["has_pains"]
+                    and not c["in_training_corpus"]
+                )
+            ),
+        }
 
         target_screening_payload = {
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -331,6 +374,7 @@ def main() -> None:
             "target_sequence_preview": target["sequence"][:60] + ("..." if len(target["sequence"]) > 60 else ""),
             "library_stats": library_stats,
             "novelty_breakdown_top_k": novelty_breakdown,
+            "provenance_breakdown_top_k": provenance_breakdown,
             "reference_control_ranks": ref_control_ranks,
             "candidates": candidates,
         }
@@ -352,6 +396,7 @@ def main() -> None:
                 "sequence_region": target["sequence_region"],
                 "in_domain": in_domain,
                 "is_positive_control": bool(target.get("is_positive_control", False)),
+                "corpus_coverage": target.get("corpus_coverage", "unknown"),
                 "domain_label": target["domain_label"],
                 "domain_rationale": target["domain_rationale"],
                 "disease_burden": target["disease_burden"],
@@ -366,6 +411,7 @@ def main() -> None:
                     "pkd_median": library_stats["pkd_median"],
                 },
                 "novelty_breakdown_top_k": novelty_breakdown,
+                "provenance_breakdown_top_k": provenance_breakdown,
                 "screening_file": f"/data/screening/{tid}.json",
             }
         )

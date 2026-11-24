@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-11-24T12:26:01.702722+00:00",
-  "git_commit": "c6b070e",
+  "generated_at_utc": "2026-11-24T13:22:35.730767+00:00",
+  "git_commit": "6802106",
   "seed": 42,
   "reproduce_command": "python scripts/reproduce_eval.py",
   "hardware": {
@@ -90,9 +90,9 @@
         "test_idx_sha256": "619ba547f9d6a33aa897613a6f1a8db086d7a45ec38b026b35e498f837291d12"
       },
       "cold_target": {
-        "train_idx_sha256": "f2b701335696959a621ecab905ae13fd89d4fa3bbb91478ae2cd98ccb18df5ec",
-        "val_idx_sha256": "6bf1bd3a93009b929efb880b4f9b24ae350e822be8074538f85176177ac851e8",
-        "test_idx_sha256": "59fc6ab55b5096eba474fe2a0fd667967cc602e73147dc458bcde39846ee39df"
+        "train_idx_sha256": "8984724621c42bb657b3e761af8ae38692649ef3f8a2584bcfe3655b70bb5e34",
+        "val_idx_sha256": "c66e0171fdca3f0bd8c98a83bad886872db89b1315b84833f6cd33f2b7967e55",
+        "test_idx_sha256": "56c39f55aaa9c1739b726fe678c5d28e7c7359a44b6d14e69482a65ea680ad2e"
       }
     },
     "bindingdb_kd": {
@@ -102,14 +102,14 @@
         "test_idx_sha256": "576d3f36641e1020ef58b5f68e804e57a913f03eb3d9ade7a96d28610e1284a8"
       },
       "cold_drug": {
-        "train_idx_sha256": "389945a859b6c3e7d380a00acf904383406a664c6ccfc43adff2d6f615831839",
-        "val_idx_sha256": "9f22cfac8cab39bc06811bee24c3c1a935102aa9de537047157eb2b8db76c6c4",
-        "test_idx_sha256": "0ae20e687c7f5be23b0355631fbdab485a7158f08c50a57a9677762c0fbd6747"
+        "train_idx_sha256": "c06c0f8f0b80d87ad88e62911c9ac194b39a0ff0eb77a60f718ee6ce6af5bb0e",
+        "val_idx_sha256": "1cc684ec9fb944852336e0f9d8ed11ccad275853dea5117187033a0cdaa29e9b",
+        "test_idx_sha256": "6ae50405e4bebbe19b1359ebcd6058766f781f6eed4d8d41be92d121d716b1e9"
       },
       "cold_target": {
-        "train_idx_sha256": "9d065f90ec58f71096f2a04dd11a12e19fd05d020ab84772c56b2c6add185bd3",
-        "val_idx_sha256": "5a0cfd2d6c03e14f18300b5600b20b0878e86cc1ab13dd869e37434bf05206c1",
-        "test_idx_sha256": "a713762bc4931cf41d7a3ddd66def242b7878fc18db56e1a6b0817bdfd5a5f85"
+        "train_idx_sha256": "55cc6bcd687ed7bf2c6fc1265c7caa50ca7376094b3899257bc6f053459d4cb2",
+        "val_idx_sha256": "2b520b3430cb5b484fd2429911c55ab9a99fc312629885a89cb0e8f1f6f622da",
+        "test_idx_sha256": "a5c0ff1246c5189191e99371f1fd36fb4e7ab8c55586c58d8af31f8baba47113"
       }
     }
   },
@@ -132,8 +132,8 @@
     "final_checkpoint_meta": {
       "name": "openrepurpose_hybrid",
       "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-      "w_lgbm": 0.9464,
-      "w_ridge": 0.0536,
+      "w_lgbm": 0.7862,
+      "w_ridge": 0.2138,
       "ridge_best_alpha": 100.0,
       "lgbm_best_iteration": 800,
       "lgbm_params": {
@@ -153,8 +153,8 @@
     }
   },
   "output_artifacts_sha256": {
-    "web/public/data/eval_results.json": "699757e9f53cbd99a2ffcfed50eb4e6bfc82cb6908667e042779a369132eb78d",
-    "web/public/data/error_analysis.json": "d5c2da9a72826f4e86be3bf4be3781d9e659092fc5964bb662245ae34b97c06f",
-    "web/public/data/scatter_samples.json": "2f3c16d399af99d74412c1c4193eb347cb75c67fe6c2fd12ee7f55cb00b12064"
+    "web/public/data/eval_results.json": "f93840d3653794bcf8531dd3177efb1703fbe9edb21c283ada0d5c0f54e47296",
+    "web/public/data/error_analysis.json": "9b75c258a9443beff5f97497f04ba54b23796c6d1105c8b68086510bbfa91ddf",
+    "web/public/data/scatter_samples.json": "8ad6945016325762e0592361f0bc48625115d9ee655c8a07f6c8614a51a553e3"
   }
 }
