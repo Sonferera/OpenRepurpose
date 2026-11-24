@@ -1,0 +1,82 @@
+{
+  "generated_at_utc": "2026-11-24T07:31:34.777013+00:00",
+  "git_commit": "97294f6",
+  "seed": 42,
+  "reproduce_command": "python scripts/reproduce_eval.py",
+  "hardware": {
+    "device": "cuda",
+    "precision": "fp16",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "gpu_vram_mb": 4096
+  },
+  "package_versions": {
+    "python": "3.11.9",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "torch": "2.6.0+cu124",
+    "transformers": "4.57.6",
+    "rdkit": "2026.9.2",
+    "joblib": "1.6.0"
+  },
+  "dataset": {
+    "dataset": "DAVIS",
+    "source": "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291557",
+    "n_raw_rows": 30056,
+    "dropped_invalid_smiles_unique": 0,
+    "dropped_invalid_rows": 0,
+    "n_valid_before_dedup": 30056,
+    "n_duplicates_merged": 4284,
+    "n_clean_pairs": 25772,
+    "n_unique_drugs": 68,
+    "n_unique_scaffolds": 68,
+    "n_unique_targets": 379,
+    "pkd_min": 5.0,
+    "pkd_max": 10.6198,
+    "pkd_mean": 5.3969,
+    "clean_csv_sha256": "3da97c4af741350457484ee7ff23eaf579b65fa866a8037fd6985cecece5c2ad"
+  },
+  "split_index_hashes": {
+    "warm": {
+      "train_idx_sha256": "7eabb931f1443747f79961326dea119c9866634afd6db5ed7d323ba25d2c20f8",
+      "val_idx_sha256": "56d592ccf92efe7a97c3f4facd617b5df236c374ac459f7e97ff6eecafc599f7",
+      "test_idx_sha256": "cd1d306beb7f20eef0a2a0932e03238a6ab15409b329db6081652fa0c61422a2"
+    },
+    "cold_drug": {
+      "train_idx_sha256": "f88a457053fe7679fa405ad765807df3ffa457cb5d8853855edbfdf68004cf04",
+      "val_idx_sha256": "6b31449375f13db20fdf3e367c80d77547859b01e387679678f32c24e5ad7e2f",
+      "test_idx_sha256": "619ba547f9d6a33aa897613a6f1a8db086d7a45ec38b026b35e498f837291d12"
+    },
+    "cold_target": {
+      "train_idx_sha256": "f2b701335696959a621ecab905ae13fd89d4fa3bbb91478ae2cd98ccb18df5ec",
+      "val_idx_sha256": "6bf1bd3a93009b929efb880b4f9b24ae350e822be8074538f85176177ac851e8",
+      "test_idx_sha256": "59fc6ab55b5096eba474fe2a0fd667967cc602e73147dc458bcde39846ee39df"
+    }
+  },
+  "model_hyperparameters": {
+    "openrepurpose_lgbm": {
+      "objective": "regression",
+      "metric": "rmse",
+      "n_estimators": 800,
+      "learning_rate": 0.05,
+      "num_leaves": 63,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.5,
+      "min_child_samples": 20,
+      "random_state": 42,
+      "n_jobs": -1,
+      "verbose": -1
+    },
+    "early_stopping_rounds": 50,
+    "final_checkpoint_best_iteration": 800
+  },
+  "output_artifacts_sha256": {
+    "web/public/data/eval_results.json": "c20e7f61eca5979df54179a07ab1594b94574a83d94901ebbf62b5aeecb1a4ed",
+    "web/public/data/error_analysis.json": "b2da9cc9f9619a63af8447843bee42d976167cfe1c816425e8814b4656f7ece3",
+    "web/public/data/scatter_samples.json": "160e5ec4f4f9f7ff00802a00a92899e3b83aac10249b6e8c0b51c33ee64a92e6"
+  }
+}

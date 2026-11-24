@@ -103,6 +103,13 @@ def test_evaluate_predictions_handles_constant_baseline_and_enrichment_curve() -
     assert res["spearman_rho"] == 0.0
     assert res["concordance_index"] == pytest.approx(0.5)
     assert res["roc_auc"] == pytest.approx(0.5)
+    assert res["ef_at_5pct"] == pytest.approx(1.0)
+    assert res["hit_capture_at_5pct"] == pytest.approx(0.05)
+
+    # Constant predictor EF@5% must be strictly invariant to row ordering
+    y_sorted = np.sort(y_true)[::-1]
+    res_sorted = evaluate_predictions(y_sorted, y_const)
+    assert res_sorted["ef_at_5pct"] == pytest.approx(1.0)
 
     curve = compute_enrichment_curve(y_true, y_true + 0.01)
     assert curve[0]["screened_pct"] == 0.0

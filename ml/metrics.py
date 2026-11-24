@@ -86,26 +86,52 @@ def concordance_index(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(concordant / comparable)
 
 
+def _expected_hits_in_top_k(actives: np.ndarray, y_pred: np.ndarray, k: int) -> float:
+    """Compute exact expected hits in top-k under uniform random tie-breaking.
+
+    Eliminates row-order artifacts for constant baselines (e.g. Mean Predictor -> exact EF=1.0x)
+    and tied model scores.
+    """
+    n = len(actives)
+    if n == 0 or k <= 0:
+        return 0.0
+    k = min(k, n)
+
+    order = np.argsort(-y_pred, kind="mergesort")
+    yp_sorted = y_pred[order]
+    act_sorted = actives[order]
+
+    cutoff_val = yp_sorted[k - 1]
+    strictly_above = yp_sorted > cutoff_val
+    in_tie = yp_sorted == cutoff_val
+
+    n_above = int(strictly_above.sum())
+    hits_above = float(act_sorted[strictly_above].sum())
+    remaining_slots = k - n_above
+    n_tie = int(in_tie.sum())
+    hits_tie = float(act_sorted[in_tie].sum())
+
+    expected_tie_hits = remaining_slots * (hits_tie / n_tie) if n_tie > 0 else 0.0
+    return hits_above + expected_tie_hits
+
+
 def enrichment_factor_at_fraction(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     fraction: float = TOP_TRIAGE_FRACTION,
     threshold: float = ACTIVE_PKD_THRESHOLD,
-) -> tuple[float, float, int, int]:
-    """Compute EF@fraction, Recall@fraction (HitCapture), hits_in_top, and n_top."""
+) -> tuple[float, float, float, int]:
+    """Compute tie-unbiased EF@fraction, Recall@fraction (HitCapture), expected hits_in_top, and n_top."""
     yt = np.asarray(y_true, dtype=np.float64).ravel()
     yp = np.asarray(y_pred, dtype=np.float64).ravel()
     n_total = len(yt)
     if n_total == 0:
-        return 0.0, 0.0, 0, 0
+        return 0.0, 0.0, 0.0, 0
 
     actives = (yt >= threshold).astype(np.int64)
     total_hits = int(actives.sum())
     n_top = max(1, int(math.ceil(n_total * fraction)))
-
-    # Stable descending sort by predicted affinity
-    top_order = np.argsort(-yp, kind="mergesort")[:n_top]
-    hits_in_top = int(actives[top_order].sum())
+    hits_in_top = _expected_hits_in_top_k(actives, yp, n_top)
 
     if total_hits == 0:
         return 0.0, 0.0, hits_in_top, n_top
@@ -114,7 +140,7 @@ def enrichment_factor_at_fraction(
     top_rate = hits_in_top / n_top
     ef = top_rate / base_rate
     hit_capture = hits_in_top / total_hits
-    return float(ef), float(hit_capture), hits_in_top, n_top
+    return float(ef), float(hit_capture), float(hits_in_top), n_top
 
 
 def compute_enrichment_curve(
@@ -123,7 +149,7 @@ def compute_enrichment_curve(
     threshold: float = ACTIVE_PKD_THRESHOLD,
     n_points: int = 25,
 ) -> list[dict[str, float]]:
-    """Compute cumulative active-hit recovery curve points for plotting."""
+    """Compute tie-unbiased cumulative active-hit recovery curve points for plotting."""
     yt = np.asarray(y_true, dtype=np.float64).ravel()
     yp = np.asarray(y_pred, dtype=np.float64).ravel()
     n_total = len(yt)
@@ -132,9 +158,6 @@ def compute_enrichment_curve(
 
     if n_total == 0 or total_hits == 0:
         return [{"screened_pct": 0.0, "model_recall_pct": 0.0, "random_recall_pct": 0.0}]
-
-    order = np.argsort(-yp, kind="mergesort")
-    cum_hits = np.cumsum(actives[order])
 
     fractions = np.unique(
         np.concatenate(
@@ -150,7 +173,8 @@ def compute_enrichment_curve(
             points.append({"screened_pct": 0.0, "model_recall_pct": 0.0, "random_recall_pct": 0.0})
             continue
         k = max(1, min(n_total, int(math.ceil(frac * n_total))))
-        recall = float(cum_hits[k - 1] / total_hits)
+        exp_hits = _expected_hits_in_top_k(actives, yp, k)
+        recall = float(exp_hits / total_hits)
         points.append(
             {
                 "screened_pct": round(float(k / n_total) * 100.0, 2),
@@ -164,7 +188,7 @@ def compute_enrichment_curve(
 def compute_cost_impact(
     n_total: int,
     total_hits: int,
-    hits_in_top: int,
+    hits_in_top: float,
     n_top: int,
     ef_at_fraction: float,
     assay_cost_usd: float = DEFAULT_ASSAY_COST_USD,
@@ -200,7 +224,7 @@ def compute_cost_impact(
         "n_library_evaluated": int(n_total),
         "n_top_screened": int(n_top),
         "total_true_hits": int(total_hits),
-        "hits_captured_top5": int(hits_in_top),
+        "hits_captured_top5": round(float(hits_in_top), 2),
         "exhaustive_screening_cost_usd": round(exhaustive_cost, 2),
         "triage_screening_cost_usd": round(triage_cost, 2),
         "assay_cost_saved_usd": round(cost_saved_usd, 2),

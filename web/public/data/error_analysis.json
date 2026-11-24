@@ -1,0 +1,465 @@
+{
+  "generated_at_utc": "2026-11-24T07:30:48.296198+00:00",
+  "model": "openrepurpose_lgbm",
+  "active_pkd_threshold": 7.0,
+  "splits": {
+    "cold_drug": {
+      "n_test_pairs": 3790,
+      "strict_false_positives_count": 25,
+      "strict_false_negatives_count": 161,
+      "worst_false_positives": [
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "MEK5",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 448,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.582,
+          "error": 2.582
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "MST1",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 487,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.358,
+          "error": 2.358
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "SNARK",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 628,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.193,
+          "error": 2.193
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "ULK3",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 472,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.147,
+          "error": 2.147
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "PLK4",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 970,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.125,
+          "error": 2.125
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "PHKG2",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 406,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.124,
+          "error": 2.124
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "MST2",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 491,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.122,
+          "error": 2.122
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "176167",
+          "target_id": "PLK4",
+          "canonical_smiles": "Cn1cc(C2=C(c3cn(C4CCN(Cc5ccccn5)CC4)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+          "scaffold_smiles": "O=C1NC(=O)C(c2cn(C3CCN(Cc4ccccn4)CC3)c3ccccc23)=C1c1c[nH]c2ccccc12",
+          "target_length": 970,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.117,
+          "error": 2.117
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "11667893",
+          "target_id": "TRKA",
+          "canonical_smiles": "CC1(C)CNc2cc(NC(=O)c3cccnc3NCc3ccncc3)ccc21",
+          "scaffold_smiles": "O=C(Nc1ccc2c(c1)NCC2)c1cccnc1NCc1ccncc1",
+          "target_length": 790,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.099,
+          "error": 2.099
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "176167",
+          "target_id": "CSF1R",
+          "canonical_smiles": "Cn1cc(C2=C(c3cn(C4CCN(Cc5ccccn5)CC4)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+          "scaffold_smiles": "O=C1NC(=O)C(c2cn(C3CCN(Cc4ccccn4)CC3)c3ccccc23)=C1c1c[nH]c2ccccc12",
+          "target_length": 972,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.095,
+          "error": 2.095
+        }
+      ],
+      "worst_false_negatives": [
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHA3",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 983,
+          "actual_pkd": 10.032,
+          "predicted_pkd": 5.222,
+          "error": -4.809
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHB6",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1021,
+          "actual_pkd": 10.409,
+          "predicted_pkd": 5.667,
+          "error": -4.742
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHA5",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1017,
+          "actual_pkd": 9.62,
+          "predicted_pkd": 5.112,
+          "error": -4.507
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHA8",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1005,
+          "actual_pkd": 9.62,
+          "predicted_pkd": 5.249,
+          "error": -4.371
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHB2",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 482,
+          "actual_pkd": 9.409,
+          "predicted_pkd": 5.058,
+          "error": -4.351
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "HCK",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 526,
+          "actual_pkd": 9.456,
+          "predicted_pkd": 5.128,
+          "error": -4.328
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHB4",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 935,
+          "actual_pkd": 9.469,
+          "predicted_pkd": 5.186,
+          "error": -4.282
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "EPHB1",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 984,
+          "actual_pkd": 9.347,
+          "predicted_pkd": 5.218,
+          "error": -4.129
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "SRC",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 536,
+          "actual_pkd": 9.678,
+          "predicted_pkd": 5.618,
+          "error": -4.06
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "CSK",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 450,
+          "actual_pkd": 9.0,
+          "predicted_pkd": 4.978,
+          "error": -4.022
+        }
+      ]
+    },
+    "cold_target": {
+      "n_test_pairs": 3876,
+      "strict_false_positives_count": 6,
+      "strict_false_negatives_count": 256,
+      "worst_false_positives": [
+        {
+          "failure_type": "false_positive",
+          "drug_id": "126565",
+          "target_id": "PCTK3",
+          "canonical_smiles": "CC12OC(CC1(O)CO)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)CNC4=O",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCC3O1",
+          "target_length": 436,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.337,
+          "error": 2.337
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "44259",
+          "target_id": "BRAF(V600E)",
+          "canonical_smiles": "CNC1CC2OC(C)(C1OC)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)C(=O)NC4",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCCC3O1",
+          "target_length": 766,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.295,
+          "error": 2.295
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "16038120",
+          "target_id": "BRAF(V600E)",
+          "canonical_smiles": "COc1cc(N2CCC(N3CCN(C)CC3)CC2)ccc1Nc1ncc(Cl)c(Nc2ccccc2S(=O)(=O)C(C)C)n1",
+          "scaffold_smiles": "c1ccc(Nc2ccnc(Nc3ccc(N4CCC(N5CCNCC5)CC4)cc3)n2)cc1",
+          "target_length": 766,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.169,
+          "error": 2.169
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "447077",
+          "target_id": "TRKA",
+          "canonical_smiles": "CSc1cccc(Nc2ncc3cc(-c4c(Cl)cccc4Cl)c(=O)n(C)c3n2)c1",
+          "scaffold_smiles": "O=c1[nH]c2nc(Nc3ccccc3)ncc2cc1-c1ccccc1",
+          "target_length": 790,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.135,
+          "error": 2.135
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "126565",
+          "target_id": "ABL2",
+          "canonical_smiles": "CC12OC(CC1(O)CO)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)CNC4=O",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCC3O1",
+          "target_length": 1167,
+          "actual_pkd": 5.187,
+          "predicted_pkd": 7.264,
+          "error": 2.077
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "126565",
+          "target_id": "BRAF(V600E)",
+          "canonical_smiles": "CC12OC(CC1(O)CO)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)CNC4=O",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCC3O1",
+          "target_length": 766,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 7.06,
+          "error": 2.06
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "44259",
+          "target_id": "PIK3CD",
+          "canonical_smiles": "CNC1CC2OC(C)(C1OC)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)C(=O)NC4",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCCC3O1",
+          "target_length": 1044,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 6.879,
+          "error": 1.879
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "447077",
+          "target_id": "MERTK",
+          "canonical_smiles": "CSc1cccc(Nc2ncc3cc(-c4c(Cl)cccc4Cl)c(=O)n(C)c3n2)c1",
+          "scaffold_smiles": "O=c1[nH]c2nc(Nc3ccccc3)ncc2cc1-c1ccccc1",
+          "target_length": 999,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 6.851,
+          "error": 1.851
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "126565",
+          "target_id": "MRCKA",
+          "canonical_smiles": "CC12OC(CC1(O)CO)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)CNC4=O",
+          "scaffold_smiles": "O=C1NCc2c1c1c3ccccc3n3c1c1c2c2ccccc2n1C1CCC3O1",
+          "target_length": 1732,
+          "actual_pkd": 5.036,
+          "predicted_pkd": 6.861,
+          "error": 1.825
+        },
+        {
+          "failure_type": "false_positive",
+          "drug_id": "447077",
+          "target_id": "AXL",
+          "canonical_smiles": "CSc1cccc(Nc2ncc3cc(-c4c(Cl)cccc4Cl)c(=O)n(C)c3n2)c1",
+          "scaffold_smiles": "O=c1[nH]c2nc(Nc3ccccc3)ncc2cc1-c1ccccc1",
+          "target_length": 894,
+          "actual_pkd": 5.0,
+          "predicted_pkd": 6.718,
+          "error": 1.718
+        }
+      ],
+      "worst_false_negatives": [
+        {
+          "failure_type": "false_negative",
+          "drug_id": "11717001",
+          "target_id": "BRAF(V600E)",
+          "canonical_smiles": "OCCn1cc(-c2ccc3c(c2)CCC3=NO)c(-c2ccncc2)n1",
+          "scaffold_smiles": "N=C1CCc2cc(-c3c[nH]nc3-c3ccncc3)ccc21",
+          "target_length": 766,
+          "actual_pkd": 9.733,
+          "predicted_pkd": 5.095,
+          "error": -4.638
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "11364421",
+          "target_id": "PLK1",
+          "canonical_smiles": "CCC1C(=O)N(C)c2cnc(Nc3ccc(C(=O)NC4CCN(C)CC4)cc3OC)nc2N1C1CCCC1",
+          "scaffold_smiles": "O=C1CN(C2CCCC2)c2nc(Nc3ccc(C(=O)NC4CCNCC4)cc3)ncc2N1",
+          "target_length": 603,
+          "actual_pkd": 9.721,
+          "predicted_pkd": 5.589,
+          "error": -4.132
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "5329102",
+          "target_id": "PDGFRB",
+          "canonical_smiles": "CCN(CC)CCNC(=O)c1c(C)[nH]c(C=C2C(=O)Nc3ccc(F)cc32)c1C",
+          "scaffold_smiles": "O=C1Nc2ccccc2C1=Cc1ccc[nH]1",
+          "target_length": 777,
+          "actual_pkd": 10.125,
+          "predicted_pkd": 6.248,
+          "error": -3.877
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "ABL1p",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1167,
+          "actual_pkd": 9.892,
+          "predicted_pkd": 6.077,
+          "error": -3.814
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "ABL2",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1167,
+          "actual_pkd": 9.77,
+          "predicted_pkd": 6.066,
+          "error": -3.704
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "9933475",
+          "target_id": "PDGFRB",
+          "canonical_smiles": "COc1cc2c(Oc3ccc4[nH]c(C)cc4c3F)ncnc2cc1OCCCN1CCCC1",
+          "scaffold_smiles": "c1nc(Oc2ccc3[nH]ccc3c2)c2ccc(OCCCN3CCCC3)cc2n1",
+          "target_length": 777,
+          "actual_pkd": 9.495,
+          "predicted_pkd": 5.798,
+          "error": -3.697
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "10184653",
+          "target_id": "EGFR(T790M)",
+          "canonical_smiles": "CN(C)CC=CC(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OC1CCOC1",
+          "scaffold_smiles": "c1ccc(Nc2ncnc3cc(OC4CCOC4)ccc23)cc1",
+          "target_length": 1210,
+          "actual_pkd": 9.695,
+          "predicted_pkd": 6.013,
+          "error": -3.682
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "6450551",
+          "target_id": "PDGFRB",
+          "canonical_smiles": "CNC(=O)c1ccccc1Sc1ccc2c(C=Cc3ccccn3)n[nH]c2c1",
+          "scaffold_smiles": "C(=Cc1n[nH]c2cc(Sc3ccccc3)ccc12)c1ccccn1",
+          "target_length": 777,
+          "actual_pkd": 9.244,
+          "predicted_pkd": 5.619,
+          "error": -3.625
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "3062316",
+          "target_id": "PDGFRA",
+          "canonical_smiles": "Cc1nc(Nc2ncc(C(=O)Nc3c(C)cccc3Cl)s2)cc(N2CCN(CCO)CC2)n1",
+          "scaffold_smiles": "O=C(Nc1ccccc1)c1cnc(Nc2cc(N3CCNCC3)ncn2)s1",
+          "target_length": 1089,
+          "actual_pkd": 9.328,
+          "predicted_pkd": 5.714,
+          "error": -3.614
+        },
+        {
+          "failure_type": "false_negative",
+          "drug_id": "10138260",
+          "target_id": "PDGFRB",
+          "canonical_smiles": "Cc1[nH]c(C=C2C(=O)Nc3ccc(F)cc32)c(C)c1C(=O)NCC(O)CN1CCOCC1",
+          "scaffold_smiles": "O=C1Nc2ccccc2C1=Cc1cc(C(=O)NCCCN2CCOCC2)c[nH]1",
+          "target_length": 777,
+          "actual_pkd": 9.538,
+          "predicted_pkd": 5.949,
+          "error": -3.589
+        }
+      ]
+    }
+  }
+}
