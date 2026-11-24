@@ -176,6 +176,25 @@ export default function CompareMatrixStage({
         </button>
       </div>
 
+      {/* Explicit Column & Color Legend */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--ink-muted)] px-1">
+        <span>
+          <strong className="text-[var(--ink-secondary)]">Legend:</strong> Sel# = selectivity rank ·
+          Raw# = raw pKd rank · Delta-pKd = target pKd minus 32-protein mean
+        </span>
+        <div className="flex items-center gap-3 mono-num">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[var(--selective)]" /> Selective
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[var(--review)]" /> Moderate
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[var(--alert)]" /> Promiscuous Bias
+          </span>
+        </div>
+      </div>
+
       {candidates.length === 0 ? (
         <div className="py-10 text-center space-y-2">
           <p className="text-xs text-[var(--ink-secondary)]">
@@ -190,7 +209,7 @@ export default function CompareMatrixStage({
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto studio-scroll max-h-[480px]">
+        <div className="overflow-x-auto studio-scroll max-h-[600px]">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 bg-[var(--bg-subtle)] border-b border-[var(--border-subtle)] text-[11px] uppercase text-[var(--ink-muted)]">
               <tr>

@@ -353,34 +353,36 @@ export default function MoleculeViewer3D({
 
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
-      <div className="px-3 py-1.5 border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+      <div className="px-2.5 py-1.5 border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
         <span className="font-semibold text-[var(--ink-secondary)] truncate">
-          3D Conformer: {moleculeName}
+          3D Conformer
         </span>
         <div className="flex flex-wrap items-center gap-1" role="group" aria-label="3D display controls">
-          {(["stick", "ball", "surface"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setStyleMode(m)}
-              aria-pressed={styleMode === m}
-              className={`px-2 py-1 rounded text-[11px] font-medium min-h-[28px] ${
-                styleMode === m
-                  ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                  : "bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
-              }`}
-            >
-              {m === "stick" ? "Stick" : m === "ball" ? "Ball+Stick" : "Surface"}
-            </button>
-          ))}
+          <div className="inline-flex rounded-md bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-0.5">
+            {(["stick", "ball", "surface"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setStyleMode(m)}
+                aria-pressed={styleMode === m}
+                className={`px-1.5 py-0.5 rounded text-[10.5px] font-semibold min-h-[24px] ${
+                  styleMode === m
+                    ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                    : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                }`}
+              >
+                {m === "stick" ? "Stick" : m === "ball" ? "Ball" : "Surface"}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={() => setSpinning((s) => !s)}
             aria-pressed={spinning}
-            className={`px-2 py-1 rounded text-[11px] font-medium min-h-[28px] ${
+            className={`px-2 py-0.5 rounded-md text-[10.5px] font-semibold min-h-[26px] border ${
               spinning
-                ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                : "bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-on-solid)]"
+                : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             {spinning ? "Pause" : "Spin"}
@@ -388,7 +390,7 @@ export default function MoleculeViewer3D({
           <button
             type="button"
             onClick={() => setStageOverride(effectiveDark ? "paper" : "dark")}
-            className="px-2 py-1 rounded text-[11px] font-medium min-h-[28px] bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+            className="px-2 py-0.5 rounded-md text-[10.5px] font-semibold min-h-[26px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
           >
             {effectiveDark ? "Paper 3D" : "Dark 3D"}
           </button>

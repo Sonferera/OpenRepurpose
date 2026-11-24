@@ -125,6 +125,18 @@ export default function SafetyRisksStage({
           </div>
         </div>
 
+        {/* Failure Mode Legend */}
+        <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 px-2.5 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--ink-secondary)]">
+          <span>
+            <strong className="text-[var(--alert)]">False Positive (+Error):</strong> model
+            over-predicts affinity on an inactive pair (risks wasted wet-lab assay cost).
+          </span>
+          <span>
+            <strong className="text-[var(--review)]">False Negative (-Error):</strong> model
+            under-predicts a potent true binder (risks missing an active scaffold).
+          </span>
+        </div>
+
         <div className="overflow-x-auto studio-scroll">
           <table className="w-full text-left border-collapse text-xs mono-num">
             <thead>

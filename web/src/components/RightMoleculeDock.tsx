@@ -26,7 +26,7 @@ export default function RightMoleculeDock({
     return (
       <aside
         aria-label="Molecule inspector"
-        className="no-print md:col-span-12 lg:col-span-3 bg-[var(--bg-rail)] border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] p-4 flex items-center justify-center text-center text-xs text-[var(--ink-muted)]"
+        className="no-print md:col-span-2 lg:col-span-1 lg:sticky lg:top-0 lg:h-dvh bg-[var(--bg-rail)] border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] p-5 flex items-center justify-center text-center text-xs text-[var(--ink-muted)]"
       >
         Select a candidate drug on the left rail to inspect its 3D conformer, 2D pharmacophore
         attribution, medicinal chemistry gates, and NCBI PubMed verification.
@@ -63,145 +63,147 @@ export default function RightMoleculeDock({
   return (
     <aside
       aria-label="Selected molecule details and wet-lab actions"
-      className="no-print md:col-span-12 lg:col-span-3 bg-[var(--bg-rail)] border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] p-4 flex flex-col justify-between space-y-4"
+      className="no-print md:col-span-2 lg:col-span-1 lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto studio-scroll bg-[var(--bg-rail)] border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] p-4 space-y-3.5"
     >
-      <div className="space-y-3.5">
-        {/* Drug Header */}
-        <div className="border-b border-[var(--border-subtle)] pb-3 space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <h2 className="text-base font-bold text-[var(--ink-primary)] leading-tight">
-              {candidate.drug_name}
-            </h2>
-            <span
-              className={`px-2 py-0.5 text-[11px] font-semibold rounded border shrink-0 mono-num ${specBadgeClass}`}
-            >
-              Sel #{candidate.rank_by_selectivity}
-            </span>
-          </div>
-          <p className="text-xs text-[var(--ink-secondary)]">
-            {candidate.known_indication || candidate.moa || "Approved small-molecule therapeutic"}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
-            <span className="px-1.5 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--ink-secondary)] mono-num">
-              {candidate.in_training_corpus ? "In-Train: True" : "In-Train: False"}
-            </span>
-            {pubchemCidClean && pubchemCidClean !== "nan" && (
-              <a
-                href={`https://pubchem.ncbi.nlm.nih.gov/compound/${pubchemCidClean}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-1.5 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--accent-ink)] font-medium hover:underline mono-num"
-              >
-                CID {pubchemCidClean}
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={handleCopySmiles}
-              className="px-2 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] font-medium hover:bg-[var(--bg-hover)]"
-            >
-              {copiedSmiles ? "SMILES Copied" : "Copy SMILES"}
-            </button>
-          </div>
+      {/* Drug Header */}
+      <div className="border-b border-[var(--border-subtle)] pb-3 space-y-1.5">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-base font-bold text-[var(--ink-primary)] leading-tight">
+            {candidate.drug_name}
+          </h2>
+          <span
+            className={`px-2 py-0.5 text-[11px] font-semibold rounded border shrink-0 mono-num ${specBadgeClass}`}
+          >
+            Sel #{candidate.rank_by_selectivity}
+          </span>
         </div>
-
-        {/* Interactive WebGL 3Dmol Conformer */}
-        <MoleculeViewer3D
-          sdfUrl={candidate.assets.sdf_3d}
-          moleculeName={candidate.drug_name}
-          theme={theme}
-          heightClass="h-[205px]"
-          onExpandStage={onExpand3DStage}
-        />
-
-        {/* Theme-Matched 2D RDKit Substructure Attribution SVG */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-semibold text-[var(--ink-secondary)]">
-              2D Substructure Attribution
-            </span>
-            <span className="mono-num text-[var(--accent-ink)] font-semibold">
-              {candidate.explainability.n_active_morgan_bits} bits
-            </span>
-          </div>
-          <div className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
-            <img
-              src={svgSrc}
-              alt={`2D chemical structure of ${candidate.drug_name} showing top weighted Morgan fingerprint atoms`}
-              width={440}
-              height={300}
-              className="w-full h-auto block"
-            />
-          </div>
-          {candidate.explainability.top_motifs.length > 0 && (
-            <div className="space-y-1 pt-0.5">
-              {candidate.explainability.top_motifs.slice(0, 2).map((m) => (
-                <div
-                  key={m.bit_id}
-                  className="flex items-center justify-between text-[11px] mono-num text-[var(--ink-secondary)]"
-                >
-                  <span className="truncate pr-2 font-sans">{m.motif_label}</span>
-                  <span className="text-[var(--accent-ink)] font-semibold shrink-0">
-                    {m.importance_pct.toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
+        <p className="text-xs text-[var(--ink-secondary)] leading-snug">
+          {candidate.known_indication || candidate.moa || "Approved small-molecule therapeutic"}
+        </p>
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
+          <span className="px-1.5 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--ink-secondary)] mono-num">
+            {candidate.in_training_corpus ? "In-Train: True" : "In-Train: False"}
+          </span>
+          {pubchemCidClean && pubchemCidClean !== "nan" && (
+            <a
+              href={`https://pubchem.ncbi.nlm.nih.gov/compound/${pubchemCidClean}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-1.5 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--accent-ink)] font-medium hover:underline mono-num"
+            >
+              CID {pubchemCidClean}
+            </a>
           )}
+          <button
+            type="button"
+            onClick={handleCopySmiles}
+            className="px-2 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-control)] text-[var(--ink-primary)] font-medium hover:bg-[var(--bg-hover)]"
+          >
+            {copiedSmiles ? "SMILES Copied" : "Copy SMILES"}
+          </button>
         </div>
-
-        {/* Clean Unboxed Key-Value Readout List */}
-        <dl className="divide-y divide-[var(--border-subtle)] text-xs">
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">Target Affinity ({target.short_name})</dt>
-            <dd className="mono-num font-semibold text-[var(--ink-primary)]">
-              {candidate.predicted_pkd.toFixed(3)} ({candidate.estimated_kd_nm.toFixed(1)} nM)
-            </dd>
-          </div>
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">32-Protein Bg Mean</dt>
-            <dd className="mono-num font-semibold text-[var(--ink-secondary)]">
-              {candidate.background_mean_pkd.toFixed(3)} pKd
-            </dd>
-          </div>
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">Selectivity Delta (Z)</dt>
-            <dd
-              className={`mono-num font-bold ${
-                candidate.target_selectivity_delta >= 0
-                  ? "text-[var(--selective)]"
-                  : "text-[var(--alert)]"
-              }`}
-            >
-              {candidate.target_selectivity_delta >= 0 ? "+" : ""}
-              {candidate.target_selectivity_delta.toFixed(3)} (
-              {candidate.selectivity_zscore >= 0 ? "+" : ""}
-              {candidate.selectivity_zscore.toFixed(2)})
-            </dd>
-          </div>
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">MW / LogP / QED</dt>
-            <dd className="mono-num font-medium text-[var(--ink-primary)]">
-              {candidate.medchem.mol_wt.toFixed(0)} Da · {candidate.medchem.logp.toFixed(2)} ·{" "}
-              {candidate.medchem.qed.toFixed(2)}
-            </dd>
-          </div>
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">Ro5 / PAINS / Gates</dt>
-            <dd className="mono-num font-semibold text-[var(--ink-primary)]">
-              Ro5 {candidate.medchem.ro5_violations} ·{" "}
-              {candidate.medchem.has_pains ? "PAINS Alert" : "Clear"} ·{" "}
-              {candidate.triage_gates.passed_count}/{candidate.triage_gates.total_gates}
-            </dd>
-          </div>
-          <div className="py-1.5 flex items-center justify-between gap-2">
-            <dt className="text-[var(--ink-muted)]">NCBI PubMed Hits</dt>
-            <dd className="mono-num font-semibold text-[var(--accent-ink)]">
-              {candidate.novelty.pubmed_count ?? 0} ({candidate.novelty.novelty_tier})
-            </dd>
-          </div>
-        </dl>
       </div>
+
+      {/* Interactive WebGL 3Dmol Conformer */}
+      <MoleculeViewer3D
+        sdfUrl={candidate.assets.sdf_3d}
+        moleculeName={candidate.drug_name}
+        theme={theme}
+        heightClass="h-[195px]"
+        onExpandStage={onExpand3DStage}
+      />
+
+      {/* Theme-Matched 2D RDKit Substructure Attribution SVG */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3 space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-semibold text-[var(--ink-secondary)]">
+            2D Substructure Attribution
+          </span>
+          <span className="mono-num text-[var(--accent-ink)] font-semibold">
+            {candidate.explainability.n_active_morgan_bits} bits
+          </span>
+        </div>
+        <div className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
+          <img
+            src={svgSrc}
+            alt={`2D chemical structure of ${candidate.drug_name} showing top weighted Morgan fingerprint atoms`}
+            width={440}
+            height={300}
+            className="w-full h-auto block"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 text-[10.5px] text-[var(--ink-muted)]">
+          <span className="w-2 h-2 rounded-full bg-[var(--accent-ink)] opacity-75 shrink-0" />
+          <span>Shaded atom halos = top Morgan fingerprint motifs driving pKd</span>
+        </div>
+        {candidate.explainability.top_motifs.length > 0 && (
+          <div className="space-y-1 pt-1 border-t border-[var(--border-subtle)]">
+            {candidate.explainability.top_motifs.slice(0, 2).map((m) => (
+              <div
+                key={m.bit_id}
+                className="flex items-center justify-between text-[11px] mono-num text-[var(--ink-secondary)]"
+              >
+                <span className="truncate pr-2 font-sans">{m.motif_label}</span>
+                <span className="text-[var(--accent-ink)] font-semibold shrink-0">
+                  {m.importance_pct.toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Clean Unboxed Key-Value Readout List */}
+      <dl className="divide-y divide-[var(--border-subtle)] text-xs">
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">Target Affinity ({target.short_name})</dt>
+          <dd className="mono-num font-semibold text-[var(--ink-primary)]">
+            {candidate.predicted_pkd.toFixed(3)} ({candidate.estimated_kd_nm.toFixed(1)} nM)
+          </dd>
+        </div>
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">32-Protein Bg Mean</dt>
+          <dd className="mono-num font-semibold text-[var(--ink-secondary)]">
+            {candidate.background_mean_pkd.toFixed(3)} pKd
+          </dd>
+        </div>
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">Selectivity Delta (Z)</dt>
+          <dd
+            className={`mono-num font-bold ${
+              candidate.target_selectivity_delta >= 0
+                ? "text-[var(--selective)]"
+                : "text-[var(--alert)]"
+            }`}
+          >
+            {candidate.target_selectivity_delta >= 0 ? "+" : ""}
+            {candidate.target_selectivity_delta.toFixed(3)} (
+            {candidate.selectivity_zscore >= 0 ? "+" : ""}
+            {candidate.selectivity_zscore.toFixed(2)})
+          </dd>
+        </div>
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">MW / LogP / QED</dt>
+          <dd className="mono-num font-medium text-[var(--ink-primary)]">
+            {candidate.medchem.mol_wt.toFixed(0)} Da · {candidate.medchem.logp.toFixed(2)} ·{" "}
+            {candidate.medchem.qed.toFixed(2)}
+          </dd>
+        </div>
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">Ro5 / PAINS / Gates</dt>
+          <dd className="mono-num font-semibold text-[var(--ink-primary)]">
+            Ro5 {candidate.medchem.ro5_violations} ·{" "}
+            {candidate.medchem.has_pains ? "PAINS Alert" : "Clear"} ·{" "}
+            {candidate.triage_gates.passed_count}/{candidate.triage_gates.total_gates}
+          </dd>
+        </div>
+        <div className="py-1.5 flex items-center justify-between gap-2">
+          <dt className="text-[var(--ink-muted)]">NCBI PubMed Hits</dt>
+          <dd className="mono-num font-semibold text-[var(--accent-ink)]">
+            {candidate.novelty.pubmed_count ?? 0} ({candidate.novelty.novelty_tier})
+          </dd>
+        </div>
+      </dl>
 
       {/* Primary Action Buttons */}
       <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
@@ -209,14 +211,14 @@ export default function RightMoleculeDock({
           href={candidate.novelty.pubmed_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full min-h-[44px] px-3 py-2 text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--accent-ink)] text-[var(--accent-ink)] hover:bg-[var(--accent-soft)] rounded-lg flex items-center justify-center text-center"
+          className="w-full min-h-[40px] px-3 py-2 text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--accent-ink)] text-[var(--accent-ink)] hover:bg-[var(--accent-soft)] rounded-lg flex items-center justify-center text-center"
         >
           Verify Literature on PubMed ({candidate.novelty.pubmed_count ?? 0})
         </a>
         <button
           type="button"
           onClick={onOpenPrintModal}
-          className="w-full min-h-[44px] px-3 py-2 text-xs font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
+          className="w-full min-h-[40px] px-3 py-2 text-xs font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
         >
           Print Wet-Lab Triage Sheet
         </button>
