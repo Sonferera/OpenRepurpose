@@ -23,7 +23,7 @@ Drug discovery for Neglected Tropical Diseases (NTDs) such as Dengue, Malaria, T
 ## Repository Structure
 
 ```text
-open-Purpose/
+OpenRepurpose/
 ├── api/                         # Optional local FastAPI inference bridge (custom SMILES/FASTA)
 ├── artifacts/                   # Reproducibility manifest (heavy checkpoints/caches gitignored)
 ├── data/                        # Downloaded benchmark datasets (gitignored, auto-fetched)
