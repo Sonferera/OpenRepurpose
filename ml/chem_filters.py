@@ -276,8 +276,9 @@ def render_2d_svg(
     atom_weights: Mapping[int, float] | None = None,
     width: int = 440,
     height: int = 300,
+    dark_mode: bool = False,
 ) -> str | None:
-    """Render a crisp dark-mode 2D chemical structure SVG with optional atom attribution highlights."""
+    """Render a crisp 2D chemical structure SVG (porcelain light studio default) with atom attribution highlights."""
     mol, _ = parse_and_canonicalize(smiles)
     if mol is None:
         return None
@@ -285,24 +286,44 @@ def render_2d_svg(
     rdDepictor.Compute2DCoords(mol)
     drawer = rdMolDraw2D.MolDraw2DSVG(width, height)
     opts = drawer.drawOptions()
-    opts.setBackgroundColour((0.051, 0.051, 0.059, 1.0))  # #0d0d0f scientific dark stage
+    if dark_mode:
+        opts.setBackgroundColour((0.059, 0.090, 0.165, 1.0))  # #0F172A deep slate
+        opts.updateAtomPalette(
+            {
+                0: (0.85, 0.88, 0.93),
+                6: (0.88, 0.91, 0.95),
+                7: (0.45, 0.65, 0.98),
+                8: (0.98, 0.42, 0.45),
+                9: (0.55, 0.62, 0.98),
+                15: (0.98, 0.68, 0.25),
+                16: (0.96, 0.75, 0.24),
+                17: (0.50, 0.58, 0.96),
+                35: (0.88, 0.48, 0.30),
+                53: (0.76, 0.52, 0.98),
+            }
+        )
+        hl_rgb = (0.38, 0.48, 0.98)
+    else:
+        opts.setBackgroundColour((0.973, 0.980, 0.988, 1.0))  # #F8FAFC porcelain studio stage
+        opts.updateAtomPalette(
+            {
+                0: (0.06, 0.09, 0.16),
+                6: (0.06, 0.09, 0.16),   # Carbon -> #0F172A crisp obsidian ink
+                7: (0.12, 0.25, 0.69),   # Nitrogen -> #1E40AF cobalt
+                8: (0.73, 0.11, 0.11),   # Oxygen -> #B91C1C crimson
+                9: (0.26, 0.22, 0.79),   # Fluorine -> #4338CA indigo
+                15: (0.60, 0.20, 0.07),  # Phosphorus -> #9A3412 ochre
+                16: (0.71, 0.33, 0.04),  # Sulfur -> #B45309 amber
+                17: (0.22, 0.19, 0.64),  # Chlorine -> #3730A3 ultramarine
+                35: (0.58, 0.25, 0.05),  # Bromine -> warm bronze
+                53: (0.43, 0.16, 0.85),  # Iodine -> royal violet
+            }
+        )
+        hl_rgb = (0.31, 0.27, 0.90)  # Soft Oxford Ultramarine highlight
+
     opts.bondLineWidth = 2.0
     opts.fixedBondLength = 26
     opts.padding = 0.08
-    opts.updateAtomPalette(
-        {
-            0: (0.85, 0.85, 0.88),
-            6: (0.88, 0.88, 0.91),   # Carbon -> crisp light gray
-            7: (0.35, 0.62, 1.00),   # Nitrogen -> Carbon blue
-            8: (0.98, 0.36, 0.40),   # Oxygen -> signal red
-            9: (0.35, 0.88, 0.62),   # Fluorine -> mint
-            15: (1.00, 0.68, 0.25),  # Phosphorus -> amber
-            16: (0.95, 0.78, 0.22),  # Sulfur -> gold
-            17: (0.32, 0.84, 0.55),  # Chlorine -> emerald
-            35: (0.88, 0.48, 0.30),  # Bromine -> copper
-            53: (0.76, 0.52, 0.98),  # Iodine -> violet
-        }
-    )
 
     atom_list = sorted({int(a) for a in (highlight_atoms or []) if 0 <= int(a) < mol.GetNumAtoms()})
     atom_colors: dict[int, tuple[float, float, float, float]] = {}
@@ -314,15 +335,15 @@ def render_2d_svg(
         max_w = max(max_w, 1e-8)
         for idx in atom_list:
             strength = abs(float(atom_weights.get(idx, 1.0))) / max_w if atom_weights else 0.75
-            alpha = 0.28 + 0.42 * min(1.0, strength)
-            atom_colors[idx] = (0.27, 0.54, 1.0, alpha)
+            alpha = 0.14 + 0.24 * min(1.0, strength)
+            atom_colors[idx] = (hl_rgb[0], hl_rgb[1], hl_rgb[2], alpha)
 
         atom_set = set(atom_list)
         for bond in mol.GetBonds():
             if bond.GetBeginAtomIdx() in atom_set and bond.GetEndAtomIdx() in atom_set:
                 bidx = bond.GetIdx()
                 bond_list.append(bidx)
-                bond_colors[bidx] = (0.27, 0.54, 1.0, 0.45)
+                bond_colors[bidx] = (hl_rgb[0], hl_rgb[1], hl_rgb[2], 0.24)
 
     rdMolDraw2D.PrepareAndDrawMolecule(
         drawer,
