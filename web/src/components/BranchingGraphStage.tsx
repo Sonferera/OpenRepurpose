@@ -44,7 +44,11 @@ export default function BranchingGraphStage({
       shortVal: `pKd ${candidate.predicted_pkd.toFixed(2)} | Delta ${
         candidate.target_selectivity_delta >= 0 ? "+" : ""
       }${candidate.target_selectivity_delta.toFixed(2)}`,
-      tone: isBias ? ("alert" as const) : candidate.specificity_tier === "high" ? ("selective" as const) : ("review" as const),
+      tone: isBias
+        ? ("alert" as const)
+        : candidate.specificity_tier === "high"
+          ? ("selective" as const)
+          : ("review" as const),
       detail: isBias
         ? `${candidate.drug_name} shows a higher 32-protein background average (${candidate.background_mean_pkd.toFixed(
             2
@@ -110,22 +114,34 @@ export default function BranchingGraphStage({
     },
   ];
 
+  // SVG uses live CSS custom properties so Paper & Dark modes render natively with zero flicker
   const palette = {
-    selective: { stroke: "#1E40AF", fill: "#EFF6FF", dash: undefined },
-    review: { stroke: "#9A3412", fill: "#FFF7ED", dash: undefined },
-    alert: { stroke: "#B91C1C", fill: "#FEF2F2", dash: "5 4" },
+    selective: {
+      stroke: "var(--selective)",
+      fill: "var(--selective-soft)",
+      dash: undefined,
+    },
+    review: {
+      stroke: "var(--review)",
+      fill: "var(--review-soft)",
+      dash: undefined,
+    },
+    alert: {
+      stroke: "var(--alert)",
+      fill: "var(--alert-soft)",
+      dash: "5 4",
+    },
   };
 
   const activeBranch = outcomeBranches[selectedBranchIdx] ?? outcomeBranches[0];
 
-  // Contextual banner at top of stage
   const bannerStyle = target.is_positive_control
-    ? "bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]"
+    ? "bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-ink)]"
     : !target.in_domain
-      ? "bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C]"
+      ? "bg-[var(--alert-soft)] border-[var(--alert-border)] text-[var(--alert)]"
       : target.id === "pf_cdpk1"
-        ? "bg-[#FFF7ED] border-[#FED7AA] text-[#9A3412]"
-        : "bg-[#EFF6FF] border-[#BFDBFE] text-[#1E40AF]";
+        ? "bg-[var(--review-soft)] border-[var(--review-border)] text-[var(--review)]"
+        : "bg-[var(--selective-soft)] border-[var(--selective-border)] text-[var(--selective)]";
 
   const bannerMessage = target.is_positive_control
     ? `Positive Control Verification (${target.short_name}): All 5/5 FDA clinical BCR-ABL1 inhibitors rank in the Top 20 of 2,249 approved drugs after Delta-pKd normalization.`
@@ -143,22 +159,22 @@ export default function BranchingGraphStage({
         {bannerMessage}
       </div>
 
-      <div className="bg-white border border-[#E2E6F0] rounded-xl p-3.5 shadow-xs flex-1 flex flex-col justify-between space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#F1F5F9] text-[11px] text-[#475569]">
-          <span className="font-semibold text-[#0F172A]">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 flex-1 flex flex-col justify-between space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--border-subtle)] text-[11px] text-[var(--ink-muted)]">
+          <span className="font-semibold text-[var(--ink-primary)]">
             {subMode === "outcome"
               ? `Interactive Outcome Pipeline: ${candidate.drug_name} + ${target.short_name} (click any branch node)`
               : `Cross-Pathogen Selectivity Network: ${candidate.drug_name} across Saved Target Pools`}
           </span>
           <div className="flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-[#1E40AF] inline-block" /> Selective / Pass
+              <span className="w-3 h-0.5 bg-[var(--selective)] inline-block" /> Selective / Pass
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-[#9A3412] inline-block" /> Moderate / Review
+              <span className="w-3 h-0.5 bg-[var(--review)] inline-block" /> Moderate / Review
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 border-t-2 border-dashed border-[#B91C1C] inline-block" /> Bias / Alert
+              <span className="w-3 h-0.5 border-t-2 border-dashed border-[var(--alert)] inline-block" /> Bias / Alert
             </span>
           </div>
         </div>
@@ -171,21 +187,19 @@ export default function BranchingGraphStage({
               role="img"
               aria-label={`Outcome branching graph for ${candidate.drug_name} paired with ${target.short_name}`}
             >
-              {/* Input wires */}
               <path
                 d="M 196 118 C 240 118, 245 194, 284 194"
                 fill="none"
-                stroke="#3730A3"
+                stroke="var(--accent-ink)"
                 strokeWidth={2.2}
               />
               <path
                 d="M 196 270 C 240 270, 245 194, 284 194"
                 fill="none"
-                stroke="#3730A3"
+                stroke="var(--accent-ink)"
                 strokeWidth={2.2}
               />
 
-              {/* Output wires */}
               {outcomeBranches.map((b, idx) => {
                 const y = 32 + idx * 90;
                 const p = palette[b.tone];
@@ -210,24 +224,24 @@ export default function BranchingGraphStage({
                   width={184}
                   height={68}
                   rx={9}
-                  fill="#F8FAFC"
-                  stroke="#3730A3"
+                  fill="var(--bg-subtle)"
+                  stroke="var(--accent-ink)"
                   strokeWidth={1.7}
                 />
                 <text
                   x={24}
                   y={105}
-                  fill="#3730A3"
+                  fill="var(--accent-ink)"
                   fontSize={9.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
                   INPUT 1: APPROVED DRUG
                 </text>
-                <text x={24} y={125} fill="#0F172A" fontSize={12.5} fontWeight={700}>
+                <text x={24} y={125} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
                   {candidate.drug_name.slice(0, 21)}
                 </text>
-                <text x={24} y={142} fill="#475569" fontSize={10}>
+                <text x={24} y={142} fill="var(--ink-muted)" fontSize={10}>
                   {(candidate.known_indication || candidate.moa || "FDA Launched").slice(0, 27)}
                 </text>
               </g>
@@ -240,31 +254,31 @@ export default function BranchingGraphStage({
                   width={184}
                   height={68}
                   rx={9}
-                  fill="#F8FAFC"
-                  stroke="#3730A3"
+                  fill="var(--bg-subtle)"
+                  stroke="var(--accent-ink)"
                   strokeWidth={1.7}
                 />
                 <text
                   x={24}
                   y={257}
-                  fill="#3730A3"
+                  fill="var(--accent-ink)"
                   fontSize={9.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
                   INPUT 2: UNIPROT TARGET
                 </text>
-                <text x={24} y={277} fill="#0F172A" fontSize={12.5} fontWeight={700}>
+                <text x={24} y={277} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
                   {target.short_name.slice(0, 21)}
                 </text>
-                <text x={24} y={294} fill="#475569" fontSize={10}>
+                <text x={24} y={294} fill="var(--ink-muted)" fontSize={10}>
                   {target.uniprot_id} ({target.sequence_length} aa)
                 </text>
               </g>
 
               {/* Center Ensemble Fusion Node */}
               <g>
-                <rect x={284} y={148} width={180} height={92} rx={11} fill="#3730A3" />
+                <rect x={284} y={148} width={180} height={92} rx={11} fill="var(--accent)" />
                 <text
                   x={374}
                   y={173}
@@ -280,7 +294,7 @@ export default function BranchingGraphStage({
                   x={374}
                   y={195}
                   textAnchor="middle"
-                  fill="#FFFFFF"
+                  fill="var(--accent-on-solid)"
                   fontSize={12.5}
                   fontWeight={700}
                 >
@@ -290,7 +304,7 @@ export default function BranchingGraphStage({
                   x={374}
                   y={216}
                   textAnchor="middle"
-                  fill="#EEF2FF"
+                  fill="#E0E7FF"
                   fontSize={10.5}
                   fontFamily="monospace"
                 >
@@ -323,11 +337,11 @@ export default function BranchingGraphStage({
                       width={224}
                       height={58}
                       rx={9}
-                      fill={isSel ? p.fill : "#FFFFFF"}
+                      fill={isSel ? p.fill : "var(--bg-subtle)"}
                       stroke={p.stroke}
                       strokeWidth={isSel ? 2.4 : 1.4}
                     />
-                    <text x={547} y={y + 22} fill="#0F172A" fontSize={11.5} fontWeight={700}>
+                    <text x={547} y={y + 22} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
                       {b.title}
                     </text>
                     <text
@@ -351,11 +365,10 @@ export default function BranchingGraphStage({
               role="img"
               aria-label={`Cross-target repurposing network for ${candidate.drug_name}`}
             >
-              {/* 32-protein background reference line */}
               <path
                 d="M 235 194 C 330 194, 355 352, 446 352"
                 fill="none"
-                stroke="#64748B"
+                stroke="var(--border-control)"
                 strokeWidth={1.5}
                 strokeDasharray="4 4"
               />
@@ -365,17 +378,17 @@ export default function BranchingGraphStage({
                 width={308}
                 height={44}
                 rx={8}
-                fill="#F8FAFC"
-                stroke="#64748B"
+                fill="var(--bg-subtle)"
+                stroke="var(--border-control)"
                 strokeWidth={1.2}
               />
-              <text x={462} y={349} fill="#0F172A" fontSize={11.5} fontWeight={700}>
+              <text x={462} y={349} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
                 32-Protein Cross-Family Background Panel
               </text>
               <text
                 x={462}
                 y={365}
-                fill="#475569"
+                fill="var(--ink-muted)"
                 fontSize={10.5}
                 fontFamily="monospace"
               >
@@ -443,11 +456,11 @@ export default function BranchingGraphStage({
                         width={308}
                         height={44}
                         rx={8}
-                        fill={isCurrent ? tone.fill : "#FFFFFF"}
+                        fill={isCurrent ? tone.fill : "var(--bg-subtle)"}
                         stroke={tone.stroke}
                         strokeWidth={isCurrent ? 2.3 : 1.3}
                       />
-                      <text x={462} y={y + 18} fill="#0F172A" fontSize={11.5} fontWeight={700}>
+                      <text x={462} y={y + 18} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
                         {edge.target_short_name} ({edge.disease})
                       </text>
                       <text
@@ -467,7 +480,7 @@ export default function BranchingGraphStage({
 
               {/* Left Selected Drug Anchor */}
               <g>
-                <rect x={20} y={146} width={215} height={96} rx={11} fill="#3730A3" />
+                <rect x={20} y={146} width={215} height={96} rx={11} fill="var(--accent)" />
                 <text
                   x={127}
                   y={172}
@@ -483,7 +496,7 @@ export default function BranchingGraphStage({
                   x={127}
                   y={196}
                   textAnchor="middle"
-                  fill="#FFFFFF"
+                  fill="var(--accent-on-solid)"
                   fontSize={14}
                   fontWeight={700}
                 >
@@ -493,7 +506,7 @@ export default function BranchingGraphStage({
                   x={127}
                   y={218}
                   textAnchor="middle"
-                  fill="#EEF2FF"
+                  fill="#E0E7FF"
                   fontSize={10.5}
                   fontFamily="monospace"
                 >
@@ -505,22 +518,22 @@ export default function BranchingGraphStage({
         </div>
 
         {/* Evidence Explanation Strip */}
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-3 text-xs space-y-1">
+        <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3 text-xs space-y-1">
           {subMode === "outcome" ? (
             <>
-              <div className="font-bold text-[#0F172A]">
+              <div className="font-bold text-[var(--ink-primary)]">
                 {activeBranch.title}:{" "}
-                <span className="mono-num text-[#3730A3]">{activeBranch.shortVal}</span>
+                <span className="mono-num text-[var(--accent-ink)]">{activeBranch.shortVal}</span>
               </div>
-              <p className="text-[#334155]">{activeBranch.detail}</p>
+              <p className="text-[var(--ink-secondary)]">{activeBranch.detail}</p>
             </>
           ) : (
             <>
-              <div className="font-bold text-[#0F172A]">
+              <div className="font-bold text-[var(--ink-primary)]">
                 Cross-Pathogen Selectivity Summary ({crossEdges.length} saved target appearance
                 {crossEdges.length === 1 ? "" : "s"})
               </div>
-              <p className="text-[#334155]">
+              <p className="text-[var(--ink-secondary)]">
                 Click any target node on the right to jump directly to that disease target. Note:
                 predictions reflect independent single-drug x single-target binding models (not
                 drug-drug combination synergy).

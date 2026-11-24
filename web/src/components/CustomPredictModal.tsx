@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import type { CustomPredictionResponse } from "@/lib/types";
+import type { StudioTheme } from "./LeftNavigatorRail";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 
 interface CustomPredictModalProps {
+  theme: StudioTheme;
   open: boolean;
   onClose: () => void;
   apiBaseUrl: string;
@@ -28,6 +30,7 @@ const PRESETS = [
 ];
 
 export default function CustomPredictModal({
+  theme,
   open,
   onClose,
   apiBaseUrl,
@@ -93,35 +96,38 @@ export default function CustomPredictModal({
     }
   };
 
+  const activeSvgMarkup =
+    result && (theme === "dark" && result.svg_2d_dark ? result.svg_2d_dark : result.svg_2d);
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="custom-predict-title"
-      className="no-print fixed inset-0 z-50 bg-[#0F172A]/60 flex items-center justify-center p-4 overflow-y-auto"
+      className="no-print fixed inset-0 z-50 bg-black/65 flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div className="bg-white border border-[#64748B] rounded-xl max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-[#E2E6F0] pb-3">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
           <div>
-            <h2 id="custom-predict-title" className="text-sm font-bold text-[#0F172A]">
+            <h2 id="custom-predict-title" className="text-sm font-bold text-[var(--ink-primary)]">
               Score Custom FASTA + SMILES (Local FastAPI Bridge)
             </h2>
-            <p className="text-xs text-[#475569] mt-0.5">
+            <p className="text-xs text-[var(--ink-muted)] mt-0.5">
               Runs live ESM-2 (fp16) + RDKit + 5-Model Ensemble + 32-Protein Delta-pKd locally.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-white border border-[#64748B] text-[#0F172A] rounded-lg"
+            className="min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
           >
             Close (Esc)
           </button>
         </div>
 
         {!apiOnline ? (
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3 text-xs text-[#334155]">
-            <p className="font-semibold text-[#0F172A]">
+          <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3 text-xs text-[var(--ink-secondary)]">
+            <p className="font-semibold text-[var(--ink-primary)]">
               Static Cloud Mode Active (Local Inference Server Offline)
             </p>
             <p>
@@ -129,16 +135,16 @@ export default function CustomPredictModal({
               with zero backend. To run live ESM-2 + 5-model scoring on arbitrary custom sequences
               and SMILES on your GPU or CPU, start the local FastAPI bridge:
             </p>
-            <div className="bg-white border border-[#CBD5E1] rounded-lg p-2.5 mono-num text-xs text-[#3730A3] select-all">
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-2.5 mono-num text-xs text-[var(--accent-ink)] select-all">
               .venv\Scripts\python.exe -m uvicorn api.server:app --host 127.0.0.1 --port 8000
             </div>
-            {errorMsg && <p className="text-[#B91C1C] font-medium">{errorMsg}</p>}
+            {errorMsg && <p className="text-[var(--alert)] font-medium">{errorMsg}</p>}
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={handleRetryCheck}
                 disabled={checking}
-                className="min-h-[40px] px-3.5 py-1.5 font-semibold bg-[#3730A3] hover:bg-[#312E81] text-white rounded-lg"
+                className="min-h-[40px] px-3.5 py-1.5 font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
               >
                 {checking ? "Checking connection..." : "Retry Local API Connection"}
               </button>
@@ -147,7 +153,7 @@ export default function CustomPredictModal({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[#475569] font-medium">Load preset:</span>
+              <span className="text-[var(--ink-muted)] font-medium">Load preset:</span>
               {PRESETS.map((p) => (
                 <button
                   key={p.label}
@@ -156,7 +162,7 @@ export default function CustomPredictModal({
                     setSmiles(p.smiles);
                     setSequence(p.sequence);
                   }}
-                  className="px-2.5 py-1 rounded bg-[#EEF2FF] text-[#3730A3] font-semibold hover:bg-[#E0E7FF]"
+                  className="px-2.5 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-border)] font-semibold hover:opacity-90"
                 >
                   {p.label}
                 </button>
@@ -164,7 +170,7 @@ export default function CustomPredictModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="custom-smiles" className="block font-semibold text-[#0F172A]">
+              <label htmlFor="custom-smiles" className="block font-semibold text-[var(--ink-primary)]">
                 Ligand SMILES (single organic small molecule)
               </label>
               <input
@@ -174,12 +180,12 @@ export default function CustomPredictModal({
                 value={smiles}
                 onChange={(e) => setSmiles(e.target.value)}
                 placeholder="Paste canonical or isomeric SMILES"
-                className="w-full min-h-[40px] px-3 py-1.5 mono-num bg-white border border-[#64748B] rounded-lg text-[#0F172A]"
+                className="w-full min-h-[40px] px-3 py-1.5 mono-num bg-[var(--bg-subtle)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)]"
               />
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="custom-fasta" className="block font-semibold text-[#0F172A]">
+              <label htmlFor="custom-fasta" className="block font-semibold text-[var(--ink-primary)]">
                 Target Protein Sequence (FASTA or raw amino acids, 30 to 2,000 aa)
               </label>
               <textarea
@@ -189,25 +195,25 @@ export default function CustomPredictModal({
                 value={sequence}
                 onChange={(e) => setSequence(e.target.value)}
                 placeholder="Paste amino-acid sequence"
-                className="w-full p-2.5 mono-num bg-white border border-[#64748B] rounded-lg text-[#0F172A]"
+                className="w-full p-2.5 mono-num bg-[var(--bg-subtle)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)]"
               />
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor="custom-indomain" className="flex items-center gap-2 text-[#334155]">
+              <label htmlFor="custom-indomain" className="flex items-center gap-2 text-[var(--ink-secondary)]">
                 <input
                   id="custom-indomain"
                   type="checkbox"
                   checked={inDomain}
                   onChange={(e) => setInDomain(e.target.checked)}
-                  className="accent-[#3730A3]"
+                  className="accent-[var(--accent)]"
                 />
                 <span>Target is a kinase homolog (In-Domain)</span>
               </label>
               <button
                 type="submit"
                 disabled={submitting}
-                className="min-h-[42px] px-4 py-2 font-semibold bg-[#3730A3] hover:bg-[#312E81] text-white rounded-lg"
+                className="min-h-[42px] px-4 py-2 font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
               >
                 {submitting ? "Scoring on 5-Model Ensemble..." : "Run Live Prediction"}
               </button>
@@ -216,35 +222,35 @@ export default function CustomPredictModal({
         )}
 
         {errorMsg && apiOnline && (
-          <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg p-3 text-xs text-[#B91C1C]">
+          <div className="bg-[var(--alert-soft)] border border-[var(--alert-border)] rounded-lg p-3 text-xs text-[var(--alert)]">
             {errorMsg}
           </div>
         )}
 
         {result && (
-          <div className="border-t border-[#E2E6F0] pt-3.5 space-y-3 text-xs">
+          <div className="border-t border-[var(--border-subtle)] pt-3.5 space-y-3 text-xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mono-num">
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-2.5">
-                <div className="text-[11px] font-sans text-[#475569]">Predicted pKd</div>
-                <div className="text-base font-bold text-[#0F172A]">
+              <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
+                <div className="text-[11px] font-sans text-[var(--ink-muted)]">Predicted pKd</div>
+                <div className="text-base font-bold text-[var(--ink-primary)]">
                   {result.predicted_pkd.toFixed(3)}
                 </div>
               </div>
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-2.5">
-                <div className="text-[11px] font-sans text-[#475569]">Est. Kd (nM)</div>
-                <div className="text-base font-bold text-[#0F172A]">
+              <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
+                <div className="text-[11px] font-sans text-[var(--ink-muted)]">Est. Kd (nM)</div>
+                <div className="text-base font-bold text-[var(--ink-primary)]">
                   {result.estimated_kd_nm.toFixed(1)}
                 </div>
               </div>
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-2.5">
-                <div className="text-[11px] font-sans text-[#475569]">32-Prot Bg Mean</div>
-                <div className="text-base font-bold text-[#334155]">
+              <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
+                <div className="text-[11px] font-sans text-[var(--ink-muted)]">32-Prot Bg Mean</div>
+                <div className="text-base font-bold text-[var(--ink-secondary)]">
                   {result.background_mean_pkd.toFixed(3)}
                 </div>
               </div>
-              <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-2.5">
-                <div className="text-[11px] font-sans text-[#1E40AF]">Delta-pKd</div>
-                <div className="text-base font-bold text-[#1E40AF]">
+              <div className="bg-[var(--selective-soft)] border border-[var(--selective-border)] rounded-lg p-2.5">
+                <div className="text-[11px] font-sans text-[var(--selective)]">Delta-pKd</div>
+                <div className="text-base font-bold text-[var(--selective)]">
                   {result.target_selectivity_delta >= 0 ? "+" : ""}
                   {result.target_selectivity_delta.toFixed(3)}
                 </div>
@@ -256,17 +262,18 @@ export default function CustomPredictModal({
                 <MoleculeViewer3D
                   sdfContent={result.sdf_3d}
                   moleculeName="Custom Compound"
+                  theme={theme}
                   heightClass="h-[200px]"
                 />
               )}
-              {result.svg_2d && (
-                <div className="bg-white border border-[#E2E6F0] rounded-xl p-2.5">
-                  <div className="text-[11px] font-semibold text-[#334155] mb-1.5">
+              {activeSvgMarkup && (
+                <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-xl p-2.5">
+                  <div className="text-[11px] font-semibold text-[var(--ink-secondary)] mb-1.5">
                     2D Attribution SVG
                   </div>
                   <div
-                    className="w-full overflow-hidden rounded border border-[#E2E8F0]"
-                    dangerouslySetInnerHTML={{ __html: result.svg_2d }}
+                    className="w-full overflow-hidden rounded border border-[var(--border-subtle)] [&_svg]:w-full [&_svg]:h-auto"
+                    dangerouslySetInnerHTML={{ __html: activeSvgMarkup }}
                   />
                 </div>
               )}

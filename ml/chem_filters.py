@@ -287,30 +287,30 @@ def render_2d_svg(
     drawer = rdMolDraw2D.MolDraw2DSVG(width, height)
     opts = drawer.drawOptions()
     if dark_mode:
-        opts.setBackgroundColour((0.059, 0.090, 0.165, 1.0))  # #0F172A deep slate
+        opts.setBackgroundColour((0.078, 0.090, 0.122, 1.0))  # #14171F dark slate inset
         opts.updateAtomPalette(
             {
-                0: (0.85, 0.88, 0.93),
-                6: (0.88, 0.91, 0.95),
-                7: (0.45, 0.65, 0.98),
-                8: (0.98, 0.42, 0.45),
-                9: (0.55, 0.62, 0.98),
-                15: (0.98, 0.68, 0.25),
-                16: (0.96, 0.75, 0.24),
-                17: (0.50, 0.58, 0.96),
-                35: (0.88, 0.48, 0.30),
-                53: (0.76, 0.52, 0.98),
+                0: (0.86, 0.89, 0.94),
+                6: (0.89, 0.91, 0.95),   # Carbon -> #E2E8F0 soft silver
+                7: (0.58, 0.77, 0.99),   # Nitrogen -> #93C5FD sky cobalt
+                8: (0.99, 0.65, 0.65),   # Oxygen -> #FCA5A5 coral red
+                9: (0.65, 0.71, 0.99),   # Fluorine -> #A5B4FC indigo
+                15: (0.99, 0.73, 0.45),  # Phosphorus -> #FDBA74 warm amber
+                16: (0.98, 0.78, 0.35),  # Sulfur -> warm gold
+                17: (0.65, 0.71, 0.99),  # Chlorine -> #A5B4FC indigo
+                35: (0.94, 0.62, 0.42),  # Bromine -> copper
+                53: (0.77, 0.65, 0.99),  # Iodine -> lavender
             }
         )
-        hl_rgb = (0.38, 0.48, 0.98)
+        hl_rgb = (0.51, 0.55, 0.97)  # #818CF8 soft indigo highlight
     else:
-        opts.setBackgroundColour((0.973, 0.980, 0.988, 1.0))  # #F8FAFC porcelain studio stage
+        opts.setBackgroundColour((0.969, 0.961, 0.941, 1.0))  # #F7F5F0 soft warm paper
         opts.updateAtomPalette(
             {
-                0: (0.06, 0.09, 0.16),
-                6: (0.06, 0.09, 0.16),   # Carbon -> #0F172A crisp obsidian ink
+                0: (0.11, 0.10, 0.09),
+                6: (0.11, 0.10, 0.09),   # Carbon -> #1C1917 warm obsidian ink
                 7: (0.12, 0.25, 0.69),   # Nitrogen -> #1E40AF cobalt
-                8: (0.73, 0.11, 0.11),   # Oxygen -> #B91C1C crimson
+                8: (0.60, 0.11, 0.11),   # Oxygen -> #991B1B crimson
                 9: (0.26, 0.22, 0.79),   # Fluorine -> #4338CA indigo
                 15: (0.60, 0.20, 0.07),  # Phosphorus -> #9A3412 ochre
                 16: (0.71, 0.33, 0.04),  # Sulfur -> #B45309 amber

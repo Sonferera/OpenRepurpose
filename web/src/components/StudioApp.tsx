@@ -25,6 +25,7 @@ import LabTriageModal from "./LabTriageModal";
 import LeftNavigatorRail, {
   type QuickFilterChip,
   type SortOrder,
+  type StudioTheme,
 } from "./LeftNavigatorRail";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 import RightMoleculeDock from "./RightMoleculeDock";
@@ -36,6 +37,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
 
 export default function StudioApp() {
+  const [theme, setTheme] = useState<StudioTheme>("paper");
   const [targetsIndex, setTargetsIndex] = useState<TargetsIndexPayload | null>(null);
   const [screeningsByTarget, setScreeningsByTarget] = useState<
     Record<string, TargetScreeningPayload>
@@ -68,6 +70,27 @@ export default function StudioApp() {
   const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
+
+  // Sync initial theme from html[data-theme] / localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "dark" || attr === "paper") {
+      setTheme(attr);
+    }
+  }, []);
+
+  const handleToggleTheme = useCallback((next: StudioTheme) => {
+    setTheme(next);
+    if (typeof window !== "undefined") {
+      document.documentElement.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("openrepurpose_theme", next);
+      } catch {
+        // ignore storage restrictions
+      }
+    }
+  }, []);
 
   const checkLocalApi = useCallback(async (): Promise<boolean> => {
     try {
@@ -139,7 +162,6 @@ export default function StudioApp() {
     checkLocalApi();
   }, [loadInitialData, checkLocalApi]);
 
-  // Sync URL hash for bookmarkable stage views
   useEffect(() => {
     if (typeof window === "undefined") return;
     const h = window.location.hash.replace("#", "");
@@ -212,7 +234,6 @@ export default function StudioApp() {
     sortOrder,
   ]);
 
-  // Keep selectedDrugId valid when target or filters change
   useEffect(() => {
     if (filteredCandidates.length === 0) return;
     if (!filteredCandidates.some((c) => c.drug_id === selectedDrugId)) {
@@ -269,11 +290,11 @@ export default function StudioApp() {
   if (initLoading) {
     return (
       <div className="min-h-[600px] flex items-center justify-center p-8 text-center">
-        <div className="bg-white border border-[#E2E6F0] rounded-xl p-6 max-w-md space-y-2 shadow-xs">
-          <div className="text-sm font-bold text-[#0F172A]">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 max-w-md space-y-2">
+          <div className="text-sm font-bold text-[var(--ink-primary)]">
             Initializing OpenRepurpose Molecular Studio
           </div>
-          <p className="text-xs text-[#475569]">
+          <p className="text-xs text-[var(--ink-muted)]">
             Loading verified screening indices across 8 UniProt targets and 2,249 approved drugs...
           </p>
         </div>
@@ -284,17 +305,17 @@ export default function StudioApp() {
   if (initError || !targetsIndex || !activeTarget) {
     return (
       <div className="min-h-[600px] flex items-center justify-center p-8 text-center">
-        <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-6 max-w-md space-y-3">
-          <div className="text-sm font-bold text-[#B91C1C]">
+        <div className="bg-[var(--alert-soft)] border border-[var(--alert-border)] rounded-xl p-6 max-w-md space-y-3">
+          <div className="text-sm font-bold text-[var(--alert)]">
             Failed to Load Screening Workspace
           </div>
-          <p className="text-xs text-[#7F1D1D]">
+          <p className="text-xs text-[var(--ink-secondary)]">
             {initError || "Missing targets_index.json artifact."}
           </p>
           <button
             type="button"
             onClick={loadInitialData}
-            className="min-h-[42px] px-4 py-2 text-xs font-semibold bg-[#3730A3] text-white rounded-lg"
+            className="min-h-[42px] px-4 py-2 text-xs font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-lg"
           >
             Retry Workspace Load
           </button>
@@ -308,9 +329,11 @@ export default function StudioApp() {
     : [];
 
   return (
-    <div className="min-h-[780px] grid grid-cols-1 md:grid-cols-12">
+    <div className="min-h-[780px] grid grid-cols-1 md:grid-cols-12 bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
       {/* PANE 1: LEFT NAVIGATOR RAIL */}
       <LeftNavigatorRail
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         targets={targetsIndex.targets}
         activeTargetId={activeTarget.id}
         onSelectTarget={handleSelectTarget}
@@ -334,14 +357,14 @@ export default function StudioApp() {
       {/* PANE 2: CENTER SPATIAL STAGE */}
       <main
         id="main-stage"
-        className="no-print md:col-span-8 lg:col-span-6 bg-[#F4F5F8] p-4 sm:p-5 flex flex-col justify-between space-y-3.5 min-w-0"
+        className="no-print md:col-span-8 lg:col-span-6 bg-[var(--bg-canvas)] p-4 sm:p-5 flex flex-col justify-between space-y-3.5 min-w-0"
       >
         {/* Top Stage Switcher Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <nav
             role="tablist"
             aria-label="Workspace stage views"
-            className="flex flex-wrap items-center gap-1 bg-white border border-[#E2E6F0] rounded-xl p-1 shadow-xs"
+            className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-1"
           >
             {(
               [
@@ -360,8 +383,8 @@ export default function StudioApp() {
                 onClick={() => handleChangeStage(mode)}
                 className={`min-h-[38px] px-3 py-1.5 text-xs rounded-lg font-semibold transition-colors ${
                   stageMode === mode
-                    ? "bg-[#3730A3] text-white"
-                    : "text-[#334155] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                    ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                    : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
                 }`}
               >
                 {label}
@@ -371,7 +394,7 @@ export default function StudioApp() {
 
           {stageMode === "graph" && (
             <div
-              className="inline-flex bg-white border border-[#64748B] rounded-lg overflow-hidden text-xs"
+              className="inline-flex bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg overflow-hidden text-xs"
               role="group"
               aria-label="Graph visualization mode"
             >
@@ -380,8 +403,8 @@ export default function StudioApp() {
                 onClick={() => setGraphSubMode("outcome")}
                 className={`min-h-[36px] px-2.5 py-1 font-semibold ${
                   graphSubMode === "outcome"
-                    ? "bg-[#EEF2FF] text-[#3730A3]"
-                    : "text-[#475569] hover:bg-[#F8FAFC]"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                    : "text-[var(--ink-muted)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 Drug x Target Flow
@@ -391,8 +414,8 @@ export default function StudioApp() {
                 onClick={() => setGraphSubMode("cross")}
                 className={`min-h-[36px] px-2.5 py-1 font-semibold ${
                   graphSubMode === "cross"
-                    ? "bg-[#EEF2FF] text-[#3730A3]"
-                    : "text-[#475569] hover:bg-[#F8FAFC]"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                    : "text-[var(--ink-muted)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 8-Target Reach
@@ -413,14 +436,14 @@ export default function StudioApp() {
         )}
 
         {stageMode === "graph" && !selectedCandidate && (
-          <div className="flex-1 bg-white border border-[#E2E6F0] rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-2.5">
-            <p className="text-xs text-[#334155]">
+          <div className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-2.5">
+            <p className="text-xs text-[var(--ink-secondary)]">
               No candidate selected under the current filter set.
             </p>
             <button
               type="button"
               onClick={handleResetFilters}
-              className="min-h-[40px] px-3.5 py-1.5 text-xs font-semibold bg-[#3730A3] text-white rounded-lg"
+              className="min-h-[40px] px-3.5 py-1.5 text-xs font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-lg"
             >
               Reset all filters
             </button>
@@ -429,23 +452,24 @@ export default function StudioApp() {
 
         {stageMode === "3d" && selectedCandidate && (
           <div className="flex-1 flex flex-col space-y-3">
-            <div className="bg-white border border-[#E2E6F0] rounded-xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div>
-                <h2 className="font-bold text-[#0F172A]">
+                <h2 className="font-bold text-[var(--ink-primary)]">
                   Full-Stage 3D Molecular Conformer: {selectedCandidate.drug_name}
                 </h2>
-                <p className="text-[#475569] mt-0.5">
+                <p className="text-[var(--ink-muted)] mt-0.5">
                   Drag to rotate in 3D space. Use your mouse scroll wheel or the +/- controls in
                   the bottom-right corner to zoom cleanly.
                 </p>
               </div>
-              <span className="mono-num text-[11px] px-2.5 py-1 rounded bg-[#EEF2FF] text-[#3730A3] font-semibold">
+              <span className="mono-num text-[11px] px-2.5 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-border)] font-semibold">
                 ETKDGv3 + MMFF94
               </span>
             </div>
             <MoleculeViewer3D
               sdfUrl={selectedCandidate.assets.sdf_3d}
               moleculeName={selectedCandidate.drug_name}
+              theme={theme}
               heightClass="h-[490px]"
             />
           </div>
@@ -476,6 +500,7 @@ export default function StudioApp() {
 
         {stageMode === "benchmark" && (
           <BenchmarkStage
+            theme={theme}
             evalResults={evalResults}
             scatterSamples={scatterSamples}
             loading={evalLoading}
@@ -496,6 +521,7 @@ export default function StudioApp() {
 
       {/* PANE 3: RIGHT MOLECULE & WET-LAB ACTION DOCK */}
       <RightMoleculeDock
+        theme={theme}
         target={activeTarget}
         candidate={selectedCandidate}
         onExpand3DStage={() => handleChangeStage("3d")}
@@ -512,6 +538,7 @@ export default function StudioApp() {
       />
 
       <CustomPredictModal
+        theme={theme}
         open={customModalOpen}
         onClose={() => setCustomModalOpen(false)}
         apiBaseUrl={API_BASE_URL}

@@ -487,5 +487,6 @@ export interface CustomPredictionResponse {
     top_motifs: AttributedMotif[];
   };
   svg_2d: string | null;
+  svg_2d_dark?: string | null;
   sdf_3d: string | null;
 }

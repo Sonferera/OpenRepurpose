@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import type { StudioTheme } from "./LeftNavigatorRail";
 
 interface ThreeDMolAtom {
   elem?: string;
@@ -99,6 +100,7 @@ interface MoleculeViewer3DProps {
   sdfUrl?: string | null;
   sdfContent?: string | null;
   moleculeName: string;
+  theme: StudioTheme;
   heightClass?: string;
   onExpandStage?: () => void;
 }
@@ -107,6 +109,7 @@ export default function MoleculeViewer3D({
   sdfUrl,
   sdfContent,
   moleculeName,
+  theme,
   heightClass = "h-[215px]",
   onExpandStage,
 }: MoleculeViewer3DProps) {
@@ -114,7 +117,7 @@ export default function MoleculeViewer3D({
   const viewerRef = useRef<ThreeDMolViewer | null>(null);
 
   const [styleMode, setStyleMode] = useState<MoleculeStyleMode>("stick");
-  const [darkStage, setDarkStage] = useState<boolean>(false);
+  const [stageOverride, setStageOverride] = useState<"paper" | "dark" | null>(null);
   const [spinning, setSpinning] = useState<boolean>(false);
   const [zoomPct, setZoomPct] = useState<number>(100);
   const [hoverText, setHoverText] = useState<string | null>(null);
@@ -122,7 +125,13 @@ export default function MoleculeViewer3D({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rawSdf, setRawSdf] = useState<string | null>(null);
 
-  // Load SDF text from inline content or static asset URL
+  // Follow app theme automatically unless user clicks the local stage override button
+  useEffect(() => {
+    setStageOverride(null);
+  }, [theme]);
+
+  const effectiveDark = (stageOverride ?? theme) === "dark";
+
   useEffect(() => {
     if (sdfContent) {
       setRawSdf(sdfContent);
@@ -166,28 +175,29 @@ export default function MoleculeViewer3D({
       const cpkColors: Record<string, string> = isDark
         ? {
             C: "#CBD5E1",
-            N: "#60A5FA",
-            O: "#F87171",
+            N: "#93C5FD",
+            O: "#FCA5A5",
             S: "#FBBF24",
-            P: "#FB923C",
-            F: "#818CF8",
-            Cl: "#818CF8",
+            P: "#FDBA74",
+            F: "#A5B4FC",
+            Cl: "#A5B4FC",
             Br: "#C084FC",
-            I: "#A78BFA",
+            I: "#C4B5FD",
           }
         : {
-            C: "#475569",
+            C: "#44403C",
             N: "#1D4ED8",
-            O: "#DC2626",
-            S: "#D97706",
-            P: "#C2410C",
+            O: "#B91C1C",
+            S: "#B45309",
+            P: "#9A3412",
             F: "#4338CA",
             Cl: "#3730A3",
             Br: "#7C2D12",
             I: "#6D28D9",
           };
 
-      viewer.setBackgroundColor(isDark ? "#0F172A" : "#FFFFFF");
+      // Warm paper (#F7F5F0) in Paper mode; Deep slate (#14171F) in Dark mode
+      viewer.setBackgroundColor(isDark ? "#14171F" : "#F7F5F0");
       viewer.removeAllSurfaces();
 
       if (mode === "stick") {
@@ -206,7 +216,7 @@ export default function MoleculeViewer3D({
         viewer.addSurface(
           surfType,
           {
-            opacity: 0.58,
+            opacity: 0.56,
             color: isDark ? "#818CF8" : "#4338CA",
           },
           {}
@@ -218,7 +228,6 @@ export default function MoleculeViewer3D({
     []
   );
 
-  // Initialize WebGL viewer once container exists and SDF arrives
   useEffect(() => {
     const host = containerRef.current;
     if (!host || !rawSdf) return;
@@ -234,7 +243,7 @@ export default function MoleculeViewer3D({
         if (!viewer) {
           containerRef.current.innerHTML = "";
           viewer = lib.createViewer(containerRef.current, {
-            backgroundColor: darkStage ? "#0F172A" : "#FFFFFF",
+            backgroundColor: effectiveDark ? "#14171F" : "#F7F5F0",
             antialias: true,
             disableFog: true,
           });
@@ -259,7 +268,7 @@ export default function MoleculeViewer3D({
           () => setHoverText(null)
         );
 
-        applyViewerStyle(viewer, lib, styleMode, darkStage);
+        applyViewerStyle(viewer, lib, styleMode, effectiveDark);
         viewer.resize();
         viewer.zoomTo();
         viewer.zoom(1.08);
@@ -287,18 +296,16 @@ export default function MoleculeViewer3D({
     };
   }, [rawSdf]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update visual representation in-place without rebuilding WebGL context
   useEffect(() => {
     if (!viewerRef.current || !window.$3Dmol || !rawSdf) return;
-    applyViewerStyle(viewerRef.current, window.$3Dmol, styleMode, darkStage);
-  }, [styleMode, darkStage, rawSdf, applyViewerStyle]);
+    applyViewerStyle(viewerRef.current, window.$3Dmol, styleMode, effectiveDark);
+  }, [styleMode, effectiveDark, rawSdf, applyViewerStyle]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
     viewerRef.current.spin(spinning ? "y" : false);
   }, [spinning]);
 
-  // Capture-phase wheel zoom so scrolling inside the 3D stage zooms smoothly without scrolling the page
   useEffect(() => {
     const host = containerRef.current;
     if (!host) return;
@@ -315,7 +322,6 @@ export default function MoleculeViewer3D({
     return () => host.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
   }, []);
 
-  // Cleanup WebGL resources on unmount
   useEffect(() => {
     return () => {
       if (viewerRef.current) {
@@ -346,9 +352,9 @@ export default function MoleculeViewer3D({
   };
 
   return (
-    <div className="bg-white border border-[#E2E6F0] rounded-xl overflow-hidden shadow-xs">
-      <div className="px-3 py-1.5 border-b border-[#E2E6F0] bg-[#F8FAFC] flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-        <span className="font-semibold text-[#334155] truncate">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+      <div className="px-3 py-1.5 border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+        <span className="font-semibold text-[var(--ink-secondary)] truncate">
           3D Conformer: {moleculeName}
         </span>
         <div className="flex flex-wrap items-center gap-1" role="group" aria-label="3D display controls">
@@ -360,8 +366,8 @@ export default function MoleculeViewer3D({
               aria-pressed={styleMode === m}
               className={`px-2 py-1 rounded text-[11px] font-medium min-h-[28px] ${
                 styleMode === m
-                  ? "bg-[#3730A3] text-white"
-                  : "bg-white border border-[#64748B] text-[#334155] hover:bg-[#F1F5F9]"
+                  ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                  : "bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
               }`}
             >
               {m === "stick" ? "Stick" : m === "ball" ? "Ball+Stick" : "Surface"}
@@ -373,23 +379,27 @@ export default function MoleculeViewer3D({
             aria-pressed={spinning}
             className={`px-2 py-1 rounded text-[11px] font-medium min-h-[28px] ${
               spinning
-                ? "bg-[#3730A3] text-white"
-                : "bg-white border border-[#64748B] text-[#334155] hover:bg-[#F1F5F9]"
+                ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                : "bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             {spinning ? "Pause" : "Spin"}
           </button>
           <button
             type="button"
-            onClick={() => setDarkStage((d) => !d)}
-            className="px-2 py-1 rounded text-[11px] font-medium min-h-[28px] bg-white border border-[#64748B] text-[#334155] hover:bg-[#F1F5F9]"
+            onClick={() => setStageOverride(effectiveDark ? "paper" : "dark")}
+            className="px-2 py-1 rounded text-[11px] font-medium min-h-[28px] bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
           >
-            {darkStage ? "Light" : "Dark"}
+            {effectiveDark ? "Paper 3D" : "Dark 3D"}
           </button>
         </div>
       </div>
 
-      <div className={`relative w-full ${heightClass} ${darkStage ? "bg-[#0F172A]" : "bg-white"}`}>
+      <div
+        className={`relative w-full ${heightClass} ${
+          effectiveDark ? "bg-[#14171F]" : "bg-[#F7F5F0]"
+        }`}
+      >
         <div
           ref={containerRef}
           className="w-full h-full relative"
@@ -397,49 +407,49 @@ export default function MoleculeViewer3D({
         />
 
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/85 text-xs text-[#334155] font-medium">
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-surface)]/85 text-xs text-[var(--ink-secondary)] font-medium">
             Loading 3D RDKit ETKDGv3 conformer...
           </div>
         )}
 
         {errorMsg && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#FEF2F2] text-xs text-[#B91C1C]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[var(--alert-soft)] text-xs text-[var(--alert)]">
             <p className="font-semibold">3D viewport unavailable</p>
-            <p className="mt-1 text-[#7F1D1D]">{errorMsg}</p>
+            <p className="mt-1">{errorMsg}</p>
           </div>
         )}
 
         {hoverText && !loading && !errorMsg && (
-          <div className="absolute top-2 left-2.5 px-2 py-0.5 rounded bg-[#0F172A]/85 text-white text-[11px] mono-num pointer-events-none">
+          <div className="absolute top-2 left-2.5 px-2 py-0.5 rounded bg-[#111318]/90 text-[#ECEEF4] text-[11px] mono-num pointer-events-none">
             Atom {hoverText}
           </div>
         )}
 
         {!loading && !errorMsg && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/95 border border-[#64748B] rounded-md px-1.5 py-0.5 shadow-xs text-[11px] mono-num">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-[var(--bg-surface)]/95 border border-[var(--border-control)] rounded-md px-1.5 py-0.5 text-[11px] mono-num">
             <button
               type="button"
               onClick={() => handleManualZoom(0.84)}
               aria-label="Zoom out 3D molecule"
-              className="px-1.5 py-0.5 font-bold text-[#0F172A] hover:text-[#3730A3]"
+              className="px-1.5 py-0.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
             >
               -
             </button>
-            <span className="text-[#3730A3] font-semibold min-w-[38px] text-center">
+            <span className="text-[var(--accent-ink)] font-semibold min-w-[38px] text-center">
               {zoomPct}%
             </span>
             <button
               type="button"
               onClick={() => handleManualZoom(1.19)}
               aria-label="Zoom in 3D molecule"
-              className="px-1.5 py-0.5 font-bold text-[#0F172A] hover:text-[#3730A3]"
+              className="px-1.5 py-0.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
             >
               +
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="px-1.5 py-0.5 font-sans font-medium text-[#334155] hover:text-[#0F172A]"
+              className="px-1.5 py-0.5 font-sans font-medium text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
             >
               Reset
             </button>
@@ -447,7 +457,7 @@ export default function MoleculeViewer3D({
               <button
                 type="button"
                 onClick={onExpandStage}
-                className="ml-0.5 px-1.5 py-0.5 font-sans font-semibold text-[#3730A3] hover:underline"
+                className="ml-0.5 px-1.5 py-0.5 font-sans font-semibold text-[var(--accent-ink)] hover:underline"
               >
                 Expand
               </button>

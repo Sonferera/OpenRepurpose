@@ -273,6 +273,12 @@ def predict_custom_pair(req: PredictRequest) -> dict[str, Any]:
     svg_2d, explanation = render_attributed_2d_svg(
         smiles=canon_smiles,
         morgan_bit_importances=STATE.morgan_bit_importances,
+        dark_mode=False,
+    )
+    svg_2d_dark, _ = render_attributed_2d_svg(
+        smiles=canon_smiles,
+        morgan_bit_importances=STATE.morgan_bit_importances,
+        dark_mode=True,
     )
     sdf_3d = generate_3d_sdf(canon_smiles, name="CustomCompound", seed=SEED)
 
@@ -296,5 +302,6 @@ def predict_custom_pair(req: PredictRequest) -> dict[str, Any]:
             "top_motifs": explanation["top_motifs"],
         },
         "svg_2d": svg_2d,
+        "svg_2d_dark": svg_2d_dark,
         "sdf_3d": sdf_3d,
     }

@@ -161,8 +161,9 @@ def render_attributed_2d_svg(
     top_k_bits: int = 6,
     width: int = 440,
     height: int = 300,
+    dark_mode: bool = False,
 ) -> tuple[str | None, dict[str, Any]]:
-    """Compute atom-level substructure attribution and render dark-mode highlighted 2D SVG."""
+    """Compute atom-level substructure attribution and render 2D SVG (paper or dark mode)."""
     explanation = explain_molecule_substructures(
         smiles=smiles,
         morgan_bit_importances=morgan_bit_importances,
@@ -174,5 +175,6 @@ def render_attributed_2d_svg(
         atom_weights=explanation["atom_weights"],
         width=width,
         height=height,
+        dark_mode=dark_mode,
     )
     return svg, explanation
