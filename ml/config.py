@@ -40,6 +40,7 @@ ESM2_BATCH_SIZE: int = 4
 MORGAN_RADIUS: int = 2
 MORGAN_NBITS: int = 2048
 MORGAN_USE_CHIRALITY: bool = True
+MACCS_NBITS: int = 166  # RDKit MACCS structural keys (bits 1..166)
 PHYSCHEM_DESCRIPTOR_NAMES: tuple[str, ...] = (
     "MolWt",
     "MolLogP",
@@ -49,8 +50,8 @@ PHYSCHEM_DESCRIPTOR_NAMES: tuple[str, ...] = (
     "NumRotatableBonds",
     "QED",
 )
-LIGAND_FEATURE_DIM: int = MORGAN_NBITS + len(PHYSCHEM_DESCRIPTOR_NAMES)  # 2055
-JOINT_FEATURE_DIM: int = ESM2_EMBEDDING_DIM + LIGAND_FEATURE_DIM         # 2375
+LIGAND_FEATURE_DIM: int = MORGAN_NBITS + MACCS_NBITS + len(PHYSCHEM_DESCRIPTOR_NAMES)  # 2221
+JOINT_FEATURE_DIM: int = ESM2_EMBEDDING_DIM + LIGAND_FEATURE_DIM                       # 2541
 
 # Medicinal chemistry thresholds
 LIPINSKI_MAX_MW: float = 500.0

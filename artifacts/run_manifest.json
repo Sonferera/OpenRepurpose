@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-11-24T07:31:34.777013+00:00",
-  "git_commit": "97294f6",
+  "generated_at_utc": "2026-11-24T11:34:20.462065+00:00",
+  "git_commit": "b5250db",
   "seed": 42,
   "reproduce_command": "python scripts/reproduce_eval.py",
   "hardware": {
@@ -57,7 +57,7 @@
     }
   },
   "model_hyperparameters": {
-    "openrepurpose_lgbm": {
+    "openrepurpose_hybrid_lgbm": {
       "objective": "regression",
       "metric": "rmse",
       "n_estimators": 800,
@@ -72,11 +72,32 @@
       "verbose": -1
     },
     "early_stopping_rounds": 50,
-    "final_checkpoint_best_iteration": 800
+    "final_checkpoint_meta": {
+      "name": "openrepurpose_hybrid",
+      "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
+      "w_lgbm": 0.7329,
+      "w_ridge": 0.2671,
+      "ridge_best_alpha": 10.0,
+      "lgbm_best_iteration": 799,
+      "lgbm_params": {
+        "objective": "regression",
+        "metric": "rmse",
+        "n_estimators": 800,
+        "learning_rate": 0.05,
+        "num_leaves": 63,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.5,
+        "min_child_samples": 20,
+        "random_state": 42,
+        "n_jobs": -1,
+        "verbose": -1
+      }
+    }
   },
   "output_artifacts_sha256": {
-    "web/public/data/eval_results.json": "c20e7f61eca5979df54179a07ab1594b94574a83d94901ebbf62b5aeecb1a4ed",
-    "web/public/data/error_analysis.json": "b2da9cc9f9619a63af8447843bee42d976167cfe1c816425e8814b4656f7ece3",
-    "web/public/data/scatter_samples.json": "160e5ec4f4f9f7ff00802a00a92899e3b83aac10249b6e8c0b51c33ee64a92e6"
+    "web/public/data/eval_results.json": "2a20f740482f009f8308cfc2734f79da5d18e7d8fd2cf648f93b3eb969e97227",
+    "web/public/data/error_analysis.json": "ea5809567e13277b6daf5d96b1912b2b4b7cbdba2a61f10c95f36a932207bef4",
+    "web/public/data/scatter_samples.json": "c0c67d2f12ccfa1d7eb39b6487ec5bc50259c68f8d3da879aefcb765039fb440"
   }
 }

@@ -1,4 +1,4 @@
-"""DTI baseline models and primary OpenRepurpose LightGBM regressor."""
+"""DTI baseline models, LightGBM ablation, and primary OpenRepurpose Hybrid (L2-Ridge + LightGBM)."""
 
 from __future__ import annotations
 
@@ -18,12 +18,17 @@ from ml.config import (
     ESM2_EMBEDDING_DIM,
     LIGHTGBM_EARLY_STOPPING_ROUNDS,
     LIGHTGBM_PARAMS,
+    MACCS_NBITS,
     MORGAN_NBITS,
     SEED,
 )
 
-# Column indices of the 7 continuous physicochemical descriptors inside the 2375-dim joint vector
-PHYSCHEM_START_COL: int = ESM2_EMBEDDING_DIM + MORGAN_NBITS  # 320 + 2048 = 2368
+# Column layout in joint vector: [ESM2 (320) || Morgan (2048) || MACCS (166) || Physchem (7)]
+MORGAN_START_COL: int = ESM2_EMBEDDING_DIM
+MORGAN_END_COL: int = MORGAN_START_COL + MORGAN_NBITS
+MACCS_END_COL: int = MORGAN_END_COL + MACCS_NBITS
+PHYSCHEM_START_COL: int = MACCS_END_COL  # 320 + 2048 + 166 = 2534
+LIGAND_PHYSCHEM_OFFSET: int = MORGAN_NBITS + MACCS_NBITS  # 2214 inside ligand slice
 
 
 def _fit_lgbm_early_stop(
@@ -111,10 +116,14 @@ class LigandOnlyLightGBMModel(BaseDTIModel):
         X_lig = np.array(X[:, ESM2_EMBEDDING_DIM:], dtype=np.float32, copy=True)
         if fit_scaler:
             self.physchem_scaler_ = StandardScaler()
-            X_lig[:, MORGAN_NBITS:] = self.physchem_scaler_.fit_transform(X_lig[:, MORGAN_NBITS:])
+            X_lig[:, LIGAND_PHYSCHEM_OFFSET:] = self.physchem_scaler_.fit_transform(
+                X_lig[:, LIGAND_PHYSCHEM_OFFSET:]
+            )
         else:
             assert self.physchem_scaler_ is not None
-            X_lig[:, MORGAN_NBITS:] = self.physchem_scaler_.transform(X_lig[:, MORGAN_NBITS:])
+            X_lig[:, LIGAND_PHYSCHEM_OFFSET:] = self.physchem_scaler_.transform(
+                X_lig[:, LIGAND_PHYSCHEM_OFFSET:]
+            )
         return X_lig
 
     def fit(
@@ -149,9 +158,9 @@ class RidgeDTIModel(BaseDTIModel):
 
     name = "baseline_ridge"
     display_name = "Ridge Regression (Linear)"
-    description = "Standardized L2 linear baseline on joint ESM-2 + RDKit features."
+    description = "Standardized L2 linear baseline on joint ESM-2 + RDKit (Morgan + MACCS + Physchem)."
 
-    def __init__(self, alphas: tuple[float, ...] = (10.0, 100.0, 1000.0, 5000.0)) -> None:
+    def __init__(self, alphas: tuple[float, ...] = (10.0, 100.0, 1000.0, 5000.0, 20000.0)) -> None:
         self.alphas = alphas
         self.best_alpha_: float = 100.0
         self.pipeline_: Pipeline | None = None
@@ -193,16 +202,24 @@ class RidgeDTIModel(BaseDTIModel):
         assert self.pipeline_ is not None
         return np.asarray(self.pipeline_.predict(X), dtype=np.float64)
 
+    def get_morgan_bit_weights(self) -> np.ndarray:
+        """Return absolute standardized Ridge coefficients aligned with the 2048 Morgan bits."""
+        assert self.pipeline_ is not None
+        ridge: Ridge = self.pipeline_.named_steps["ridge"]
+        coefs = np.abs(np.asarray(ridge.coef_[MORGAN_START_COL:MORGAN_END_COL], dtype=np.float64))
+        assert coefs.shape == (MORGAN_NBITS,)
+        return coefs
+
     def get_metadata(self) -> dict[str, Any]:
         return {**super().get_metadata(), "best_alpha": self.best_alpha_}
 
 
 class OpenRepurposeLightGBMModel(BaseDTIModel):
-    """Primary Model: Tuned LightGBM DTI Regressor on joint [e_p || e_d] features."""
+    """Ablation 3: Pure LightGBM DTI Regressor on joint [e_p || e_d] features."""
 
-    name = "openrepurpose_lgbm"
-    display_name = "OpenRepurpose (ESM-2 + RDKit + LightGBM)"
-    description = "Primary gradient-boosted DTI model over ESM-2 protein embeddings and RDKit descriptors."
+    name = "ablation_lgbm"
+    display_name = "LightGBM DTI (Standalone)"
+    description = "Standalone gradient-boosted tree regressor without L2 linear scaffold regularization."
 
     def __init__(self, params: dict[str, Any] | None = None) -> None:
         self.params = dict(LIGHTGBM_PARAMS)
@@ -253,7 +270,7 @@ class OpenRepurposeLightGBMModel(BaseDTIModel):
         """Return gain-based LightGBM feature importances for the 2048 Morgan fingerprint bits."""
         assert self.model_ is not None
         gains = self.model_.booster_.feature_importance(importance_type="gain")
-        morgan_gains = np.asarray(gains[ESM2_EMBEDDING_DIM:PHYSCHEM_START_COL], dtype=np.float64)
+        morgan_gains = np.asarray(gains[MORGAN_START_COL:MORGAN_END_COL], dtype=np.float64)
         assert morgan_gains.shape == (MORGAN_NBITS,)
         return morgan_gains
 
@@ -265,11 +282,81 @@ class OpenRepurposeLightGBMModel(BaseDTIModel):
         }
 
 
+class OpenRepurposeHybridModel(BaseDTIModel):
+    """Primary Model: Validation-calibrated Hybrid L2-Ridge + Non-Linear LightGBM DTI Regressor.
+
+    Combines:
+      1. L2-regularized Ridge for smooth extrapolation across novel chemical scaffolds, and
+      2. LightGBM for non-linear protein-ligand interaction modeling.
+    The convex combination weight w_lgbm in [0, 1] is solved analytically on the validation fold
+    only (zero test-set peeking), automatically balancing linear regularization and tree capacity.
+    """
+
+    name = "openrepurpose_hybrid"
+    display_name = "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)"
+    description = "Primary validation-calibrated hybrid combining L2 linear scaffold smoothness with GBDT non-linearity."
+
+    def __init__(
+        self,
+        lgbm_params: dict[str, Any] | None = None,
+        ridge_alphas: tuple[float, ...] = (10.0, 100.0, 1000.0, 5000.0, 20000.0),
+    ) -> None:
+        self.ridge_model_ = RidgeDTIModel(alphas=ridge_alphas)
+        self.lgbm_model_ = OpenRepurposeLightGBMModel(params=lgbm_params)
+        self.w_lgbm_: float = 0.70
+
+    def fit(
+        self,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+    ) -> "OpenRepurposeHybridModel":
+        self.ridge_model_.fit(X_train, y_train, X_val, y_val)
+        self.lgbm_model_.fit(X_train, y_train, X_val, y_val)
+
+        if X_val is not None and y_val is not None and len(X_val) > 0:
+            p_ridge = self.ridge_model_.predict(X_val)
+            p_lgbm = self.lgbm_model_.predict(X_val)
+            diff = p_lgbm - p_ridge
+            denom = float(np.dot(diff, diff))
+            if denom > 1e-12:
+                raw_w = float(np.dot(diff, y_val - p_ridge) / denom)
+                self.w_lgbm_ = float(np.clip(raw_w, 0.0, 1.0))
+            else:
+                self.w_lgbm_ = 0.5
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        p_ridge = self.ridge_model_.predict(X)
+        p_lgbm = self.lgbm_model_.predict(X)
+        return self.w_lgbm_ * p_lgbm + (1.0 - self.w_lgbm_) * p_ridge
+
+    def get_morgan_bit_importances(self) -> np.ndarray:
+        """Return normalized blended Morgan bit importances (LightGBM gain + Ridge |coef|)."""
+        lgbm_imp = self.lgbm_model_.get_morgan_bit_importances()
+        ridge_imp = self.ridge_model_.get_morgan_bit_weights()
+        lgbm_norm = lgbm_imp / max(float(lgbm_imp.sum()), 1e-12)
+        ridge_norm = ridge_imp / max(float(ridge_imp.sum()), 1e-12)
+        return self.w_lgbm_ * lgbm_norm + (1.0 - self.w_lgbm_) * ridge_norm
+
+    def get_metadata(self) -> dict[str, Any]:
+        return {
+            **super().get_metadata(),
+            "w_lgbm": round(self.w_lgbm_, 4),
+            "w_ridge": round(1.0 - self.w_lgbm_, 4),
+            "ridge_best_alpha": self.ridge_model_.best_alpha_,
+            "lgbm_best_iteration": self.lgbm_model_.best_iteration_,
+            "lgbm_params": self.lgbm_model_.params,
+        }
+
+
 def build_benchmark_models() -> list[BaseDTIModel]:
-    """Instantiate all four required benchmark models in canonical reporting order."""
+    """Instantiate all five benchmark models in canonical reporting order."""
     return [
         MeanBaselineModel(),
         LigandOnlyLightGBMModel(),
         RidgeDTIModel(),
         OpenRepurposeLightGBMModel(),
+        OpenRepurposeHybridModel(),
     ]

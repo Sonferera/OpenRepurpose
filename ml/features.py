@@ -10,8 +10,8 @@ from typing import Iterable, Sequence
 
 import numpy as np
 import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import rdFingerprintGenerator
+from rdkit import Chem, DataStructs
+from rdkit.Chem import MACCSkeys, rdFingerprintGenerator
 
 from ml.chem_filters import evaluate_medchem, parse_and_canonicalize
 from ml.config import (
@@ -22,6 +22,7 @@ from ml.config import (
     ESM2_MODEL_NAME,
     JOINT_FEATURE_DIM,
     LIGAND_FEATURE_DIM,
+    MACCS_NBITS,
     MORGAN_NBITS,
     MORGAN_RADIUS,
     MORGAN_USE_CHIRALITY,
@@ -210,18 +211,24 @@ def compute_morgan_fingerprint_with_bit_info(
 
 
 def compute_ligand_feature_vector(smiles: str) -> np.ndarray:
-    """Compute concatenated 2055-dim ligand feature vector [Morgan_2048 || Physchem_7]."""
+    """Compute concatenated 2221-dim ligand vector [Morgan_2048 || MACCS_166 || Physchem_7]."""
     mol, canon = parse_and_canonicalize(smiles)
     if mol is None or canon is None:
         raise ValueError(f"Invalid SMILES for ligand feature vector: {smiles!r}")
 
     gen = _get_morgan_generator()
     fp_np = gen.GetFingerprintAsNumPy(mol).astype(np.float32)
+
+    maccs_bv = MACCSkeys.GenMACCSKeys(mol)
+    maccs_full = np.zeros((maccs_bv.GetNumBits(),), dtype=np.float32)
+    DataStructs.ConvertToNumpyArray(maccs_bv, maccs_full)
+    maccs_np = maccs_full[1 : 1 + MACCS_NBITS]  # Drop unused index 0 -> 166 structural keys
+
     profile = evaluate_medchem(canon)
     if profile is None:
         raise ValueError(f"MedChem profile extraction failed for {canon!r}")
     desc_np = profile.to_descriptor_vector()
-    vec = np.concatenate([fp_np, desc_np]).astype(np.float32)
+    vec = np.concatenate([fp_np, maccs_np, desc_np]).astype(np.float32)
 
     if vec.shape != (LIGAND_FEATURE_DIM,) or not np.all(np.isfinite(vec)):
         raise ValueError(f"Malformed ligand vector for {canon!r}: shape={vec.shape}")

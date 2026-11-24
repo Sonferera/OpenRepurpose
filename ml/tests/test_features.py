@@ -8,7 +8,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ml.config import ESM2_EMBEDDING_DIM, JOINT_FEATURE_DIM, LIGAND_FEATURE_DIM, MORGAN_NBITS, SEED
+from ml.config import (
+    ESM2_EMBEDDING_DIM,
+    JOINT_FEATURE_DIM,
+    LIGAND_FEATURE_DIM,
+    MACCS_NBITS,
+    MORGAN_NBITS,
+    SEED,
+)
 from ml.features import (
     assemble_single_target_matrix,
     build_joint_feature_matrix,
@@ -21,6 +28,7 @@ from ml.features import (
 from ml.models import (
     LigandOnlyLightGBMModel,
     MeanBaselineModel,
+    OpenRepurposeHybridModel,
     OpenRepurposeLightGBMModel,
     RidgeDTIModel,
 )
@@ -34,10 +42,13 @@ def test_ligand_feature_shape_and_finiteness() -> None:
     assert vec.shape == (LIGAND_FEATURE_DIM,)
     assert vec.dtype == np.float32
     assert np.all(np.isfinite(vec))
-    # First 2048 entries are binary Morgan FP bits
+    # First 2048 entries are binary Morgan FP bits; next 166 entries are binary MACCS keys
     bits = vec[:MORGAN_NBITS]
+    maccs = vec[MORGAN_NBITS : MORGAN_NBITS + MACCS_NBITS]
     assert set(np.unique(bits).tolist()).issubset({0.0, 1.0})
+    assert set(np.unique(maccs).tolist()).issubset({0.0, 1.0})
     assert bits.sum() > 20
+    assert maccs.sum() > 15
 
 
 def test_morgan_bit_info_maps_to_valid_atom_indices() -> None:
@@ -103,6 +114,7 @@ def test_models_fit_predict_and_ligand_only_ignores_protein_columns() -> None:
         LigandOnlyLightGBMModel(params=fast_params),
         RidgeDTIModel(alphas=(10.0, 100.0)),
         OpenRepurposeLightGBMModel(params=fast_params),
+        OpenRepurposeHybridModel(lgbm_params=fast_params, ridge_alphas=(10.0, 100.0)),
     ]
 
     for model in models:
@@ -117,9 +129,14 @@ def test_models_fit_predict_and_ligand_only_ignores_protein_columns() -> None:
     X_test_perturbed[:, :ESM2_EMBEDDING_DIM] += 100.0
     np.testing.assert_array_equal(lig_model.predict(X_test), lig_model.predict(X_test_perturbed))
 
-    # Primary model exposes 2048 Morgan bit gain importances
-    primary = models[3]
-    assert isinstance(primary, OpenRepurposeLightGBMModel)
-    gains = primary.get_morgan_bit_importances()
-    assert gains.shape == (MORGAN_NBITS,)
-    assert np.all(gains >= 0.0)
+    # Standalone LGBM and Hybrid primary model expose 2048 Morgan bit importances
+    lgbm_only = models[3]
+    assert isinstance(lgbm_only, OpenRepurposeLightGBMModel)
+    assert lgbm_only.get_morgan_bit_importances().shape == (MORGAN_NBITS,)
+
+    hybrid = models[4]
+    assert isinstance(hybrid, OpenRepurposeHybridModel)
+    assert 0.0 <= hybrid.w_lgbm_ <= 1.0
+    hybrid_gains = hybrid.get_morgan_bit_importances()
+    assert hybrid_gains.shape == (MORGAN_NBITS,)
+    assert np.all(hybrid_gains >= 0.0)

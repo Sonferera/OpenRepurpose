@@ -7,8 +7,8 @@ OpenRepurpose separates reproducible scientific computation from interactive bro
 1. **Offline / Local Reproducible ML Pipeline (`ml/`, `scripts/`):**
    - Ingests the public **Davis** kinase DTI dataset (~30,056 drug-target pairs; continuous affinity transformed to `pKd = -log10(Kd / 1e9)` with inactive floor `pKd = 5.0` and active threshold `pKd >= 7.0`, i.e., `Kd <= 100 nM`).
    - Computes and caches sequence-level protein embeddings via `facebook/esm2_t6_8M_UR50D` (320 dimensions, residue truncation at 1022 aa, `fp16` with `batch_size <= 4` for 4 GB VRAM safety).
-   - Computes RDKit ligand representations (2048-bit chirality-aware Morgan fingerprints, `radius=2` + 7 physicochemical descriptors = 2055 dimensions) and deterministic medicinal chemistry filters (Lipinski Rule of 5, PAINS catalog, QED).
-   - Evaluates the primary **LightGBM DTI Regressor** against three baselines across three leakage-free held-out splits and writes verified JSON artifacts (`eval_results.json`, `error_analysis.json`, `scatter_samples.json`, `run_manifest.json`).
+   - Computes RDKit ligand representations (2048-bit chirality-aware Morgan fingerprints, `radius=2` + 166 MACCS structural keys + 7 physicochemical descriptors = 2221 dimensions) and deterministic medicinal chemistry filters (Lipinski Rule of 5, PAINS catalog, QED).
+   - Evaluates the primary **OpenRepurpose Hybrid (L2-Ridge + LightGBM)** DTI regressor against four baselines/ablations across three leakage-free held-out splits and writes verified JSON artifacts (`eval_results.json`, `error_analysis.json`, `scatter_samples.json`, `run_manifest.json`).
    - Screens curated FDA-approved small molecules against 8 curated NTD and positive-control protein targets, generating RDKit ETKDGv3 3D conformers (`.sdf`), Morgan-bit atom-attribution 2D drawings (`.svg`), and rate-limited NCBI PubMed E-utilities novelty counts.
 2. **Static Edge Web Workbench (`web/`):**
    - Loads precomputed artifacts directly from `web/public/data/` for instant browser rendering with zero server cold-start latency.
@@ -18,14 +18,15 @@ OpenRepurpose separates reproducible scientific computation from interactive bro
 
 ## 2. Models & Baselines
 
-Every held-out split evaluates four models with `SEED = 42`:
+Every held-out split evaluates five models with `SEED = 42`:
 
 | Model | Features | Purpose |
 | :--- | :--- | :--- |
 | **Baseline 0 — Mean Predictor** | None (training mean `pKd`) | Floor reference |
-| **Baseline 1 — Ligand-Only LightGBM** | Ligand `e_d` (2055-dim) only | Ablation proving target specificity vs. drug promiscuity |
-| **Baseline 2 — Ridge Regression** | Joint `[e_p \|\| e_d]` (2375-dim) | Linear reference quantifying non-linear modeling gain |
-| **Primary — OpenRepurpose LightGBM** | Joint `[e_p \|\| e_d]` (2375-dim) | Tuned GBDT DTI regressor with validation early stopping |
+| **Baseline 1 — Ligand-Only LightGBM** | Ligand `e_d` (2221-dim) only | Ablation proving target specificity vs. drug promiscuity |
+| **Baseline 2 — Ridge Regression** | Joint `[e_p \|\| e_d]` (2541-dim) | L2-regularized linear reference (strong chemical smoothness) |
+| **Ablation 3 — LightGBM DTI** | Joint `[e_p \|\| e_d]` (2541-dim) | Standalone non-linear GBDT without linear scaffold smoothing |
+| **Primary — OpenRepurpose Hybrid** | Joint `[e_p \|\| e_d]` (2541-dim) | Validation-calibrated convex blend of L2-Ridge + LightGBM |
 
 ---
 

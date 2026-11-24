@@ -43,6 +43,7 @@ from ml.config import (
     LIGHTGBM_EARLY_STOPPING_ROUNDS,
     LIGHTGBM_PARAMS,
     LIGAND_FEATURE_DIM,
+    MACCS_NBITS,
     MODELS_DIR,
     MORGAN_NBITS,
     MORGAN_RADIUS,
@@ -62,7 +63,7 @@ from ml.features import (
     resolve_device,
 )
 from ml.metrics import compute_enrichment_curve, evaluate_predictions, extract_error_analysis
-from ml.models import OpenRepurposeLightGBMModel, build_benchmark_models
+from ml.models import OpenRepurposeHybridModel, build_benchmark_models
 from ml.splits import generate_all_splits, verify_split_integrity
 
 logging.basicConfig(
@@ -207,7 +208,7 @@ def main() -> None:
     }
     error_output: dict[str, Any] = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "model": "openrepurpose_lgbm",
+        "model": "openrepurpose_hybrid",
         "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
         "splits": {},
     }
@@ -255,7 +256,7 @@ def main() -> None:
                 elapsed,
             )
 
-            if model.name == "openrepurpose_lgbm":
+            if model.name == "openrepurpose_hybrid":
                 scatter_output["splits"][split_name] = {
                     "n_test_total": int(len(df_te)),
                     "points": _sample_scatter_points(df_te, preds_te, max_points=1200, seed=SEED),
@@ -269,6 +270,8 @@ def main() -> None:
         }
 
     # 6. Compute headline comparison deltas directly from verified split results
+    primary_key = "openrepurpose_hybrid"
+
     def _ci(sp: str, mdl: str) -> float:
         return float(splits_output[sp]["models"][mdl]["metrics"]["concordance_index"])
 
@@ -276,36 +279,41 @@ def main() -> None:
         return float(splits_output[sp]["models"][mdl]["metrics"]["rmse"])
 
     headline = {
-        "warm_ci_vs_ridge": round(_ci("warm", "openrepurpose_lgbm") - _ci("warm", "baseline_ridge"), 4),
-        "warm_ci_vs_ligand_only": round(_ci("warm", "openrepurpose_lgbm") - _ci("warm", "baseline_ligand_only"), 4),
-        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", "openrepurpose_lgbm") - _ci("cold_drug", "baseline_ridge"), 4),
+        "primary_model": primary_key,
+        "warm_ci_vs_ridge": round(_ci("warm", primary_key) - _ci("warm", "baseline_ridge"), 4),
+        "warm_ci_vs_ligand_only": round(_ci("warm", primary_key) - _ci("warm", "baseline_ligand_only"), 4),
+        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "baseline_ridge"), 4),
+        "cold_drug_ci_vs_lgbm": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "ablation_lgbm"), 4),
         "cold_drug_ci_vs_ligand_only": round(
-            _ci("cold_drug", "openrepurpose_lgbm") - _ci("cold_drug", "baseline_ligand_only"), 4
+            _ci("cold_drug", primary_key) - _ci("cold_drug", "baseline_ligand_only"), 4
         ),
-        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", "openrepurpose_lgbm") - _rmse("cold_drug", "baseline_ridge"), 4),
+        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", primary_key) - _rmse("cold_drug", "baseline_ridge"), 4),
         "cold_target_ci_vs_ridge": round(
-            _ci("cold_target", "openrepurpose_lgbm") - _ci("cold_target", "baseline_ridge"), 4
+            _ci("cold_target", primary_key) - _ci("cold_target", "baseline_ridge"), 4
         ),
         "cold_target_ci_vs_ligand_only": round(
-            _ci("cold_target", "openrepurpose_lgbm") - _ci("cold_target", "baseline_ligand_only"), 4
+            _ci("cold_target", primary_key) - _ci("cold_target", "baseline_ligand_only"), 4
         ),
-        "warm_to_cold_drug_ci_delta": round(
-            _ci("cold_drug", "openrepurpose_lgbm") - _ci("warm", "openrepurpose_lgbm"), 4
-        ),
-        "warm_to_cold_target_ci_delta": round(
-            _ci("cold_target", "openrepurpose_lgbm") - _ci("warm", "openrepurpose_lgbm"), 4
-        ),
+        "warm_to_cold_drug_ci_delta": round(_ci("cold_drug", primary_key) - _ci("warm", primary_key), 4),
+        "warm_to_cold_target_ci_delta": round(_ci("cold_target", primary_key) - _ci("warm", primary_key), 4),
     }
 
-    # 7. Train final production screening checkpoint on 90/10 stratified Davis split (for Phase 3 screening)
-    logger.info("Training final Davis screening checkpoint (90/10 early-stopping split)...")
+    # 7. Train final production screening checkpoint on 90/10 stratified Davis split
+    #    so both Ridge and LightGBM learn across all 68 Davis kinase drugs (full tree depth),
+    #    then set the hybrid blend weight to the average of Cold-Target and Cold-Drug validation
+    #    weights so screening balances unseen-target specificity with unseen-scaffold smoothness.
+    logger.info("Training final Davis screening checkpoint (90/10 full-chemistry fit + cold-regime blend)...")
     strat_y = (y_all >= ACTIVE_PKD_THRESHOLD).astype(int)
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.10, random_state=SEED)
-    full_tr_idx, full_va_idx = next(sss.split(X_joint, strat_y))
+    prod_tr_idx, prod_va_idx = next(sss.split(X_joint, strat_y))
 
-    final_model = OpenRepurposeLightGBMModel()
-    final_model.fit(X_joint[full_tr_idx], y_all[full_tr_idx], X_joint[full_va_idx], y_all[full_va_idx])
-    checkpoint_path = MODELS_DIR / "openrepurpose_lgbm.joblib"
+    final_model = OpenRepurposeHybridModel()
+    final_model.fit(X_joint[prod_tr_idx], y_all[prod_tr_idx], X_joint[prod_va_idx], y_all[prod_va_idx])
+    w_cold_drug = float(splits_output["cold_drug"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
+    w_cold_target = float(splits_output["cold_target"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
+    final_model.w_lgbm_ = round(0.5 * (w_cold_drug + w_cold_target), 4)
+
+    checkpoint_path = MODELS_DIR / "openrepurpose_hybrid.joblib"
     joblib.dump(
         {
             "model": final_model,
@@ -313,12 +321,19 @@ def main() -> None:
             "seed": SEED,
             "davis_sha256": dataset_meta["clean_csv_sha256"],
             "esm2_model_name": ESM2_MODEL_NAME,
-            "best_iteration": final_model.best_iteration_,
+            "model_meta": final_model.get_metadata(),
         },
         checkpoint_path,
         compress=3,
     )
-    logger.info("Saved screening checkpoint to %s (best_iteration=%s).", checkpoint_path, final_model.best_iteration_)
+    logger.info(
+        "Saved screening checkpoint to %s (w_lgbm=%.3f, w_ridge=%.3f, lgbm_iter=%s, ridge_alpha=%.1f).",
+        checkpoint_path,
+        final_model.w_lgbm_,
+        1.0 - final_model.w_lgbm_,
+        final_model.lgbm_model_.best_iteration_,
+        final_model.ridge_model_.best_alpha_,
+    )
 
     # 8. Write verified JSON artifacts for the frontend and reproducibility manifest
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -328,6 +343,7 @@ def main() -> None:
         "generated_at_utc": now_iso,
         "reproduce_command": "python scripts/reproduce_eval.py",
         "seed": SEED,
+        "primary_model": primary_key,
         "total_runtime_seconds": total_seconds,
         "dataset": dataset_meta,
         "protein_encoder": {
@@ -339,7 +355,7 @@ def main() -> None:
             **hw_info,
         },
         "ligand_encoder": {
-            "fingerprint": f"RDKit Morgan (radius={MORGAN_RADIUS}, {MORGAN_NBITS}-bit, chirality=True)",
+            "fingerprint": f"RDKit Morgan (radius={MORGAN_RADIUS}, {MORGAN_NBITS}-bit, chirality=True) + MACCS ({MACCS_NBITS}-bit)",
             "physchem_descriptors": list(PHYSCHEM_DESCRIPTOR_NAMES),
             "feature_dim": LIGAND_FEATURE_DIM,
         },
@@ -373,9 +389,9 @@ def main() -> None:
         "dataset": dataset_meta,
         "split_index_hashes": split_hashes,
         "model_hyperparameters": {
-            "openrepurpose_lgbm": LIGHTGBM_PARAMS,
+            "openrepurpose_hybrid_lgbm": LIGHTGBM_PARAMS,
             "early_stopping_rounds": LIGHTGBM_EARLY_STOPPING_ROUNDS,
-            "final_checkpoint_best_iteration": final_model.best_iteration_,
+            "final_checkpoint_meta": final_model.get_metadata(),
         },
         "output_artifacts_sha256": {
             "web/public/data/eval_results.json": sha256_file(eval_path),
