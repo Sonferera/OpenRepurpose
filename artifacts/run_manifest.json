@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-11-24T11:34:20.462065+00:00",
-  "git_commit": "b5250db",
+  "generated_at_utc": "2026-11-24T12:26:01.702722+00:00",
+  "git_commit": "c6b070e",
   "seed": 42,
   "reproduce_command": "python scripts/reproduce_eval.py",
   "hardware": {
@@ -22,38 +22,95 @@
     "rdkit": "2026.9.2",
     "joblib": "1.6.0"
   },
-  "dataset": {
-    "dataset": "DAVIS",
-    "source": "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291557",
-    "n_raw_rows": 30056,
-    "dropped_invalid_smiles_unique": 0,
-    "dropped_invalid_rows": 0,
-    "n_valid_before_dedup": 30056,
-    "n_duplicates_merged": 4284,
-    "n_clean_pairs": 25772,
-    "n_unique_drugs": 68,
-    "n_unique_scaffolds": 68,
-    "n_unique_targets": 379,
-    "pkd_min": 5.0,
-    "pkd_max": 10.6198,
-    "pkd_mean": 5.3969,
-    "clean_csv_sha256": "3da97c4af741350457484ee7ff23eaf579b65fa866a8037fd6985cecece5c2ad"
+  "datasets": {
+    "davis": {
+      "dataset": "DAVIS",
+      "source": "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291557",
+      "n_raw_rows": 30056,
+      "dropped_invalid_smiles_unique": 0,
+      "dropped_invalid_rows": 0,
+      "n_valid_before_dedup": 30056,
+      "n_duplicates_merged": 4284,
+      "n_clean_pairs": 25772,
+      "n_unique_drugs": 68,
+      "n_unique_scaffolds": 68,
+      "n_unique_targets": 379,
+      "pkd_min": 5.0,
+      "pkd_max": 10.6198,
+      "pkd_mean": 5.3969,
+      "clean_csv_sha256": "3da97c4af741350457484ee7ff23eaf579b65fa866a8037fd6985cecece5c2ad"
+    },
+    "bindingdb_kd": {
+      "dataset": "BindingDB_Kd",
+      "source": "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291555",
+      "n_raw_rows": 66434,
+      "dropped_invalid_smiles_unique": 0,
+      "dropped_nonpositive_kd": 2,
+      "dropped_invalid_rows": 0,
+      "n_valid_before_dedup": 66432,
+      "n_duplicates_merged": 20317,
+      "n_clean_pairs": 46115,
+      "n_unique_drugs": 10659,
+      "n_unique_scaffolds": 5023,
+      "n_unique_targets": 1413,
+      "pkd_min": 3.0,
+      "pkd_max": 11.0,
+      "pkd_mean": 5.7727,
+      "clean_csv_sha256": "2484c32196df4f02d6f8a99df8b0f8e74161c2ae4d31e9b4607857e3157e5847"
+    },
+    "combined_screening_corpus": {
+      "dataset": "DAVIS + BindingDB_Kd (Deduplicated Experimental Kd Corpus)",
+      "sources": [
+        "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291557",
+        "TDC-HarvardDataverse:https://dataverse.harvard.edu/api/access/datafile/4291555"
+      ],
+      "n_davis_pairs": 25772,
+      "n_bindingdb_pairs": 46115,
+      "n_overlap_merged": 13040,
+      "n_clean_pairs": 58847,
+      "n_unique_drugs": 10686,
+      "n_unique_scaffolds": 5029,
+      "n_unique_targets": 1449,
+      "pkd_min": 3.0,
+      "pkd_max": 11.0,
+      "pkd_mean": 5.7214,
+      "clean_csv_sha256": "43659bac266346c4edca35035c8dc8edb542c9a66d6ede713d68a8e8f629c1d3"
+    }
   },
   "split_index_hashes": {
-    "warm": {
-      "train_idx_sha256": "7eabb931f1443747f79961326dea119c9866634afd6db5ed7d323ba25d2c20f8",
-      "val_idx_sha256": "56d592ccf92efe7a97c3f4facd617b5df236c374ac459f7e97ff6eecafc599f7",
-      "test_idx_sha256": "cd1d306beb7f20eef0a2a0932e03238a6ab15409b329db6081652fa0c61422a2"
+    "davis": {
+      "warm": {
+        "train_idx_sha256": "7eabb931f1443747f79961326dea119c9866634afd6db5ed7d323ba25d2c20f8",
+        "val_idx_sha256": "56d592ccf92efe7a97c3f4facd617b5df236c374ac459f7e97ff6eecafc599f7",
+        "test_idx_sha256": "cd1d306beb7f20eef0a2a0932e03238a6ab15409b329db6081652fa0c61422a2"
+      },
+      "cold_drug": {
+        "train_idx_sha256": "f88a457053fe7679fa405ad765807df3ffa457cb5d8853855edbfdf68004cf04",
+        "val_idx_sha256": "6b31449375f13db20fdf3e367c80d77547859b01e387679678f32c24e5ad7e2f",
+        "test_idx_sha256": "619ba547f9d6a33aa897613a6f1a8db086d7a45ec38b026b35e498f837291d12"
+      },
+      "cold_target": {
+        "train_idx_sha256": "f2b701335696959a621ecab905ae13fd89d4fa3bbb91478ae2cd98ccb18df5ec",
+        "val_idx_sha256": "6bf1bd3a93009b929efb880b4f9b24ae350e822be8074538f85176177ac851e8",
+        "test_idx_sha256": "59fc6ab55b5096eba474fe2a0fd667967cc602e73147dc458bcde39846ee39df"
+      }
     },
-    "cold_drug": {
-      "train_idx_sha256": "f88a457053fe7679fa405ad765807df3ffa457cb5d8853855edbfdf68004cf04",
-      "val_idx_sha256": "6b31449375f13db20fdf3e367c80d77547859b01e387679678f32c24e5ad7e2f",
-      "test_idx_sha256": "619ba547f9d6a33aa897613a6f1a8db086d7a45ec38b026b35e498f837291d12"
-    },
-    "cold_target": {
-      "train_idx_sha256": "f2b701335696959a621ecab905ae13fd89d4fa3bbb91478ae2cd98ccb18df5ec",
-      "val_idx_sha256": "6bf1bd3a93009b929efb880b4f9b24ae350e822be8074538f85176177ac851e8",
-      "test_idx_sha256": "59fc6ab55b5096eba474fe2a0fd667967cc602e73147dc458bcde39846ee39df"
+    "bindingdb_kd": {
+      "warm": {
+        "train_idx_sha256": "c3319dde1bac0640ab06417ae4b869a33b96986790d50e08a4c5f83c20102a53",
+        "val_idx_sha256": "b5d80de27546d1695d10b16d1069bde312d7feaef2df293b5dc064f22c7a8716",
+        "test_idx_sha256": "576d3f36641e1020ef58b5f68e804e57a913f03eb3d9ade7a96d28610e1284a8"
+      },
+      "cold_drug": {
+        "train_idx_sha256": "389945a859b6c3e7d380a00acf904383406a664c6ccfc43adff2d6f615831839",
+        "val_idx_sha256": "9f22cfac8cab39bc06811bee24c3c1a935102aa9de537047157eb2b8db76c6c4",
+        "test_idx_sha256": "0ae20e687c7f5be23b0355631fbdab485a7158f08c50a57a9677762c0fbd6747"
+      },
+      "cold_target": {
+        "train_idx_sha256": "9d065f90ec58f71096f2a04dd11a12e19fd05d020ab84772c56b2c6add185bd3",
+        "val_idx_sha256": "5a0cfd2d6c03e14f18300b5600b20b0878e86cc1ab13dd869e37434bf05206c1",
+        "test_idx_sha256": "a713762bc4931cf41d7a3ddd66def242b7878fc18db56e1a6b0817bdfd5a5f85"
+      }
     }
   },
   "model_hyperparameters": {
@@ -75,10 +132,10 @@
     "final_checkpoint_meta": {
       "name": "openrepurpose_hybrid",
       "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
-      "w_lgbm": 0.7329,
-      "w_ridge": 0.2671,
-      "ridge_best_alpha": 10.0,
-      "lgbm_best_iteration": 799,
+      "w_lgbm": 0.9464,
+      "w_ridge": 0.0536,
+      "ridge_best_alpha": 100.0,
+      "lgbm_best_iteration": 800,
       "lgbm_params": {
         "objective": "regression",
         "metric": "rmse",
@@ -96,8 +153,8 @@
     }
   },
   "output_artifacts_sha256": {
-    "web/public/data/eval_results.json": "2a20f740482f009f8308cfc2734f79da5d18e7d8fd2cf648f93b3eb969e97227",
-    "web/public/data/error_analysis.json": "ea5809567e13277b6daf5d96b1912b2b4b7cbdba2a61f10c95f36a932207bef4",
-    "web/public/data/scatter_samples.json": "c0c67d2f12ccfa1d7eb39b6487ec5bc50259c68f8d3da879aefcb765039fb440"
+    "web/public/data/eval_results.json": "699757e9f53cbd99a2ffcfed50eb4e6bfc82cb6908667e042779a369132eb78d",
+    "web/public/data/error_analysis.json": "d5c2da9a72826f4e86be3bf4be3781d9e659092fc5964bb662245ae34b97c06f",
+    "web/public/data/scatter_samples.json": "2f3c16d399af99d74412c1c4193eb347cb75c67fe6c2fd12ee7f55cb00b12064"
   }
 }

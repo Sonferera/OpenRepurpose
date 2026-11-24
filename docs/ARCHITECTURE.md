@@ -5,7 +5,10 @@
 OpenRepurpose separates reproducible scientific computation from interactive browser inspection:
 
 1. **Offline / Local Reproducible ML Pipeline (`ml/`, `scripts/`):**
-   - Ingests the public **Davis** kinase DTI dataset (~30,056 drug-target pairs; continuous affinity transformed to `pKd = -log10(Kd / 1e9)` with inactive floor `pKd = 5.0` and active threshold `pKd >= 7.0`, i.e., `Kd <= 100 nM`).
+   - Runs a **Dual-Benchmark held-out evaluation** on two experimental `Kd` corpora converted to `pKd = -log10(Kd / 1e9)` (active threshold `pKd >= 7.0`, i.e., `Kd <= 100 nM`):
+     - **Davis Kinase DTI Benchmark:** 25,772 clean unique pairs (68 scaffolds, 379 kinases) testing dense kinase specificity and exposing low-scaffold chemical extrapolation limits.
+     - **BindingDB_Kd Multi-Family Benchmark:** 46,115 clean unique pairs (10,659 drugs, 5,023 scaffolds, 1,413 multi-family proteins) testing true large-scale Cold-Drug and Cold-Target generalization.
+   - Trains the final screening model on the deduplicated combined experimental corpus (**58,847 pairs**, 10,686 drugs, 1,449 targets).
    - Computes and caches sequence-level protein embeddings via `facebook/esm2_t6_8M_UR50D` (320 dimensions, residue truncation at 1022 aa, `fp16` with `batch_size <= 4` for 4 GB VRAM safety).
    - Computes RDKit ligand representations (2048-bit chirality-aware Morgan fingerprints, `radius=2` + 166 MACCS structural keys + 7 physicochemical descriptors = 2221 dimensions) and deterministic medicinal chemistry filters (Lipinski Rule of 5, PAINS catalog, QED).
    - Evaluates the primary **OpenRepurpose Hybrid (L2-Ridge + LightGBM)** DTI regressor against four baselines/ablations across three leakage-free held-out splits and writes verified JSON artifacts (`eval_results.json`, `error_analysis.json`, `scatter_samples.json`, `run_manifest.json`).

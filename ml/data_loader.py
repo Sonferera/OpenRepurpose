@@ -22,8 +22,9 @@ from ml.config import DATA_DIR, FDA_MAX_MW, FDA_MIN_MW, ensure_directories
 
 logger = logging.getLogger(__name__)
 
-# Official Therapeutics Data Commons (TDC) Harvard Dataverse datafile for DAVIS (tdc/metadata.py: 4291557)
+# Official Therapeutics Data Commons (TDC) Harvard Dataverse datafiles (tdc/metadata.py)
 DAVIS_TDC_DATAVERSE_URL = "https://dataverse.harvard.edu/api/access/datafile/4291557"
+BINDINGDB_KD_TDC_DATAVERSE_URL = "https://dataverse.harvard.edu/api/access/datafile/4291555"
 # Official Broad Institute Drug Repurposing Hub (Corsello et al., Nature Medicine 2017)
 BROAD_REPURPOSING_DRUGS_URL = (
     "https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_drugs_20200324.txt"
@@ -81,31 +82,16 @@ def _fetch_raw_davis_dataframe(raw_dir: Path) -> tuple[pd.DataFrame, str]:
     return df, f"TDC-HarvardDataverse:{DAVIS_TDC_DATAVERSE_URL}"
 
 
-def load_davis_dataset(
-    data_dir: Path = DATA_DIR,
-    force_rebuild: bool = False,
+def _clean_dti_dataframe(
+    raw_df: pd.DataFrame,
+    dataset_name: str,
+    source: str,
+    clean_csv: Path,
+    meta_json: Path,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Load, sanitize, canonicalize, and cache the Davis kinase DTI benchmark.
-
-    Returns:
-        df: Clean DataFrame with columns
-            ['drug_id', 'target_id', 'canonical_smiles', 'scaffold_smiles',
-             'target_sequence', 'target_hash', 'pkd']
-        meta: Checksum and cleaning statistics for artifacts/run_manifest.json.
-    """
-    ensure_directories()
-    clean_csv = data_dir / "davis_clean.csv"
-    meta_json = data_dir / "davis_meta.json"
-
-    if clean_csv.exists() and meta_json.exists() and not force_rebuild:
-        df = pd.read_csv(clean_csv)
-        meta = json.loads(meta_json.read_text(encoding="utf-8"))
-        return df, meta
-
-    raw_df, source = _fetch_raw_davis_dataframe(data_dir / "raw_davis")
+    """Canonicalize SMILES, validate Kd > 0 -> pKd, extract Bemis-Murcko scaffolds, and deduplicate."""
     n_raw = int(len(raw_df))
 
-    # Normalize column names across PyTDC DataFrames and raw TDC Dataverse .tab exports
     col_map = {c.lower(): c for c in raw_df.columns}
     drug_col = col_map.get("drug") or col_map.get("smiles") or col_map.get("x1")
     target_col = col_map.get("target") or col_map.get("sequence") or col_map.get("x2")
@@ -114,9 +100,10 @@ def load_davis_dataset(
     target_id_col = col_map.get("target_id") or col_map.get("id2")
 
     if not (drug_col and target_col and y_col):
-        raise ValueError(f"Unexpected Davis columns: {list(raw_df.columns)}")
+        raise ValueError(f"Unexpected {dataset_name} columns: {list(raw_df.columns)}")
 
-    pkd_values = kd_nm_to_pkd(raw_df[y_col].to_numpy(dtype=np.float64))
+    y_raw = pd.to_numeric(raw_df[y_col], errors="coerce").to_numpy(dtype=np.float64)
+    is_kd_nm_scale = bool(np.nanmax(y_raw) > 20.0)
 
     # Canonicalize unique SMILES once for speed
     unique_raw_smiles = raw_df[drug_col].dropna().astype(str).unique().tolist()
@@ -132,22 +119,46 @@ def load_davis_dataset(
         smiles_to_canon[smi] = canon
         smiles_to_scaffold[smi] = get_bemis_murcko_scaffold(canon)
 
+    drug_vals = raw_df[drug_col].tolist()
+    target_vals = raw_df[target_col].tolist()
+    drug_id_vals = raw_df[drug_id_col].tolist() if drug_id_col else [""] * n_raw
+    target_id_vals = raw_df[target_id_col].tolist() if target_id_col else [""] * n_raw
+
     records: list[dict[str, Any]] = []
     dropped_invalid_rows = 0
-    for idx, row in raw_df.iterrows():
-        raw_smi = str(row[drug_col]) if pd.notna(row[drug_col]) else ""
-        seq = str(row[target_col]).strip().upper() if pd.notna(row[target_col]) else ""
-        pkd = float(pkd_values[idx])
+    dropped_nonpositive_kd = 0
+
+    for idx in range(n_raw):
+        raw_smi = str(drug_vals[idx]) if pd.notna(drug_vals[idx]) else ""
+        seq = str(target_vals[idx]).strip().upper() if pd.notna(target_vals[idx]) else ""
+        y_val = float(y_raw[idx])
+
+        if not np.isfinite(y_val):
+            dropped_invalid_rows += 1
+            continue
+        if is_kd_nm_scale:
+            if y_val <= 0.0:
+                dropped_nonpositive_kd += 1
+                continue
+            # Clamp extreme physical tails [0.01 nM, 1 mM] -> pKd in [3.0, 11.0]
+            pkd = float(-np.log10(np.clip(y_val, 1e-2, 1e6) / 1e9))
+        else:
+            pkd = y_val
 
         canon = smiles_to_canon.get(raw_smi)
-        if canon is None or not seq or not np.isfinite(pkd):
+        if canon is None or not seq or len(seq) < 20:
             dropped_invalid_rows += 1
             continue
 
+        did = drug_id_vals[idx]
+        tid = target_id_vals[idx]
+        did_str = str(int(did)) if isinstance(did, (int, float)) and pd.notna(did) and float(did).is_integer() else (str(did) if pd.notna(did) else "")
+        tid_str = str(tid) if pd.notna(tid) else ""
+
         records.append(
             {
-                "drug_id": str(row[drug_id_col]) if drug_id_col and pd.notna(row[drug_id_col]) else "",
-                "target_id": str(row[target_id_col]) if target_id_col and pd.notna(row[target_id_col]) else "",
+                "drug_id": did_str,
+                "target_id": tid_str,
                 "canonical_smiles": canon,
                 "scaffold_smiles": smiles_to_scaffold[raw_smi],
                 "target_sequence": seq,
@@ -159,7 +170,6 @@ def load_davis_dataset(
     df_valid = pd.DataFrame(records)
     before_dedup = int(len(df_valid))
 
-    # Deterministic deduplication on exact (canonical_smiles, target_sequence)
     df_clean = (
         df_valid.groupby(["canonical_smiles", "target_sequence"], as_index=False, sort=True)
         .agg(
@@ -177,13 +187,117 @@ def load_davis_dataset(
 
     df_clean.to_csv(clean_csv, index=False)
     meta = {
-        "dataset": "DAVIS",
+        "dataset": dataset_name,
         "source": source,
         "n_raw_rows": n_raw,
         "dropped_invalid_smiles_unique": invalid_smiles_unique,
+        "dropped_nonpositive_kd": dropped_nonpositive_kd,
         "dropped_invalid_rows": dropped_invalid_rows,
         "n_valid_before_dedup": before_dedup,
         "n_duplicates_merged": before_dedup - int(len(df_clean)),
+        "n_clean_pairs": int(len(df_clean)),
+        "n_unique_drugs": int(df_clean["canonical_smiles"].nunique()),
+        "n_unique_scaffolds": int(df_clean["scaffold_smiles"].nunique()),
+        "n_unique_targets": int(df_clean["target_sequence"].nunique()),
+        "pkd_min": round(float(df_clean["pkd"].min()), 4),
+        "pkd_max": round(float(df_clean["pkd"].max()), 4),
+        "pkd_mean": round(float(df_clean["pkd"].mean()), 4),
+        "clean_csv_sha256": sha256_file(clean_csv),
+    }
+    meta_json.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return df_clean, meta
+
+
+def load_davis_dataset(
+    data_dir: Path = DATA_DIR,
+    force_rebuild: bool = False,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load, sanitize, canonicalize, and cache the Davis kinase DTI benchmark."""
+    ensure_directories()
+    clean_csv = data_dir / "davis_clean.csv"
+    meta_json = data_dir / "davis_meta.json"
+
+    if clean_csv.exists() and meta_json.exists() and not force_rebuild:
+        df = pd.read_csv(clean_csv)
+        meta = json.loads(meta_json.read_text(encoding="utf-8"))
+        return df, meta
+
+    raw_df, source = _fetch_raw_davis_dataframe(data_dir / "raw_davis")
+    return _clean_dti_dataframe(raw_df, "DAVIS", source, clean_csv, meta_json)
+
+
+def _fetch_raw_bindingdb_kd_dataframe(raw_dir: Path) -> tuple[pd.DataFrame, str]:
+    """Download official TDC BindingDB_Kd dataset from Harvard Dataverse."""
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_tab = raw_dir / "bindingdb_kd_raw.tab"
+    if not raw_tab.exists():
+        resp = requests.get(BINDINGDB_KD_TDC_DATAVERSE_URL, timeout=180)
+        resp.raise_for_status()
+        raw_tab.write_bytes(resp.content)
+    df = pd.read_csv(raw_tab, sep="\t")
+    return df, f"TDC-HarvardDataverse:{BINDINGDB_KD_TDC_DATAVERSE_URL}"
+
+
+def load_bindingdb_kd_dataset(
+    data_dir: Path = DATA_DIR,
+    force_rebuild: bool = False,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load, sanitize, canonicalize, and cache the multi-family BindingDB_Kd benchmark."""
+    ensure_directories()
+    clean_csv = data_dir / "bindingdb_kd_clean.csv"
+    meta_json = data_dir / "bindingdb_kd_meta.json"
+
+    if clean_csv.exists() and meta_json.exists() and not force_rebuild:
+        df = pd.read_csv(clean_csv)
+        meta = json.loads(meta_json.read_text(encoding="utf-8"))
+        return df, meta
+
+    raw_df, source = _fetch_raw_bindingdb_kd_dataframe(data_dir / "raw_bindingdb")
+    return _clean_dti_dataframe(raw_df, "BindingDB_Kd", source, clean_csv, meta_json)
+
+
+def load_combined_kd_corpus(
+    data_dir: Path = DATA_DIR,
+    force_rebuild: bool = False,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Merge Davis and BindingDB_Kd into one deduplicated experimental pKd corpus for screening."""
+    ensure_directories()
+    clean_csv = data_dir / "combined_kd_clean.csv"
+    meta_json = data_dir / "combined_kd_meta.json"
+
+    if clean_csv.exists() and meta_json.exists() and not force_rebuild:
+        df = pd.read_csv(clean_csv)
+        meta = json.loads(meta_json.read_text(encoding="utf-8"))
+        return df, meta
+
+    df_davis, meta_davis = load_davis_dataset(data_dir=data_dir, force_rebuild=force_rebuild)
+    df_bdb, meta_bdb = load_bindingdb_kd_dataset(data_dir=data_dir, force_rebuild=force_rebuild)
+
+    combined_raw = pd.concat([df_davis, df_bdb], ignore_index=True)
+    before_dedup = int(len(combined_raw))
+
+    df_clean = (
+        combined_raw.groupby(["canonical_smiles", "target_sequence"], as_index=False, sort=True)
+        .agg(
+            drug_id=("drug_id", "first"),
+            target_id=("target_id", "first"),
+            scaffold_smiles=("scaffold_smiles", "first"),
+            target_hash=("target_hash", "first"),
+            pkd=("pkd", "mean"),
+        )
+    )
+    df_clean["pkd"] = df_clean["pkd"].round(6)
+    df_clean = df_clean[
+        ["drug_id", "target_id", "canonical_smiles", "scaffold_smiles", "target_sequence", "target_hash", "pkd"]
+    ].reset_index(drop=True)
+    df_clean.to_csv(clean_csv, index=False)
+
+    meta = {
+        "dataset": "DAVIS + BindingDB_Kd (Deduplicated Experimental Kd Corpus)",
+        "sources": [meta_davis["source"], meta_bdb["source"]],
+        "n_davis_pairs": int(len(df_davis)),
+        "n_bindingdb_pairs": int(len(df_bdb)),
+        "n_overlap_merged": before_dedup - int(len(df_clean)),
         "n_clean_pairs": int(len(df_clean)),
         "n_unique_drugs": int(df_clean["canonical_smiles"].nunique()),
         "n_unique_scaffolds": int(df_clean["scaffold_smiles"].nunique()),

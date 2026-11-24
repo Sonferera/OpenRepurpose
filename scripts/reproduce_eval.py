@@ -1,8 +1,12 @@
-"""Single-command reproducible held-out evaluation on the Davis DTI benchmark.
+"""Single-command reproducible Dual-Benchmark evaluation (Davis + BindingDB_Kd).
 
-Runs all 4 models (Mean, Ligand-Only Ablation, Ridge, OpenRepurpose LightGBM) across
-Warm, Cold-Drug (Bemis-Murcko Scaffold), and Cold-Target (Protein) splits, trains the
-final screening checkpoint, and writes verified JSON artifacts read directly by the UI.
+Runs all 5 models (Mean, Ligand-Only Ablation, Ridge, Standalone LightGBM, OpenRepurpose Hybrid)
+across Warm, Cold-Drug (Bemis-Murcko Scaffold), and Cold-Target (Protein) splits on:
+  1. Davis (Kinase-focused benchmark: 25,772 clean pairs, 68 scaffolds, 379 kinases)
+  2. BindingDB_Kd (Multi-family benchmark: 46,115 clean pairs, 5,023 scaffolds, 1,413 proteins)
+
+Then trains the final multi-family screening checkpoint on the deduplicated combined experimental
+Kd corpus (Davis + BindingDB_Kd, 58,847 pairs) and writes verified JSON artifacts for the UI.
 
 Usage:
     python scripts/reproduce_eval.py
@@ -10,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import importlib.metadata
 import json
@@ -55,7 +60,12 @@ from ml.config import (
     ensure_directories,
     seed_everything,
 )
-from ml.data_loader import load_davis_dataset, sha256_file
+from ml.data_loader import (
+    load_bindingdb_kd_dataset,
+    load_combined_kd_corpus,
+    load_davis_dataset,
+    sha256_file,
+)
 from ml.features import (
     build_joint_feature_matrix,
     extract_ligand_features,
@@ -72,6 +82,8 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("reproduce_eval")
+
+PRIMARY_MODEL_KEY = "openrepurpose_hybrid"
 
 
 def _array_sha256(arr: np.ndarray) -> str:
@@ -100,10 +112,10 @@ def _get_git_commit() -> str:
 def _sample_scatter_points(
     df_test: pd.DataFrame,
     y_pred: np.ndarray,
-    max_points: int = 1200,
+    max_points: int = 1000,
     seed: int = SEED,
 ) -> list[dict[str, Any]]:
-    """Build deterministic held-out scatter points retaining 100% of true active hits."""
+    """Build deterministic held-out scatter points retaining strong active representation."""
     n = len(df_test)
     yt = df_test["pkd"].to_numpy(dtype=np.float64)
     yp = np.asarray(y_pred, dtype=np.float64)
@@ -114,14 +126,20 @@ def _sample_scatter_points(
     if n <= max_points:
         selected = np.arange(n, dtype=np.int64)
     else:
-        n_inactive_keep = max(0, max_points - len(active_idx))
         rng = np.random.default_rng(seed)
+        max_active = min(len(active_idx), int(max_points * 0.45))
+        chosen_active = (
+            rng.choice(active_idx, size=max_active, replace=False)
+            if len(active_idx) > max_active
+            else active_idx
+        )
+        n_inactive_keep = max(0, max_points - len(chosen_active))
         chosen_inactive = (
             rng.choice(inactive_idx, size=min(n_inactive_keep, len(inactive_idx)), replace=False)
             if n_inactive_keep > 0
             else np.array([], dtype=np.int64)
         )
-        selected = np.sort(np.concatenate([active_idx, chosen_inactive]))
+        selected = np.sort(np.concatenate([chosen_active, chosen_inactive]))
 
     points: list[dict[str, Any]] = []
     for pos in selected.tolist():
@@ -156,66 +174,46 @@ def _describe_hardware(device: str) -> dict[str, Any]:
     return info
 
 
-def main() -> None:
-    t_start = time.perf_counter()
-    seed_everything(SEED)
-    ensure_directories()
-
-    device = resolve_device()
-    hw_info = _describe_hardware(device)
-    logger.info("Starting reproducible Davis DTI evaluation | seed=%d | device=%s (%s)", SEED, device, hw_info["gpu_name"] or "CPU")
-
-    # 1. Load clean Davis benchmark
-    df, dataset_meta = load_davis_dataset()
+def _evaluate_benchmark(
+    benchmark_id: str,
+    label: str,
+    description: str,
+    df: pd.DataFrame,
+    dataset_meta: dict[str, Any],
+    protein_embeddings: dict[str, np.ndarray],
+    ligand_features: dict[str, np.ndarray],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Run all 5 models across Warm, Cold-Drug, and Cold-Target splits for one benchmark."""
     logger.info(
-        "Loaded Davis dataset: %d clean pairs (%d drugs, %d scaffolds, %d unique proteins).",
+        "=== Benchmark [%s]: %d clean pairs (%d drugs, %d scaffolds, %d targets) ===",
+        benchmark_id,
         dataset_meta["n_clean_pairs"],
         dataset_meta["n_unique_drugs"],
         dataset_meta["n_unique_scaffolds"],
         dataset_meta["n_unique_targets"],
     )
 
-    # 2. Extract real ESM-2 protein embeddings (4 GB VRAM safe + SHA-256 disk cache)
-    t_emb = time.perf_counter()
-    protein_embeddings = extract_protein_embeddings(
-        df["target_sequence"].unique().tolist(),
-        device=device,
-        batch_size=ESM2_BATCH_SIZE,
-        max_length=ESM2_MAX_LENGTH,
-    )
-    emb_seconds = round(time.perf_counter() - t_emb, 2)
-    logger.info("ESM-2 embeddings ready for %d proteins in %.2fs.", len(protein_embeddings), emb_seconds)
-
-    # 3. Extract RDKit ligand features (2048 Morgan FP + 7 physicochemical descriptors)
-    t_lig = time.perf_counter()
-    ligand_features = extract_ligand_features(df["canonical_smiles"].unique().tolist())
     X_joint = build_joint_feature_matrix(df, protein_embeddings, ligand_features)
     y_all = df["pkd"].to_numpy(dtype=np.float64)
-    lig_seconds = round(time.perf_counter() - t_lig, 2)
-    logger.info("Assembled joint feature matrix %s in %.2fs.", X_joint.shape, lig_seconds)
 
-    # 4. Generate and assert leakage-free splits
     splits = generate_all_splits(df, seed=SEED)
     for split in splits.values():
         verify_split_integrity(df, split)
 
-    # 5. Train & evaluate all 4 models on all 3 held-out splits
     splits_output: dict[str, Any] = {}
-    scatter_output: dict[str, Any] = {
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
-        "splits": {},
-    }
-    error_output: dict[str, Any] = {
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "model": "openrepurpose_hybrid",
-        "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
-        "splits": {},
-    }
+    scatter_splits: dict[str, Any] = {}
+    error_splits: dict[str, Any] = {}
     split_hashes: dict[str, dict[str, str]] = {}
 
     for split_name, split in splits.items():
-        logger.info("Evaluating split: %s (train=%d, val=%d, test=%d)", split_name, len(split.train_idx), len(split.val_idx), len(split.test_idx))
+        logger.info(
+            "  [%s/%s] train=%d, val=%d, test=%d",
+            benchmark_id,
+            split_name,
+            len(split.train_idx),
+            len(split.val_idx),
+            len(split.test_idx),
+        )
         split_hashes[split_name] = {
             "train_idx_sha256": _array_sha256(split.train_idx),
             "val_idx_sha256": _array_sha256(split.val_idx),
@@ -245,32 +243,29 @@ def main() -> None:
                 "enrichment_curve": curve,
             }
             logger.info(
-                "  [%s] %-22s | RMSE=%.4f | CI=%.4f | ROC-AUC=%s | EF@5%%=%.2fx | HitCap@5%%=%.1f%% | %.2fs",
-                split_name,
+                "    %-22s | RMSE=%.4f | CI=%.4f | ROC=%s | PR=%s | EF@5%%=%.2fx | HitCap=%.1f%% | %.2fs",
                 model.name,
                 metrics["rmse"],
                 metrics["concordance_index"] or 0.0,
                 f"{metrics['roc_auc']:.4f}" if metrics["roc_auc"] is not None else "n/a",
+                f"{metrics['pr_auc']:.4f}" if metrics["pr_auc"] is not None else "n/a",
                 metrics["ef_at_5pct"],
                 metrics["hit_capture_at_5pct"] * 100.0,
                 elapsed,
             )
 
-            if model.name == "openrepurpose_hybrid":
-                scatter_output["splits"][split_name] = {
+            if model.name == PRIMARY_MODEL_KEY:
+                scatter_splits[split_name] = {
                     "n_test_total": int(len(df_te)),
-                    "points": _sample_scatter_points(df_te, preds_te, max_points=1200, seed=SEED),
+                    "points": _sample_scatter_points(df_te, preds_te, max_points=1000, seed=SEED),
                 }
                 if split_name in ("cold_target", "cold_drug"):
-                    error_output["splits"][split_name] = extract_error_analysis(df_te, preds_te, top_k=10)
+                    error_splits[split_name] = extract_error_analysis(df_te, preds_te, top_k=10)
 
         splits_output[split_name] = {
             "summary": split.summary(df),
             "models": models_result,
         }
-
-    # 6. Compute headline comparison deltas directly from verified split results
-    primary_key = "openrepurpose_hybrid"
 
     def _ci(sp: str, mdl: str) -> float:
         return float(splits_output[sp]["models"][mdl]["metrics"]["concordance_index"])
@@ -279,39 +274,119 @@ def main() -> None:
         return float(splits_output[sp]["models"][mdl]["metrics"]["rmse"])
 
     headline = {
-        "primary_model": primary_key,
-        "warm_ci_vs_ridge": round(_ci("warm", primary_key) - _ci("warm", "baseline_ridge"), 4),
-        "warm_ci_vs_ligand_only": round(_ci("warm", primary_key) - _ci("warm", "baseline_ligand_only"), 4),
-        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "baseline_ridge"), 4),
-        "cold_drug_ci_vs_lgbm": round(_ci("cold_drug", primary_key) - _ci("cold_drug", "ablation_lgbm"), 4),
+        "primary_model": PRIMARY_MODEL_KEY,
+        "warm_ci_vs_ridge": round(_ci("warm", PRIMARY_MODEL_KEY) - _ci("warm", "baseline_ridge"), 4),
+        "warm_ci_vs_ligand_only": round(_ci("warm", PRIMARY_MODEL_KEY) - _ci("warm", "baseline_ligand_only"), 4),
+        "cold_drug_ci_vs_ridge": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "baseline_ridge"), 4),
+        "cold_drug_ci_vs_lgbm": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "ablation_lgbm"), 4),
         "cold_drug_ci_vs_ligand_only": round(
-            _ci("cold_drug", primary_key) - _ci("cold_drug", "baseline_ligand_only"), 4
+            _ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("cold_drug", "baseline_ligand_only"), 4
         ),
-        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", primary_key) - _rmse("cold_drug", "baseline_ridge"), 4),
+        "cold_drug_rmse_vs_ridge": round(_rmse("cold_drug", PRIMARY_MODEL_KEY) - _rmse("cold_drug", "baseline_ridge"), 4),
         "cold_target_ci_vs_ridge": round(
-            _ci("cold_target", primary_key) - _ci("cold_target", "baseline_ridge"), 4
+            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("cold_target", "baseline_ridge"), 4
         ),
         "cold_target_ci_vs_ligand_only": round(
-            _ci("cold_target", primary_key) - _ci("cold_target", "baseline_ligand_only"), 4
+            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("cold_target", "baseline_ligand_only"), 4
         ),
-        "warm_to_cold_drug_ci_delta": round(_ci("cold_drug", primary_key) - _ci("warm", primary_key), 4),
-        "warm_to_cold_target_ci_delta": round(_ci("cold_target", primary_key) - _ci("warm", primary_key), 4),
+        "warm_to_cold_drug_ci_delta": round(_ci("cold_drug", PRIMARY_MODEL_KEY) - _ci("warm", PRIMARY_MODEL_KEY), 4),
+        "warm_to_cold_target_ci_delta": round(
+            _ci("cold_target", PRIMARY_MODEL_KEY) - _ci("warm", PRIMARY_MODEL_KEY), 4
+        ),
     }
 
-    # 7. Train final production screening checkpoint on 90/10 stratified Davis split
-    #    so both Ridge and LightGBM learn across all 68 Davis kinase drugs (full tree depth),
-    #    then set the hybrid blend weight to the average of Cold-Target and Cold-Drug validation
-    #    weights so screening balances unseen-target specificity with unseen-scaffold smoothness.
-    logger.info("Training final Davis screening checkpoint (90/10 full-chemistry fit + cold-regime blend)...")
-    strat_y = (y_all >= ACTIVE_PKD_THRESHOLD).astype(int)
+    del X_joint
+    gc.collect()
+
+    benchmark_result = {
+        "id": benchmark_id,
+        "label": label,
+        "description": description,
+        "dataset": dataset_meta,
+        "splits": splits_output,
+        "headline_comparisons": headline,
+    }
+    return benchmark_result, scatter_splits, error_splits, split_hashes
+
+
+def main() -> None:
+    t_start = time.perf_counter()
+    seed_everything(SEED)
+    ensure_directories()
+
+    device = resolve_device()
+    hw_info = _describe_hardware(device)
+    logger.info(
+        "Starting Dual-Benchmark DTI evaluation (Davis + BindingDB_Kd) | seed=%d | device=%s (%s)",
+        SEED,
+        device,
+        hw_info["gpu_name"] or "CPU",
+    )
+
+    # 1. Load both clean benchmarks and deduplicated combined corpus
+    df_davis, meta_davis = load_davis_dataset()
+    df_bdb, meta_bdb = load_bindingdb_kd_dataset()
+    df_comb, meta_comb = load_combined_kd_corpus()
+
+    # 2. Extract real ESM-2 embeddings for all unique proteins across both corpora (4 GB VRAM safe + cached)
+    t_emb = time.perf_counter()
+    all_proteins = sorted(set(df_comb["target_sequence"].unique().tolist()))
+    protein_embeddings = extract_protein_embeddings(
+        all_proteins,
+        device=device,
+        batch_size=ESM2_BATCH_SIZE,
+        max_length=ESM2_MAX_LENGTH,
+    )
+    emb_seconds = round(time.perf_counter() - t_emb, 2)
+    logger.info("ESM-2 embeddings ready for %d unique proteins in %.2fs.", len(protein_embeddings), emb_seconds)
+
+    # 3. Extract RDKit ligand features (2048 Morgan + 166 MACCS + 7 Physchem) for all unique SMILES
+    t_lig = time.perf_counter()
+    all_smiles = sorted(set(df_comb["canonical_smiles"].unique().tolist()))
+    ligand_features = extract_ligand_features(all_smiles)
+    lig_seconds = round(time.perf_counter() - t_lig, 2)
+    logger.info("RDKit ligand features ready for %d unique drugs in %.2fs.", len(ligand_features), lig_seconds)
+
+    # 4. Run full held-out evaluation on Benchmark 1 (Davis) and Benchmark 2 (BindingDB_Kd)
+    davis_res, davis_scatter, davis_err, davis_hashes = _evaluate_benchmark(
+        benchmark_id="davis",
+        label="Davis Kinase DTI Benchmark",
+        description="Canonical 68-drug x 379-kinase benchmark (high target density, low chemical scaffold diversity).",
+        df=df_davis,
+        dataset_meta=meta_davis,
+        protein_embeddings=protein_embeddings,
+        ligand_features=ligand_features,
+    )
+    bdb_res, bdb_scatter, bdb_err, bdb_hashes = _evaluate_benchmark(
+        benchmark_id="bindingdb_kd",
+        label="BindingDB_Kd Multi-Family Benchmark",
+        description="Large-scale experimental Kd corpus (10,659 drugs, 5,023 scaffolds, 1,413 multi-family proteins).",
+        df=df_bdb,
+        dataset_meta=meta_bdb,
+        protein_embeddings=protein_embeddings,
+        ligand_features=ligand_features,
+    )
+
+    # 5. Train final production screening checkpoint on the full deduplicated Combined Corpus (58,847 pairs)
+    logger.info(
+        "Training final multi-family screening checkpoint on combined corpus (%d pairs, %d drugs, %d targets)...",
+        len(df_comb),
+        meta_comb["n_unique_drugs"],
+        meta_comb["n_unique_targets"],
+    )
+    X_comb = build_joint_feature_matrix(df_comb, protein_embeddings, ligand_features)
+    y_comb = df_comb["pkd"].to_numpy(dtype=np.float64)
+    strat_y = (y_comb >= ACTIVE_PKD_THRESHOLD).astype(int)
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.10, random_state=SEED)
-    prod_tr_idx, prod_va_idx = next(sss.split(X_joint, strat_y))
+    prod_tr_idx, prod_va_idx = next(sss.split(X_comb, strat_y))
 
     final_model = OpenRepurposeHybridModel()
-    final_model.fit(X_joint[prod_tr_idx], y_all[prod_tr_idx], X_joint[prod_va_idx], y_all[prod_va_idx])
-    w_cold_drug = float(splits_output["cold_drug"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
-    w_cold_target = float(splits_output["cold_target"]["models"]["openrepurpose_hybrid"]["model_meta"]["w_lgbm"])
-    final_model.w_lgbm_ = round(0.5 * (w_cold_drug + w_cold_target), 4)
+    final_model.fit(X_comb[prod_tr_idx], y_comb[prod_tr_idx], X_comb[prod_va_idx], y_comb[prod_va_idx])
+
+    # Calibrate cold-regime blend weight from multi-family BindingDB_Kd Cold-Drug & Cold-Target validation weights
+    w_bdb_cd = float(bdb_res["splits"]["cold_drug"]["models"][PRIMARY_MODEL_KEY]["model_meta"]["w_lgbm"])
+    w_bdb_ct = float(bdb_res["splits"]["cold_target"]["models"][PRIMARY_MODEL_KEY]["model_meta"]["w_lgbm"])
+    final_model.w_lgbm_ = round(0.5 * (w_bdb_cd + w_bdb_ct), 4)
 
     checkpoint_path = MODELS_DIR / "openrepurpose_hybrid.joblib"
     joblib.dump(
@@ -319,7 +394,8 @@ def main() -> None:
             "model": final_model,
             "morgan_bit_importances": final_model.get_morgan_bit_importances(),
             "seed": SEED,
-            "davis_sha256": dataset_meta["clean_csv_sha256"],
+            "training_corpus": meta_comb["dataset"],
+            "corpus_sha256": meta_comb["clean_csv_sha256"],
             "esm2_model_name": ESM2_MODEL_NAME,
             "model_meta": final_model.get_metadata(),
         },
@@ -327,15 +403,17 @@ def main() -> None:
         compress=3,
     )
     logger.info(
-        "Saved screening checkpoint to %s (w_lgbm=%.3f, w_ridge=%.3f, lgbm_iter=%s, ridge_alpha=%.1f).",
+        "Saved multi-family checkpoint to %s (w_lgbm=%.3f, w_ridge=%.3f, lgbm_iter=%s, ridge_alpha=%.1f).",
         checkpoint_path,
         final_model.w_lgbm_,
         1.0 - final_model.w_lgbm_,
         final_model.lgbm_model_.best_iteration_,
         final_model.ridge_model_.best_alpha_,
     )
+    del X_comb
+    gc.collect()
 
-    # 8. Write verified JSON artifacts for the frontend and reproducibility manifest
+    # 6. Export verified JSON artifacts for the frontend and reproducibility manifest
     now_iso = datetime.now(timezone.utc).isoformat()
     total_seconds = round(time.perf_counter() - t_start, 2)
 
@@ -343,14 +421,16 @@ def main() -> None:
         "generated_at_utc": now_iso,
         "reproduce_command": "python scripts/reproduce_eval.py",
         "seed": SEED,
-        "primary_model": primary_key,
+        "primary_model": PRIMARY_MODEL_KEY,
+        "default_benchmark": "bindingdb_kd",
         "total_runtime_seconds": total_seconds,
-        "dataset": dataset_meta,
+        "combined_screening_corpus": meta_comb,
         "protein_encoder": {
             "model_name": ESM2_MODEL_NAME,
             "embedding_dim": ESM2_EMBEDDING_DIM,
             "max_length": ESM2_MAX_LENGTH,
             "batch_size": ESM2_BATCH_SIZE,
+            "n_unique_proteins_encoded": len(protein_embeddings),
             "extraction_seconds": emb_seconds,
             **hw_info,
         },
@@ -358,6 +438,8 @@ def main() -> None:
             "fingerprint": f"RDKit Morgan (radius={MORGAN_RADIUS}, {MORGAN_NBITS}-bit, chirality=True) + MACCS ({MACCS_NBITS}-bit)",
             "physchem_descriptors": list(PHYSCHEM_DESCRIPTOR_NAMES),
             "feature_dim": LIGAND_FEATURE_DIM,
+            "n_unique_drugs_encoded": len(ligand_features),
+            "extraction_seconds": lig_seconds,
         },
         "cost_assumptions": {
             "default_assay_cost_usd": DEFAULT_ASSAY_COST_USD,
@@ -367,8 +449,30 @@ def main() -> None:
             "active_kd_nm_threshold": 100.0,
             "cost_effective_min_ef": COST_EFFECTIVE_MIN_EF,
         },
-        "splits": splits_output,
-        "headline_comparisons": headline,
+        "benchmarks": {
+            "bindingdb_kd": bdb_res,
+            "davis": davis_res,
+        },
+    }
+
+    error_payload = {
+        "generated_at_utc": now_iso,
+        "model": PRIMARY_MODEL_KEY,
+        "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
+        "benchmarks": {
+            "bindingdb_kd": bdb_err,
+            "davis": davis_err,
+        },
+    }
+
+    scatter_payload = {
+        "generated_at_utc": now_iso,
+        "model": PRIMARY_MODEL_KEY,
+        "active_pkd_threshold": ACTIVE_PKD_THRESHOLD,
+        "benchmarks": {
+            "bindingdb_kd": bdb_scatter,
+            "davis": davis_scatter,
+        },
     }
 
     eval_path = WEB_DATA_DIR / "eval_results.json"
@@ -376,8 +480,8 @@ def main() -> None:
     scatter_path = WEB_DATA_DIR / "scatter_samples.json"
 
     eval_path.write_text(json.dumps(eval_payload, indent=2), encoding="utf-8")
-    error_path.write_text(json.dumps(error_output, indent=2), encoding="utf-8")
-    scatter_path.write_text(json.dumps(scatter_output, indent=2), encoding="utf-8")
+    error_path.write_text(json.dumps(error_payload, indent=2), encoding="utf-8")
+    scatter_path.write_text(json.dumps(scatter_payload, indent=2), encoding="utf-8")
 
     manifest: dict[str, Any] = {
         "generated_at_utc": now_iso,
@@ -386,8 +490,15 @@ def main() -> None:
         "reproduce_command": "python scripts/reproduce_eval.py",
         "hardware": hw_info,
         "package_versions": _get_package_versions(),
-        "dataset": dataset_meta,
-        "split_index_hashes": split_hashes,
+        "datasets": {
+            "davis": meta_davis,
+            "bindingdb_kd": meta_bdb,
+            "combined_screening_corpus": meta_comb,
+        },
+        "split_index_hashes": {
+            "davis": davis_hashes,
+            "bindingdb_kd": bdb_hashes,
+        },
         "model_hyperparameters": {
             "openrepurpose_hybrid_lgbm": LIGHTGBM_PARAMS,
             "early_stopping_rounds": LIGHTGBM_EARLY_STOPPING_ROUNDS,
@@ -401,7 +512,7 @@ def main() -> None:
     }
     RUN_MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-    logger.info("Reproducible evaluation complete in %.2fs. Artifacts written to %s.", total_seconds, WEB_DATA_DIR)
+    logger.info("Dual-Benchmark evaluation complete in %.2fs. Artifacts written to %s.", total_seconds, WEB_DATA_DIR)
 
 
 if __name__ == "__main__":
