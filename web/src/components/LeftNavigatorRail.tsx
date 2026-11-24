@@ -65,21 +65,21 @@ export default function LeftNavigatorRail({
       className="no-print w-full md:sticky md:top-0 md:h-dvh md:overflow-hidden bg-[var(--bg-rail)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)] flex flex-col"
     >
       {/* Top Pinned Controls */}
-      <div className="shrink-0 p-4 pb-2.5 space-y-3.5 border-b border-[var(--border-subtle)]">
+      <div className="shrink-0 p-4 pb-3 space-y-3.5 border-b border-[var(--border-subtle)]">
         {/* Studio Brand Header + Paper/Dark Theme Switcher */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="w-7 h-7 rounded-md bg-[var(--accent)] flex items-center justify-center text-[var(--accent-on-solid)] font-bold mono-num text-[11px] shrink-0"
+              className="w-8 h-8 rounded-md bg-[var(--accent)] flex items-center justify-center text-[var(--accent-on-solid)] font-bold mono-num text-xs shrink-0"
               aria-hidden="true"
             >
               OR
             </div>
             <div className="min-w-0">
-              <h1 className="text-[13.5px] font-bold tracking-tight text-[var(--ink-primary)] leading-none">
+              <h1 className="text-base font-bold tracking-tight text-[var(--ink-primary)] leading-none">
                 OpenRepurpose
               </h1>
-              <p className="text-[10.5px] text-[var(--ink-muted)] mt-0.5 truncate">
+              <p className="text-xs text-[var(--ink-secondary)] mt-0.5 truncate">
                 Molecular Triage Studio
               </p>
             </div>
@@ -88,13 +88,13 @@ export default function LeftNavigatorRail({
           <div
             role="group"
             aria-label="Color theme"
-            className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5 text-[11px] shrink-0"
+            className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5 text-xs shrink-0"
           >
             <button
               type="button"
               onClick={() => onToggleTheme("paper")}
               aria-pressed={theme === "paper"}
-              className={`min-h-[26px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
+              className={`min-h-[28px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
                 theme === "paper"
                   ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
                   : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
@@ -106,7 +106,7 @@ export default function LeftNavigatorRail({
               type="button"
               onClick={() => onToggleTheme("dark")}
               aria-pressed={theme === "dark"}
-              className={`min-h-[26px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
+              className={`min-h-[28px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
                 theme === "dark"
                   ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
                   : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
@@ -122,13 +122,13 @@ export default function LeftNavigatorRail({
           <div className="flex items-center justify-between gap-2">
             <label
               htmlFor="pathogen-target-select"
-              className="block text-[10.5px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]"
+              className="block text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)]"
             >
               1. Pathogen Target
             </label>
             {activeTarget && (
               <span
-                className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold leading-none ${domainBadgeClass}`}
+                className={`px-2 py-0.5 rounded border text-[11px] font-semibold leading-none ${domainBadgeClass}`}
               >
                 {activeTarget.is_positive_control
                   ? "Positive Control"
@@ -143,7 +143,7 @@ export default function LeftNavigatorRail({
             id="pathogen-target-select"
             value={activeTargetId}
             onChange={(e) => onSelectTarget(e.target.value)}
-            className="w-full min-h-[40px] text-xs font-semibold text-[var(--ink-primary)] bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg px-2.5 py-1.5"
+            className="w-full min-h-[42px] text-sm font-semibold text-[var(--ink-primary)] bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg px-2.5 py-1.5"
           >
             <optgroup label="In-Domain NTD Kinases">
               {inDomainKinases.map((t) => (
@@ -169,16 +169,16 @@ export default function LeftNavigatorRail({
           </select>
 
           {activeTarget && (
-            <div className="flex items-center justify-between gap-1.5 text-[11px] text-[var(--ink-muted)]">
+            <div className="flex items-center justify-between gap-1.5 text-xs text-[var(--ink-secondary)]">
               <a
                 href={activeTarget.uniprot_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mono-num text-[var(--accent-ink)] font-medium hover:underline"
+                className="mono-num text-[var(--accent-ink)] font-semibold hover:underline"
               >
                 UniProt {activeTarget.uniprot_id} ({activeTarget.sequence_length} aa)
               </a>
-              <span className="mono-num text-[10.5px]">{candidates.length} shown</span>
+              <span className="mono-num font-medium">{candidates.length} shown</span>
             </div>
           )}
         </div>
@@ -186,20 +186,20 @@ export default function LeftNavigatorRail({
         {/* Step 2: Approved FDA Drugs Controls */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+            <span className="text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)]">
               2. Approved Drugs ({totalScreened.toLocaleString()})
             </span>
             <button
               type="button"
               onClick={onToggleSortOrder}
-              className="text-[11px] font-semibold text-[var(--accent-ink)] hover:underline mono-num"
+              className="text-xs font-semibold text-[var(--accent-ink)] hover:underline mono-num"
             >
               Sort: {sortOrder === "delta" ? "Delta-pKd" : "Raw pKd"}
             </button>
           </div>
 
           <div
-            className="grid grid-cols-4 gap-1 bg-[var(--bg-subtle)] p-0.5 rounded-lg border border-[var(--border-subtle)]"
+            className="grid grid-cols-4 gap-1 bg-[var(--bg-subtle)] p-1 rounded-lg border border-[var(--border-subtle)]"
             role="group"
             aria-label="Quick candidate filters"
           >
@@ -216,10 +216,10 @@ export default function LeftNavigatorRail({
                 type="button"
                 onClick={() => onChangeQuickChip(key)}
                 aria-pressed={quickChip === key}
-                className={`min-h-[30px] px-1 py-1 text-[10.5px] whitespace-nowrap rounded-md font-semibold transition-colors ${
+                className={`min-h-[32px] px-1 py-1 text-xs whitespace-nowrap rounded-md font-semibold transition-colors ${
                   quickChip === key
                     ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                    : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                    : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 {label}
@@ -237,24 +237,24 @@ export default function LeftNavigatorRail({
               value={searchQuery}
               onChange={(e) => onChangeSearchQuery(e.target.value)}
               placeholder="Search drug name or indication..."
-              className="w-full min-h-[36px] px-2.5 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
+              className="w-full min-h-[38px] px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
             />
           </div>
 
           {/* Explicit Legend for Candidate Stream */}
-          <div className="flex items-center justify-between gap-1 pt-0.5 text-[10.5px] text-[var(--ink-muted)]">
+          <div className="flex items-center justify-between gap-1 pt-0.5 text-xs text-[var(--ink-secondary)] font-medium">
             <span>Rank · Drug</span>
-            <div className="flex items-center gap-2 mono-num" title="Target Selectivity Delta-pKd color key">
+            <div className="flex items-center gap-2.5 mono-num" title="Target Selectivity Delta-pKd color key">
               <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--selective)]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--selective)]" />
                 Sel
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--review)]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--review)]" />
                 Mod
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--alert)]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--alert)]" />
                 Bias
               </span>
             </div>
@@ -262,17 +262,17 @@ export default function LeftNavigatorRail({
         </div>
       </div>
 
-      {/* Elastic Full-Height Candidate Stream (Zero mid-sidebar clipping) */}
-      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-3 py-2 space-y-1 max-md:max-h-[360px]">
+      {/* Elastic Full-Height Candidate Stream */}
+      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-3 py-2 space-y-1 max-md:max-h-[380px]">
         {candidates.length === 0 ? (
           <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-4 text-center space-y-2 my-2">
-            <p className="text-xs text-[var(--ink-secondary)]">
+            <p className="text-sm text-[var(--ink-secondary)]">
               No candidates match the active filter combination.
             </p>
             <button
               type="button"
               onClick={onResetFilters}
-              className="min-h-[36px] px-3 py-1.5 text-xs font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-md"
+              className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-md"
             >
               Reset all filters
             </button>
@@ -294,35 +294,37 @@ export default function LeftNavigatorRail({
                 type="button"
                 onClick={() => onSelectDrug(c.drug_id)}
                 aria-current={isSelected ? "true" : undefined}
-                className={`w-full text-left px-2.5 py-2 rounded-lg border transition-colors min-h-[50px] ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors min-h-[56px] ${
                   isSelected
                     ? "bg-[var(--bg-surface)] border-[var(--accent-ink)] ring-1 ring-[var(--accent-ink)] shadow-2xs"
                     : "bg-transparent border-transparent hover:bg-[var(--bg-surface)] hover:border-[var(--border-subtle)]"
                 }`}
               >
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="font-semibold text-xs text-[var(--ink-primary)] truncate">
-                    <span className="mono-num text-[var(--ink-muted)] mr-1">#{shownRank}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-sm text-[var(--ink-primary)] truncate">
+                    <span className="mono-num text-[var(--ink-muted)] font-semibold mr-1.5">
+                      #{shownRank}
+                    </span>
                     {c.drug_name}
                   </span>
                   <span
-                    className={`mono-num text-[11px] font-bold shrink-0 ${deltaColor}`}
+                    className={`mono-num text-[13px] font-bold shrink-0 ${deltaColor}`}
                     title={`Selectivity Delta-pKd: ${c.target_selectivity_delta.toFixed(3)} | Raw pKd: ${c.predicted_pkd.toFixed(2)}`}
                   >
                     {c.target_selectivity_delta >= 0 ? "+" : ""}
                     {c.target_selectivity_delta.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-2 mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                <div className="flex items-center justify-between gap-2 mt-1 text-xs text-[var(--ink-secondary)]">
                   <span className="truncate">
                     {c.known_indication || c.moa || "Launched clinical compound"}
                   </span>
                   <span
-                    className={`mono-num shrink-0 ${
+                    className={`mono-num shrink-0 font-medium ${
                       c.novelty.pubmed_count === 0 &&
                       c.specificity_tier !== "low_promiscuous_bias"
-                        ? "text-[var(--accent-ink)] font-semibold"
-                        : ""
+                        ? "text-[var(--accent-ink)] font-bold"
+                        : "text-[var(--ink-muted)]"
                     }`}
                   >
                     {c.novelty.pubmed_count ?? 0} PubMed
@@ -335,11 +337,11 @@ export default function LeftNavigatorRail({
       </div>
 
       {/* Bottom Pinned Action & Research Scope Strip */}
-      <div className="shrink-0 p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] space-y-1.5">
+      <div className="shrink-0 p-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] space-y-2">
         <button
           type="button"
           onClick={onOpenCustomModal}
-          className="w-full min-h-[40px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-2"
+          className="w-full min-h-[42px] px-3 py-2 text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-2"
         >
           {localApiOnline && (
             <span
@@ -350,7 +352,7 @@ export default function LeftNavigatorRail({
           )}
           <span>Score Custom FASTA + SMILES</span>
         </button>
-        <p className="text-[10.5px] text-[var(--ink-muted)] leading-snug">
+        <p className="text-xs text-[var(--ink-secondary)] leading-snug">
           <strong className="text-[var(--review)]">Research triage only:</strong> single-target pKd
           estimates require 3D docking and wet-lab validation.
         </p>

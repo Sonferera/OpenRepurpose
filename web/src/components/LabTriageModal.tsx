@@ -49,21 +49,21 @@ export default function LabTriageModal({
     >
       <div className="print-only-dossier bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-3xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="no-print flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-          <h2 id="lab-dossier-title" className="text-sm font-bold text-[var(--ink-primary)]">
+          <h2 id="lab-dossier-title" className="text-base font-bold text-[var(--ink-primary)]">
             Printable Wet-Lab Assay Triage Sheet
           </h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => window.print()}
-              className="min-h-[38px] px-3.5 py-1.5 text-xs font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
+              className="min-h-[38px] px-4 py-1.5 text-sm font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] rounded-lg"
             >
               Print / Save PDF
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
+              className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
             >
               Close (Esc)
             </button>
@@ -71,7 +71,7 @@ export default function LabTriageModal({
         </div>
 
         {/* Printable Dossier Body (warm paper on screen, crisp black-on-white in @media print) */}
-        <div className="space-y-3 text-xs text-[var(--ink-primary)]">
+        <div className="space-y-3 text-[13px] text-[var(--ink-primary)]">
           <div className="flex flex-wrap items-start justify-between gap-2 border-b-2 border-[var(--ink-primary)] pb-2">
             <div>
               <div className="font-bold text-sm tracking-tight">

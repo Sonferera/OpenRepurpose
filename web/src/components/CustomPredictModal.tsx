@@ -109,24 +109,24 @@ export default function CustomPredictModal({
       <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
           <div>
-            <h2 id="custom-predict-title" className="text-sm font-bold text-[var(--ink-primary)]">
+            <h2 id="custom-predict-title" className="text-base font-bold text-[var(--ink-primary)]">
               Score Custom FASTA + SMILES (Local FastAPI Bridge)
             </h2>
-            <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+            <p className="text-xs text-[var(--ink-secondary)] mt-0.5">
               Runs live ESM-2 (fp16) + RDKit + 5-Model Ensemble + 32-Protein Delta-pKd locally.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
+            className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
           >
             Close (Esc)
           </button>
         </div>
 
         {!apiOnline ? (
-          <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3 text-xs text-[var(--ink-secondary)]">
+          <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3 text-sm text-[var(--ink-secondary)]">
             <p className="font-semibold text-[var(--ink-primary)]">
               Static Cloud Mode Active (Local Inference Server Offline)
             </p>

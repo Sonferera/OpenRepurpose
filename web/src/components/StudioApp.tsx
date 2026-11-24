@@ -329,7 +329,7 @@ export default function StudioApp() {
     : [];
 
   return (
-    <div className="min-h-dvh grid grid-cols-1 md:grid-cols-[284px_minmax(0,1fr)] lg:grid-cols-[296px_minmax(0,1fr)_328px] xl:grid-cols-[312px_minmax(0,1fr)_344px] items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+    <div className="min-h-dvh grid grid-cols-1 md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)_344px] xl:grid-cols-[328px_minmax(0,1fr)_356px] items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
       {/* PANE 1: LEFT NAVIGATOR RAIL */}
       <LeftNavigatorRail
         theme={theme}
@@ -357,10 +357,10 @@ export default function StudioApp() {
       {/* PANE 2: CENTER SPATIAL STAGE */}
       <main
         id="main-stage"
-        className="no-print w-full min-w-0 bg-[var(--bg-canvas)] p-4 sm:p-5 lg:p-6 flex flex-col gap-4"
+        className="no-print w-full min-w-0 bg-[var(--bg-canvas)] p-4 sm:p-5 flex flex-col gap-4"
       >
         {/* Top Stage Switcher Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-0.5">
           <nav
             role="tablist"
             aria-label="Workspace stage views"
@@ -381,7 +381,7 @@ export default function StudioApp() {
                 role="tab"
                 aria-selected={stageMode === mode}
                 onClick={() => handleChangeStage(mode)}
-                className={`min-h-[36px] px-3 py-1.5 text-xs rounded-lg font-semibold transition-colors ${
+                className={`min-h-[36px] px-3 py-1.5 text-[13.5px] whitespace-nowrap rounded-lg font-semibold transition-colors ${
                   stageMode === mode
                     ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
                     : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
@@ -395,28 +395,28 @@ export default function StudioApp() {
           <div className="flex items-center gap-2">
             {stageMode === "graph" && (
               <div
-                className="inline-flex bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-0.5 text-xs"
+                className="inline-flex bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-0.5 text-[13px]"
                 role="group"
                 aria-label="Graph visualization mode"
               >
                 <button
                   type="button"
                   onClick={() => setGraphSubMode("outcome")}
-                  className={`min-h-[32px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[34px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
                     graphSubMode === "outcome"
                       ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                      : "text-[var(--ink-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
+                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
                   }`}
                 >
-                  Drug x Target Flow
+                  Drug x Target
                 </button>
                 <button
                   type="button"
                   onClick={() => setGraphSubMode("cross")}
-                  className={`min-h-[32px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[34px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
                     graphSubMode === "cross"
                       ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                      : "text-[var(--ink-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
+                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
                   }`}
                 >
                   8-Target Reach
@@ -427,9 +427,9 @@ export default function StudioApp() {
               href="https://github.com/Sonferera/OpenRepurpose"
               target="_blank"
               rel="noopener noreferrer"
-              className="mono-num text-xs min-h-[34px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-subtle)] font-semibold"
+              className="mono-num text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] font-semibold whitespace-nowrap"
             >
-              GitHub Repo
+              GitHub
             </a>
           </div>
         </div>

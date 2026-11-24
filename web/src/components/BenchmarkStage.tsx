@@ -121,44 +121,44 @@ function ScatterCustomTooltip({ active, payload }: ScatterTooltipProps) {
 
   const err = pt.predicted - pt.actual;
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg p-2.5 shadow-lg text-xs space-y-1.5 min-w-[225px] pointer-events-none">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-1">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg p-3 shadow-lg text-[13px] space-y-1.5 min-w-[235px] pointer-events-none">
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-1.5">
         <span className="font-bold text-[var(--ink-primary)]">Held-Out Test Pair</span>
         <span
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold mono-num border ${
+          className={`px-2 py-0.5 rounded text-[11px] font-bold mono-num border ${
             pt.is_active
               ? "bg-[var(--accent-soft)] text-[var(--accent-ink)] border-[var(--accent-border)]"
-              : "bg-[var(--bg-subtle)] text-[var(--ink-muted)] border-[var(--border-subtle)]"
+              : "bg-[var(--bg-subtle)] text-[var(--ink-secondary)] border-[var(--border-subtle)]"
           }`}
         >
           {pt.is_active ? "True Hit (<= 100 nM)" : "Inactive (> 100 nM)"}
         </span>
       </div>
-      <div className="space-y-0.5 mono-num text-[11px]">
+      <div className="space-y-1 mono-num text-xs">
         {(pt.drug_id || pt.target_id) && (
-          <div className="flex items-center justify-between gap-3 text-[var(--ink-secondary)] pb-0.5">
-            <span className="font-sans text-[var(--ink-muted)]">Drug / Target:</span>
-            <span className="truncate max-w-[135px]">
+          <div className="flex items-center justify-between gap-3 text-[var(--ink-primary)] pb-0.5">
+            <span className="font-sans text-[var(--ink-secondary)]">Drug / Target:</span>
+            <span className="font-semibold truncate max-w-[140px]">
               {pt.drug_id || "n/a"} · {pt.target_id === "nan" ? "Seq" : pt.target_id}
             </span>
           </div>
         )}
         <div className="flex items-center justify-between gap-3">
-          <span className="font-sans text-[var(--ink-muted)]">Experimental pKd:</span>
-          <span className="font-semibold text-[var(--ink-primary)]">
+          <span className="font-sans text-[var(--ink-secondary)]">Experimental pKd:</span>
+          <span className="font-bold text-[var(--ink-primary)]">
             {pt.actual.toFixed(3)} ({pkdToNmLabel(pt.actual)})
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="font-sans text-[var(--ink-muted)]">Predicted pKd:</span>
-          <span className="font-semibold text-[var(--accent-ink)]">
+          <span className="font-sans text-[var(--ink-secondary)]">Predicted pKd:</span>
+          <span className="font-bold text-[var(--accent-ink)]">
             {pt.predicted.toFixed(3)} ({pkdToNmLabel(pt.predicted)})
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="font-sans text-[var(--ink-muted)]">Residual Error:</span>
+          <span className="font-sans text-[var(--ink-secondary)]">Residual Error:</span>
           <span
-            className={`font-semibold ${
+            className={`font-bold ${
               Math.abs(err) <= 0.6 ? "text-[var(--selective)]" : "text-[var(--review)]"
             }`}
           >
@@ -195,21 +195,21 @@ function LiftCustomTooltip({
   const liftRatio = row.random > 0.05 ? row.ensemble / row.random : 0;
 
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg p-2.5 shadow-lg text-xs space-y-1.5 min-w-[225px] pointer-events-none">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-1">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg p-3 shadow-lg text-[13px] space-y-1.5 min-w-[235px] pointer-events-none">
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-1.5">
         <span className="font-bold text-[var(--ink-primary)] mono-num">
           Top {row.screened_pct < 10 ? row.screened_pct.toFixed(1) : row.screened_pct.toFixed(0)}%
           Screened
         </span>
         {liftRatio > 0 && (
-          <span className="px-1.5 py-0.5 rounded bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] text-[10px] font-semibold mono-num">
+          <span className="px-2 py-0.5 rounded bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] text-[11px] font-bold mono-num">
             {liftRatio.toFixed(2)}x lift
           </span>
         )}
       </div>
-      <div className="space-y-1 mono-num text-[11px]">
+      <div className="space-y-1 mono-num text-xs">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 font-sans text-[var(--ink-primary)] font-medium">
+          <span className="inline-flex items-center gap-1.5 font-sans text-[var(--ink-primary)] font-semibold">
             <span
               className="w-2.5 h-0.5 rounded-full inline-block"
               style={{ backgroundColor: ensembleColor }}
@@ -226,7 +226,7 @@ function LiftCustomTooltip({
             />
             2-Model Hybrid
           </span>
-          <span className="text-[var(--ink-secondary)]">{row.hybrid.toFixed(1)}%</span>
+          <span className="font-semibold text-[var(--ink-primary)]">{row.hybrid.toFixed(1)}%</span>
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 font-sans text-[var(--ink-secondary)]">
@@ -236,17 +236,17 @@ function LiftCustomTooltip({
             />
             Ligand-Only
           </span>
-          <span className="text-[var(--ink-secondary)]">{row.ligand_only.toFixed(1)}%</span>
+          <span className="font-semibold text-[var(--ink-primary)]">{row.ligand_only.toFixed(1)}%</span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 font-sans text-[var(--ink-muted)]">
+          <span className="inline-flex items-center gap-1.5 font-sans text-[var(--ink-secondary)]">
             <span
               className="w-2.5 border-t border-dashed inline-block"
               style={{ borderColor: randomColor }}
             />
             Random Screening
           </span>
-          <span className="text-[var(--ink-muted)]">{row.random.toFixed(1)}%</span>
+          <span className="text-[var(--ink-secondary)]">{row.random.toFixed(1)}%</span>
         </div>
       </div>
     </div>
@@ -483,19 +483,20 @@ export default function BenchmarkStage({
   }
 
   const isDark = theme === "dark";
-  const gridStroke = isDark ? "#2A303D" : "#DCD7CC";
-  const axisTickColor = isDark ? "#949DB0" : "#57534E";
-  const ensembleLineColor = isDark ? "#A5B4FC" : "#3730A3";
+  const gridStroke = isDark ? "#2E3545" : "#D5CFC2";
+  const axisTickColor = isDark ? "#E6EAF2" : "#262320";
+  const refLineColor = isDark ? "#94A3B8" : "#57534E";
+  const ensembleLineColor = isDark ? "#C7D2FE" : "#3730A3";
   const hybridLineColor = isDark ? "#FDBA74" : "#9A3412";
   const ligandLineColor = isDark ? "#93C5FD" : "#1E40AF";
-  const inactiveDotColor = isDark ? "#687387" : "#8A8278";
+  const inactiveDotColor = isDark ? "#8E9BB5" : "#78716C";
 
   const simplexColors: Record<string, { label: string; color: string }> = {
-    model_two_tower_mlp: { label: "Two-Tower MLP", color: isDark ? "#818CF8" : "#3730A3" },
+    model_two_tower_mlp: { label: "Two-Tower MLP", color: isDark ? "#A5B4FC" : "#3730A3" },
     model_xgboost: { label: "XGBoost CUDA", color: isDark ? "#93C5FD" : "#1E40AF" },
-    model_lgbm: { label: "LightGBM", color: isDark ? "#C084FC" : "#6D28D9" },
+    model_lgbm: { label: "LightGBM", color: isDark ? "#D8B4FE" : "#6D28D9" },
     baseline_ridge: { label: "Ridge Linear", color: isDark ? "#FDBA74" : "#9A3412" },
-    model_catboost: { label: "CatBoost", color: isDark ? "#94A3B8" : "#64748B" },
+    model_catboost: { label: "CatBoost", color: isDark ? "#CBD5E1" : "#475569" },
   };
 
   const benchmark = evalResults.benchmarks[benchKey];
@@ -546,11 +547,11 @@ export default function BenchmarkStage({
   return (
     <div className="space-y-4">
       {/* Benchmark & Split Controls + Plain-Language Guide */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <div
-              className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5 text-xs"
+              className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5 text-[13px]"
               role="group"
               aria-label="Select benchmark dataset"
             >
@@ -559,10 +560,10 @@ export default function BenchmarkStage({
                   key={bk}
                   type="button"
                   onClick={() => setBenchKey(bk)}
-                  className={`min-h-[34px] px-3 py-1 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-md font-semibold transition-colors ${
                     benchKey === bk
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   {bk === "bindingdb_kd"
@@ -573,7 +574,7 @@ export default function BenchmarkStage({
             </div>
 
             <div
-              className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5 text-xs"
+              className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5 text-[13px]"
               role="group"
               aria-label="Select generalization split"
             >
@@ -588,10 +589,10 @@ export default function BenchmarkStage({
                   key={sk}
                   type="button"
                   onClick={() => setSplitKey(sk)}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[36px] px-3 py-1.5 rounded-md font-semibold transition-colors ${
                     splitKey === sk
                       ? "bg-[var(--selective-soft)] text-[var(--selective)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   {lbl}
@@ -600,84 +601,85 @@ export default function BenchmarkStage({
             </div>
           </div>
 
-          <span className="px-2.5 py-1 rounded-md bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] text-[11px] font-semibold mono-num">
+          <span className="px-3 py-1 rounded-md bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] text-xs font-bold mono-num">
             Anti-Leakage: {splitGuide.badge}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)] text-[11.5px] text-[var(--ink-secondary)]">
-          <span>{splitGuide.desc}</span>
-          <span className="mono-num text-[11px] text-[var(--ink-muted)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[var(--border-subtle)] text-[13px] text-[var(--ink-primary)]">
+          <span className="font-medium">{splitGuide.desc}</span>
+          <span className="mono-num text-xs text-[var(--ink-secondary)] font-semibold">
             Pairs: train {splitObj.summary.n_train.toLocaleString()} · val{" "}
             {splitObj.summary.n_val.toLocaleString()} · test {splitObj.summary.n_test.toLocaleString()}
           </span>
         </div>
       </div>
 
-      {/* 4 Clean, Un-Wrapped KPI Cards */}
-      <div className="grid grid-cols-2 2xl:grid-cols-4 gap-3">
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
-          <div className="flex items-center justify-between gap-1.5 text-[11px] text-[var(--ink-muted)]">
-            <span className="truncate">Test Error (RMSE)</span>
-            <span className="mono-num text-[10px] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--ink-secondary)]">
+      {/* 4 Spacious 2x2 KPI Cards (Zero Truncation) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-sm font-semibold text-[var(--ink-secondary)]">
+            <span>Held-Out Test Error (RMSE)</span>
+            <span className="mono-num text-xs whitespace-nowrap px-2 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--ink-primary)]">
               Lower ↓
             </span>
           </div>
-          <div className="mono-num text-xl font-bold text-[var(--ink-primary)] leading-tight">
+          <div className="mono-num text-2xl font-bold text-[var(--ink-primary)] leading-tight">
             {winnerEntry.metrics.rmse.toFixed(4)}{" "}
-            <span className="text-xs font-normal text-[var(--ink-muted)]">pKd</span>
+            <span className="text-sm font-medium text-[var(--ink-secondary)]">pKd</span>
           </div>
-          <div className="text-[11px] text-[var(--selective)] font-medium mono-num truncate">
+          <div className="text-[13px] text-[var(--selective)] font-semibold mono-num">
             {rmseDeltaVsLigand !== null
-              ? `${rmseDeltaVsLigand >= 0 ? "+" : ""}${rmseDeltaVsLigand.toFixed(4)} vs Ligand-Only`
-              : `Mean Val ${evalResults.winner_selection.validation_rmse_ranking[winnerKey]?.overall_mean_val_rmse.toFixed(4)}`}
+              ? `${rmseDeltaVsLigand >= 0 ? "+" : ""}${rmseDeltaVsLigand.toFixed(4)} vs Ligand-Only Baseline`
+              : `Mean Val RMSE ${evalResults.winner_selection.validation_rmse_ranking[winnerKey]?.overall_mean_val_rmse.toFixed(4)}`}
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
-          <div className="flex items-center justify-between gap-1.5 text-[11px] text-[var(--ink-muted)]">
-            <span className="truncate">Concordance (CI)</span>
-            <span className="mono-num text-[10px] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--ink-secondary)]">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-sm font-semibold text-[var(--ink-secondary)]">
+            <span>Ranking Concordance (CI)</span>
+            <span className="mono-num text-xs whitespace-nowrap px-2 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--ink-primary)]">
               Higher ↑
             </span>
           </div>
-          <div className="mono-num text-xl font-bold text-[var(--ink-primary)] leading-tight">
+          <div className="mono-num text-2xl font-bold text-[var(--ink-primary)] leading-tight">
             {winnerEntry.metrics.concordance_index.toFixed(4)}
           </div>
-          <div className="text-[11px] text-[var(--ink-secondary)] mono-num truncate">
-            ROC {winnerEntry.metrics.roc_auc.toFixed(3)} · PR {winnerEntry.metrics.pr_auc.toFixed(3)}
+          <div className="text-[13px] text-[var(--ink-secondary)] font-medium mono-num">
+            ROC-AUC {winnerEntry.metrics.roc_auc.toFixed(4)} · PR-AUC{" "}
+            {winnerEntry.metrics.pr_auc.toFixed(4)}
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
-          <div className="flex items-center justify-between gap-1.5 text-[11px] text-[var(--ink-muted)]">
-            <span className="truncate">Top-5% Lift (EF@5%)</span>
-            <span className="mono-num text-[10px] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)]">
-              vs 1.0x
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-sm font-semibold text-[var(--ink-secondary)]">
+            <span>Top-5% Hit Enrichment (EF@5%)</span>
+            <span className="mono-num text-xs whitespace-nowrap px-2 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+              vs 1.00x random
             </span>
           </div>
-          <div className="mono-num text-xl font-bold text-[var(--accent-ink)] leading-tight">
+          <div className="mono-num text-2xl font-bold text-[var(--accent-ink)] leading-tight">
             {winnerEntry.metrics.ef_at_5pct.toFixed(2)}x
           </div>
-          <div className="text-[11px] text-[var(--ink-secondary)] mono-num truncate">
-            {Math.round(winnerEntry.metrics.cost_impact.hits_captured_top5)} /{" "}
-            {winnerEntry.metrics.cost_impact.total_true_hits} hits (
+          <div className="text-[13px] text-[var(--ink-secondary)] font-medium mono-num">
+            Captures {Math.round(winnerEntry.metrics.cost_impact.hits_captured_top5)} /{" "}
+            {winnerEntry.metrics.cost_impact.total_true_hits} true hits (
             {(winnerEntry.metrics.hit_capture_at_5pct * 100).toFixed(1)}%)
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
-          <div className="flex items-center justify-between gap-1.5 text-[11px] text-[var(--ink-muted)]">
-            <span className="truncate">Cost / Hit (${assayCostUsd})</span>
-            <span className="mono-num text-[10px] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--selective-soft)] text-[var(--selective)]">
-              -{liveCost.cost_per_hit_reduction_pct.toFixed(0)}%
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-sm font-semibold text-[var(--ink-secondary)]">
+            <span>Assay Cost / Hit (${assayCostUsd}/test)</span>
+            <span className="mono-num text-xs whitespace-nowrap px-2 py-0.5 rounded bg-[var(--selective-soft)] text-[var(--selective)]">
+              -{liveCost.cost_per_hit_reduction_pct.toFixed(0)}% saved
             </span>
           </div>
-          <div className="mono-num text-xl font-bold text-[var(--selective)] leading-tight">
+          <div className="mono-num text-2xl font-bold text-[var(--selective)] leading-tight">
             ${Math.round(liveCost.model_cost_per_hit_usd).toLocaleString()}
           </div>
-          <div className="text-[11px] text-[var(--ink-secondary)] mono-num truncate">
-            vs ${Math.round(liveCost.random_cost_per_hit_usd).toLocaleString()} / hit random
+          <div className="text-[13px] text-[var(--ink-secondary)] font-medium mono-num">
+            vs ${Math.round(liveCost.random_cost_per_hit_usd).toLocaleString()} / hit random screening
           </div>
         </div>
       </div>
@@ -685,19 +687,19 @@ export default function BenchmarkStage({
       {/* STACKED FULL-WIDTH ZOOMABLE BENCHMARK CHARTS */}
       <div className="space-y-4">
         {/* CHART 1 (TOP): Predicted vs. Experimental Binding Affinity (pKd) */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2.5">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-[var(--ink-primary)]">
+              <h3 className="text-base font-bold text-[var(--ink-primary)]">
                 1. Predicted vs. Experimental Binding Affinity (pKd)
               </h3>
-              <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+              <p className="text-[13px] text-[var(--ink-secondary)] mt-0.5">
                 Scroll wheel on plot or use +/- and presets to zoom into dense binder clusters; drag to pan when zoomed.
               </p>
             </div>
 
             {/* Interactive Zoom & Focus Presets Toolbar */}
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]" role="group" aria-label="Affinity scatter zoom controls">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs" role="group" aria-label="Affinity scatter zoom controls">
               <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5">
                 <button
                   type="button"
@@ -705,10 +707,10 @@ export default function BenchmarkStage({
                     setScatterX([SCATTER_MIN, SCATTER_MAX]);
                     setScatterY([SCATTER_MIN, SCATTER_MAX]);
                   }}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     !isScatterZoomed
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Full (3-11)
@@ -719,10 +721,10 @@ export default function BenchmarkStage({
                     setScatterX([6.8, 10.6]);
                     setScatterY([5.2, 10.6]);
                   }}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     Math.abs(scatterX[0] - 6.8) < 0.05
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Active Hits (&gt;= 6.8)
@@ -733,33 +735,33 @@ export default function BenchmarkStage({
                     setScatterX([4.8, 8.4]);
                     setScatterY([4.8, 8.4]);
                   }}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     Math.abs(scatterX[0] - 4.8) < 0.05
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Dense Core
                 </button>
               </div>
 
-              <div className="inline-flex items-center rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] px-1 py-0.5 mono-num">
+              <div className="inline-flex items-center rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] px-1.5 py-0.5 mono-num">
                 <button
                   type="button"
                   onClick={() => zoomScatterBy(1.32)}
                   aria-label="Zoom out scatter plot"
-                  className="min-h-[26px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
+                  className="min-h-[28px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                 >
                   -
                 </button>
-                <span className="min-w-[44px] text-center font-semibold text-[var(--accent-ink)]">
+                <span className="min-w-[46px] text-center font-bold text-[var(--accent-ink)]">
                   {scatterZoomPct}%
                 </span>
                 <button
                   type="button"
                   onClick={() => zoomScatterBy(0.74)}
                   aria-label="Zoom in scatter plot"
-                  className="min-h-[26px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
+                  className="min-h-[28px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                 >
                   +
                 </button>
@@ -770,7 +772,7 @@ export default function BenchmarkStage({
                       type="button"
                       onClick={() => panScatterBy(-0.2, 0)}
                       aria-label="Pan scatter plot left"
-                      className="min-h-[26px] px-1.5 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                      className="min-h-[28px] px-1.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                     >
                       &lt;
                     </button>
@@ -778,7 +780,7 @@ export default function BenchmarkStage({
                       type="button"
                       onClick={() => panScatterBy(0.2, 0)}
                       aria-label="Pan scatter plot right"
-                      className="min-h-[26px] px-1.5 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                      className="min-h-[28px] px-1.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                     >
                       &gt;
                     </button>
@@ -788,7 +790,7 @@ export default function BenchmarkStage({
                         setScatterX([SCATTER_MIN, SCATTER_MAX]);
                         setScatterY([SCATTER_MIN, SCATTER_MAX]);
                       }}
-                      className="min-h-[26px] px-2 font-sans font-semibold text-[var(--accent-ink)] hover:underline"
+                      className="min-h-[28px] px-2 font-sans font-bold text-[var(--accent-ink)] hover:underline"
                     >
                       Reset
                     </button>
@@ -800,10 +802,10 @@ export default function BenchmarkStage({
                 type="button"
                 onClick={() => setScatterWheelEnabled((v) => !v)}
                 aria-pressed={scatterWheelEnabled}
-                className={`min-h-[28px] px-2 py-0.5 rounded-lg border font-medium ${
+                className={`min-h-[30px] px-2.5 py-0.5 rounded-lg border font-semibold ${
                   scatterWheelEnabled
                     ? "bg-[var(--selective-soft)] border-[var(--selective-border)] text-[var(--selective)]"
-                    : "bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--ink-muted)]"
+                    : "bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--ink-secondary)]"
                 }`}
               >
                 Wheel Zoom: {scatterWheelEnabled ? "On" : "Off"}
@@ -812,38 +814,38 @@ export default function BenchmarkStage({
           </div>
 
           {/* Explicit Scatter Legend + Live Visible Pair Count */}
-          <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--ink-secondary)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--ink-primary)]">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="inline-flex items-center gap-1.5 font-medium text-[var(--ink-primary)]">
+              <span className="inline-flex items-center gap-1.5 font-semibold">
                 <span
-                  className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                  className="w-3 h-3 rounded-full inline-block shrink-0"
                   style={{ backgroundColor: ensembleLineColor }}
                 />
                 True Hit (Exp pKd &gt;= 7.0 / &lt;= 100 nM)
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                  className="w-3 h-3 rounded-full inline-block shrink-0"
                   style={{ backgroundColor: inactiveDotColor }}
                 />
                 Inactive (&lt; 7.0)
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-4 border-t border-dashed inline-block shrink-0"
-                  style={{ borderColor: axisTickColor }}
+                  className="w-4 border-t-2 border-dashed inline-block shrink-0"
+                  style={{ borderColor: refLineColor }}
                 />
                 Ideal Fit (y = x)
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-4 border-t border-dashed inline-block shrink-0"
+                  className="w-4 border-t-2 border-dashed inline-block shrink-0"
                   style={{ borderColor: hybridLineColor }}
                 />
                 pKd 7.0 Activity Cutoff
               </span>
             </div>
-            <span className="mono-num text-[var(--ink-muted)]">
+            <span className="mono-num font-semibold text-[var(--ink-secondary)]">
               Showing {visibleScatterPoints.length.toLocaleString()} /{" "}
               {scatterPoints.length.toLocaleString()} pairs (X {scatterX[0].toFixed(1)}-
               {scatterX[1].toFixed(1)})
@@ -893,12 +895,12 @@ export default function BenchmarkStage({
             onMouseLeave={() => {
               scatterDragRef.current = null;
             }}
-            className={`h-[340px] w-full select-none ${
+            className={`h-[350px] w-full select-none ${
               isScatterZoomed ? "cursor-grab active:cursor-grabbing" : ""
             }`}
           >
             <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 10, right: 18, bottom: 24, left: 4 }}>
+              <ScatterChart margin={{ top: 10, right: 18, bottom: 26, left: 6 }}>
                 <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                 <XAxis
                   type="number"
@@ -908,12 +910,13 @@ export default function BenchmarkStage({
                   allowDataOverflow={true}
                   tickCount={9}
                   tickFormatter={(v: number) => Number(v).toFixed(1)}
-                  tick={{ fontSize: 11, fill: axisTickColor }}
+                  tick={{ fontSize: 12.5, fill: axisTickColor, fontWeight: 500 }}
                   label={{
                     value: "Experimental pKd (-log10 M)",
                     position: "bottom",
-                    offset: 6,
-                    fontSize: 11.5,
+                    offset: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
                     fill: axisTickColor,
                   }}
                 />
@@ -924,21 +927,22 @@ export default function BenchmarkStage({
                   domain={scatterY}
                   allowDataOverflow={true}
                   tickCount={8}
-                  width={48}
+                  width={52}
                   tickFormatter={(v: number) => Number(v).toFixed(1)}
-                  tick={{ fontSize: 11, fill: axisTickColor }}
+                  tick={{ fontSize: 12.5, fill: axisTickColor, fontWeight: 500 }}
                   label={{
                     value: "Predicted pKd",
                     angle: -90,
                     position: "insideLeft",
                     style: { textAnchor: "middle" },
                     offset: 10,
-                    fontSize: 11.5,
+                    fontSize: 13,
+                    fontWeight: 600,
                     fill: axisTickColor,
                   }}
                 />
                 <Tooltip
-                  cursor={{ stroke: axisTickColor, strokeDasharray: "3 3" }}
+                  cursor={{ stroke: refLineColor, strokeDasharray: "3 3" }}
                   content={<ScatterCustomTooltip />}
                 />
                 {diagEnd > diagStart && (
@@ -947,7 +951,7 @@ export default function BenchmarkStage({
                       { x: diagStart, y: diagStart },
                       { x: diagEnd, y: diagEnd },
                     ]}
-                    stroke={axisTickColor}
+                    stroke={refLineColor}
                     strokeDasharray="4 4"
                   />
                 )}
@@ -961,14 +965,14 @@ export default function BenchmarkStage({
                   name="Inactive (< 7.0)"
                   data={inactiveScatter}
                   fill={inactiveDotColor}
-                  fillOpacity={scatterZoomPct > 150 ? 0.68 : 0.48}
+                  fillOpacity={scatterZoomPct > 150 ? 0.72 : 0.52}
                   isAnimationActive={false}
                 />
                 <Scatter
                   name="True Hit (>= 7.0)"
                   data={activeScatter}
                   fill={ensembleLineColor}
-                  fillOpacity={scatterZoomPct > 150 ? 0.9 : 0.8}
+                  fillOpacity={scatterZoomPct > 150 ? 0.92 : 0.84}
                   isAnimationActive={false}
                 />
               </ScatterChart>
@@ -977,27 +981,27 @@ export default function BenchmarkStage({
         </div>
 
         {/* CHART 2 (BOTTOM): Cumulative Hit-Capture (Virtual Screening Lift) Curve */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2.5">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-[var(--ink-primary)]">
+              <h3 className="text-base font-bold text-[var(--ink-primary)]">
                 2. Cumulative Hit-Capture (Virtual Screening Lift) Curve
               </h3>
-              <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+              <p className="text-[13px] text-[var(--ink-secondary)] mt-0.5">
                 Zoom into the Top 10% or Top 25% screening window to inspect early wet-lab enrichment separation in detail.
               </p>
             </div>
 
             {/* Interactive Zoom & Screening Window Toolbar */}
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]" role="group" aria-label="Lift curve zoom controls">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs" role="group" aria-label="Lift curve zoom controls">
               <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-0.5">
                 <button
                   type="button"
                   onClick={() => setLiftX([0, 100])}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     !isLiftZoomed
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Full (0-100%)
@@ -1005,10 +1009,10 @@ export default function BenchmarkStage({
                 <button
                   type="button"
                   onClick={() => setLiftX([0, 25])}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     Math.abs(liftX[0]) < 0.05 && Math.abs(liftX[1] - 25) < 0.2
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Top 25%
@@ -1016,33 +1020,33 @@ export default function BenchmarkStage({
                 <button
                   type="button"
                   onClick={() => setLiftX([0, 10])}
-                  className={`min-h-[28px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                  className={`min-h-[30px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                     Math.abs(liftX[0]) < 0.05 && Math.abs(liftX[1] - 10) < 0.2
                       ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   Top 10% Triage
                 </button>
               </div>
 
-              <div className="inline-flex items-center rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] px-1 py-0.5 mono-num">
+              <div className="inline-flex items-center rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] px-1.5 py-0.5 mono-num">
                 <button
                   type="button"
                   onClick={() => zoomLiftBy(1.4, 0.2)}
                   aria-label="Zoom out lift curve"
-                  className="min-h-[26px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
+                  className="min-h-[28px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                 >
                   -
                 </button>
-                <span className="min-w-[44px] text-center font-semibold text-[var(--accent-ink)]">
+                <span className="min-w-[46px] text-center font-bold text-[var(--accent-ink)]">
                   {liftZoomPct}%
                 </span>
                 <button
                   type="button"
                   onClick={() => zoomLiftBy(0.68, 0.2)}
                   aria-label="Zoom in lift curve"
-                  className="min-h-[26px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
+                  className="min-h-[28px] px-2 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                 >
                   +
                 </button>
@@ -1053,7 +1057,7 @@ export default function BenchmarkStage({
                       type="button"
                       onClick={() => panLiftBy(-0.25)}
                       aria-label="Pan lift curve left"
-                      className="min-h-[26px] px-1.5 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                      className="min-h-[28px] px-1.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                     >
                       &lt;
                     </button>
@@ -1061,14 +1065,14 @@ export default function BenchmarkStage({
                       type="button"
                       onClick={() => panLiftBy(0.25)}
                       aria-label="Pan lift curve right"
-                      className="min-h-[26px] px-1.5 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                      className="min-h-[28px] px-1.5 font-bold text-[var(--ink-primary)] hover:text-[var(--accent-ink)]"
                     >
                       &gt;
                     </button>
                     <button
                       type="button"
                       onClick={() => setLiftX([0, 100])}
-                      className="min-h-[26px] px-2 font-sans font-semibold text-[var(--accent-ink)] hover:underline"
+                      className="min-h-[28px] px-2 font-sans font-bold text-[var(--accent-ink)] hover:underline"
                     >
                       Reset
                     </button>
@@ -1080,10 +1084,10 @@ export default function BenchmarkStage({
                 type="button"
                 onClick={() => setLiftWheelEnabled((v) => !v)}
                 aria-pressed={liftWheelEnabled}
-                className={`min-h-[28px] px-2 py-0.5 rounded-lg border font-medium ${
+                className={`min-h-[30px] px-2.5 py-0.5 rounded-lg border font-semibold ${
                   liftWheelEnabled
                     ? "bg-[var(--selective-soft)] border-[var(--selective-border)] text-[var(--selective)]"
-                    : "bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--ink-muted)]"
+                    : "bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--ink-secondary)]"
                 }`}
               >
                 Wheel Zoom: {liftWheelEnabled ? "On" : "Off"}
@@ -1092,45 +1096,45 @@ export default function BenchmarkStage({
           </div>
 
           {/* Explicit Lift Legend + Active Window Range */}
-          <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--ink-secondary)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-xs text-[var(--ink-primary)]">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--ink-primary)]">
+              <span className="inline-flex items-center gap-1.5 font-bold text-[var(--ink-primary)]">
                 <span
-                  className="w-3.5 h-[2.5px] rounded-full inline-block shrink-0"
+                  className="w-4 h-[3px] rounded-full inline-block shrink-0"
                   style={{ backgroundColor: ensembleLineColor }}
                 />
                 5-Model Ensemble
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-3.5 h-[2px] rounded-full inline-block shrink-0"
+                  className="w-4 h-[2.5px] rounded-full inline-block shrink-0"
                   style={{ backgroundColor: hybridLineColor }}
                 />
                 2-Model Hybrid
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-3.5 h-[2px] rounded-full inline-block shrink-0"
+                  className="w-4 h-[2.5px] rounded-full inline-block shrink-0"
                   style={{ backgroundColor: ligandLineColor }}
                 />
                 Ligand-Only
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="w-3.5 border-t border-dashed inline-block shrink-0"
-                  style={{ borderColor: axisTickColor }}
+                  className="w-4 border-t-2 border-dashed inline-block shrink-0"
+                  style={{ borderColor: refLineColor }}
                 />
                 Random (1.0x)
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)]">
                 <span
-                  className="h-3 border-l border-dashed inline-block shrink-0"
+                  className="h-3.5 border-l-2 border-dashed inline-block shrink-0"
                   style={{ borderColor: ligandLineColor }}
                 />
                 Top-5% Budget Cutoff
               </span>
             </div>
-            <span className="mono-num text-[var(--ink-muted)]">
+            <span className="mono-num font-semibold text-[var(--ink-secondary)]">
               Window: {liftX[0].toFixed(1)}% to {liftX[1].toFixed(1)}% screened (Y 0-{liftYMax}%)
             </span>
           </div>
@@ -1155,12 +1159,12 @@ export default function BenchmarkStage({
             onMouseLeave={() => {
               liftDragRef.current = null;
             }}
-            className={`h-[340px] w-full select-none ${
+            className={`h-[350px] w-full select-none ${
               isLiftZoomed ? "cursor-grab active:cursor-grabbing" : ""
             }`}
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={visibleLiftData} margin={{ top: 10, right: 18, bottom: 24, left: 4 }}>
+              <LineChart data={visibleLiftData} margin={{ top: 10, right: 18, bottom: 26, left: 6 }}>
                 <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="screened_pct"
@@ -1171,28 +1175,30 @@ export default function BenchmarkStage({
                   tickFormatter={(v: number) =>
                     liftX[1] - liftX[0] <= 20 ? `${Number(v).toFixed(1)}%` : `${Math.round(Number(v))}%`
                   }
-                  tick={{ fontSize: 11, fill: axisTickColor }}
+                  tick={{ fontSize: 12.5, fill: axisTickColor, fontWeight: 500 }}
                   label={{
                     value: "% of Compound Library Screened",
                     position: "bottom",
-                    offset: 6,
-                    fontSize: 11.5,
+                    offset: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
                     fill: axisTickColor,
                   }}
                 />
                 <YAxis
                   domain={[0, liftYMax]}
                   allowDataOverflow={true}
-                  width={48}
+                  width={52}
                   tickFormatter={(v: number) => `${Math.round(Number(v))}%`}
-                  tick={{ fontSize: 11, fill: axisTickColor }}
+                  tick={{ fontSize: 12.5, fill: axisTickColor, fontWeight: 500 }}
                   label={{
                     value: "% Hits Captured",
                     angle: -90,
                     position: "insideLeft",
                     style: { textAnchor: "middle" },
                     offset: 10,
-                    fontSize: 11.5,
+                    fontSize: 13,
+                    fontWeight: 600,
                     fill: axisTickColor,
                   }}
                 />
@@ -1202,7 +1208,7 @@ export default function BenchmarkStage({
                       ensembleColor={ensembleLineColor}
                       hybridColor={hybridLineColor}
                       ligandColor={ligandLineColor}
-                      randomColor={axisTickColor}
+                      randomColor={refLineColor}
                     />
                   }
                 />
@@ -1214,8 +1220,8 @@ export default function BenchmarkStage({
                   dataKey="ensemble"
                   name="5-Model Ensemble"
                   stroke={ensembleLineColor}
-                  strokeWidth={2.7}
-                  dot={isLiftZoomed ? { r: 3.2, fill: ensembleLineColor } : false}
+                  strokeWidth={2.8}
+                  dot={isLiftZoomed ? { r: 3.4, fill: ensembleLineColor } : false}
                   isAnimationActive={false}
                 />
                 <Line
@@ -1223,8 +1229,8 @@ export default function BenchmarkStage({
                   dataKey="hybrid"
                   name="2-Model Hybrid"
                   stroke={hybridLineColor}
-                  strokeWidth={1.9}
-                  dot={isLiftZoomed ? { r: 2.6, fill: hybridLineColor } : false}
+                  strokeWidth={2}
+                  dot={isLiftZoomed ? { r: 2.8, fill: hybridLineColor } : false}
                   isAnimationActive={false}
                 />
                 <Line
@@ -1232,17 +1238,17 @@ export default function BenchmarkStage({
                   dataKey="ligand_only"
                   name="Ligand-Only Ablation"
                   stroke={ligandLineColor}
-                  strokeWidth={1.7}
-                  dot={isLiftZoomed ? { r: 2.6, fill: ligandLineColor } : false}
+                  strokeWidth={1.8}
+                  dot={isLiftZoomed ? { r: 2.8, fill: ligandLineColor } : false}
                   isAnimationActive={false}
                 />
                 <Line
                   type="linear"
                   dataKey="random"
                   name="Random (1.00x)"
-                  stroke={axisTickColor}
+                  stroke={refLineColor}
                   strokeDasharray="4 4"
-                  strokeWidth={1.3}
+                  strokeWidth={1.4}
                   dot={false}
                   isAnimationActive={false}
                 />
@@ -1253,34 +1259,33 @@ export default function BenchmarkStage({
       </div>
 
       {/* Full 9-Model Benchmark Table with Visual Enrichment Bars & Metric Legend */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-2.5">
           <div>
-            <h3 className="text-xs font-bold text-[var(--ink-primary)]">
+            <h3 className="text-base font-bold text-[var(--ink-primary)]">
               9-Model Cross-Family Comparison ({benchmark.dataset.dataset} · {splitKey})
             </h3>
-            <p className="text-[11px] text-[var(--ink-muted)] mt-0.5">
+            <p className="text-xs text-[var(--ink-secondary)] mt-0.5">
               RMSE: lower is better · CI, AUC, EF@5%: higher is better · Winner chosen strictly on validation RMSE (zero test peeking).
             </p>
           </div>
-          <span className="px-2 py-0.5 rounded bg-[var(--accent-soft)] border border-[var(--accent-border)] text-[var(--accent-ink)] text-[11px] font-semibold mono-num">
+          <span className="px-2.5 py-1 rounded bg-[var(--accent-soft)] border border-[var(--accent-border)] text-[var(--accent-ink)] text-xs font-bold mono-num">
             Mean Val RMSE: {evalResults.winner_selection.validation_rmse_ranking[winnerKey]?.overall_mean_val_rmse.toFixed(4)}
           </span>
         </div>
 
         <div className="overflow-x-auto studio-scroll">
-          <table className="w-full text-left border-collapse text-xs mono-num">
+          <table className="w-full text-left border-collapse text-[13px] mono-num">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)] text-[10.5px] font-sans uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="py-2 pr-2">Model Architecture</th>
-                <th className="py-2 px-2">Family</th>
-                <th className="py-2 px-2 text-right">Val RMSE ↓</th>
-                <th className="py-2 px-2 text-right">Test RMSE ↓</th>
-                <th className="py-2 px-2 text-right">CI ↑</th>
-                <th className="py-2 px-2 text-right">ROC-AUC ↑</th>
-                <th className="py-2 px-2 text-right">PR-AUC ↑</th>
-                <th className="py-2 px-2 text-right min-w-[112px]">EF@5% Lift ↑</th>
-                <th className="py-2 pl-2 text-right">Fit (s)</th>
+              <tr className="border-b border-[var(--border-subtle)] text-xs font-sans uppercase tracking-wide text-[var(--ink-secondary)]">
+                <th className="py-2.5 pr-2">Model &amp; Family</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Val RMSE ↓</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Test RMSE ↓</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">CI ↑</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">ROC-AUC ↑</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">PR-AUC ↑</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">EF@5% ↑</th>
+                <th className="py-2.5 pl-2 text-right whitespace-nowrap">Fit (s)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -1297,46 +1302,50 @@ export default function BenchmarkStage({
                     className={
                       isWin
                         ? "bg-[var(--accent-soft)] text-[var(--ink-primary)]"
-                        : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                        : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                     }
                   >
-                    <td className="py-2 pr-2 font-sans font-semibold text-[var(--ink-primary)]">
-                      <div className="flex items-center gap-1.5">
+                    <td className="py-2.5 pr-2 font-sans">
+                      <div className="flex flex-wrap items-center gap-1.5 font-bold text-[var(--ink-primary)]">
                         <span>{m.display_name}</span>
                         {isWin && (
-                          <span className="px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--accent-on-solid)] text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded bg-[var(--accent)] text-[var(--accent-on-solid)] text-[11px] font-bold">
                             Winner
                           </span>
                         )}
                       </div>
+                      <div className="text-[11.5px] text-[var(--ink-secondary)] mt-0.5">
+                        {m.family}
+                      </div>
                     </td>
-                    <td className="py-2 px-2 font-sans text-[11px] text-[var(--ink-muted)]">
-                      {m.family}
-                    </td>
-                    <td className="py-2 px-2 text-right">
+                    <td className="py-2.5 px-2 text-right text-[var(--ink-secondary)] whitespace-nowrap">
                       {typeof m.val_summary?.rmse === "number"
                         ? m.val_summary.rmse.toFixed(4)
                         : "n/a"}
                     </td>
                     <td
-                      className={`py-2 px-2 text-right ${
-                        isBestRmse ? "font-bold text-[var(--ink-primary)]" : ""
+                      className={`py-2.5 px-2 text-right whitespace-nowrap ${
+                        isBestRmse ? "font-bold text-[var(--ink-primary)]" : "text-[var(--ink-secondary)]"
                       }`}
                     >
                       {m.metrics.rmse.toFixed(4)}
                     </td>
                     <td
-                      className={`py-2 px-2 text-right ${
-                        isBestCi ? "font-bold text-[var(--ink-primary)]" : ""
+                      className={`py-2.5 px-2 text-right whitespace-nowrap ${
+                        isBestCi ? "font-bold text-[var(--ink-primary)]" : "text-[var(--ink-secondary)]"
                       }`}
                     >
                       {m.metrics.concordance_index.toFixed(4)}
                     </td>
-                    <td className="py-2 px-2 text-right">{m.metrics.roc_auc.toFixed(4)}</td>
-                    <td className="py-2 px-2 text-right">{m.metrics.pr_auc.toFixed(4)}</td>
-                    <td className="py-2 px-2 text-right">
+                    <td className="py-2.5 px-2 text-right text-[var(--ink-secondary)] whitespace-nowrap">
+                      {m.metrics.roc_auc.toFixed(4)}
+                    </td>
+                    <td className="py-2.5 px-2 text-right text-[var(--ink-secondary)] whitespace-nowrap">
+                      {m.metrics.pr_auc.toFixed(4)}
+                    </td>
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-12 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden hidden sm:block">
+                        <div className="w-12 h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden hidden sm:block">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -1345,12 +1354,12 @@ export default function BenchmarkStage({
                             }}
                           />
                         </div>
-                        <span className="font-semibold text-[var(--ink-primary)]">
+                        <span className="font-bold text-[var(--ink-primary)]">
                           {m.metrics.ef_at_5pct.toFixed(2)}x
                         </span>
                       </div>
                     </td>
-                    <td className="py-2 pl-2 text-right text-[var(--ink-muted)]">
+                    <td className="py-2.5 pl-2 text-right text-[var(--ink-secondary)] whitespace-nowrap">
                       {m.fit_seconds.toFixed(1)}
                     </td>
                   </tr>
@@ -1361,11 +1370,11 @@ export default function BenchmarkStage({
         </div>
 
         {/* Learned Validation Simplex Weights Bar */}
-        <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
-          <div className="text-[11px] font-medium text-[var(--ink-secondary)]">
+        <div className="pt-2.5 border-t border-[var(--border-subtle)] space-y-2">
+          <div className="text-xs font-semibold text-[var(--ink-primary)]">
             Learned Validation-Fold Ensemble Blend Weights ({benchKey} · {splitKey}):
           </div>
-          <div className="w-full h-2.5 flex rounded-full overflow-hidden bg-[var(--bg-subtle)]">
+          <div className="w-full h-3 flex rounded-full overflow-hidden bg-[var(--bg-subtle)]">
             {Object.entries(simplexWeights)
               .filter(([, w]) => w > 0.001)
               .map(([mk, w]) => (
@@ -1379,19 +1388,19 @@ export default function BenchmarkStage({
                 />
               ))}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] mono-num text-[var(--ink-secondary)]">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mono-num text-[var(--ink-primary)]">
             {Object.entries(simplexWeights)
               .filter(([, w]) => w > 0.001)
               .map(([mk, w]) => (
                 <span key={mk} className="inline-flex items-center gap-1.5">
                   <span
-                    className="w-2 h-2 rounded-full inline-block"
+                    className="w-2.5 h-2.5 rounded-full inline-block"
                     style={{ backgroundColor: simplexColors[mk]?.color || ensembleLineColor }}
                   />
-                  <span className="font-sans font-medium text-[var(--ink-primary)]">
+                  <span className="font-sans font-semibold text-[var(--ink-primary)]">
                     {simplexColors[mk]?.label || mk}:
                   </span>
-                  <span>{(w * 100).toFixed(1)}%</span>
+                  <span className="font-bold">{(w * 100).toFixed(1)}%</span>
                 </span>
               ))}
           </div>
@@ -1400,9 +1409,9 @@ export default function BenchmarkStage({
 
       {/* Wet-Lab Budget Simulator + Y-Randomization & Generalization Gap */}
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="wetlab-cost-slider" className="text-xs font-bold text-[var(--ink-primary)]">
+            <label htmlFor="wetlab-cost-slider" className="text-sm font-bold text-[var(--ink-primary)]">
               Wet-Lab Assay Budget Simulator:{" "}
               <span className="mono-num text-[var(--accent-ink)]">${assayCostUsd} / compound</span>
             </label>
@@ -1414,78 +1423,78 @@ export default function BenchmarkStage({
               step={10}
               value={assayCostUsd}
               onChange={(e) => setAssayCostUsd(Number(e.target.value))}
-              className="studio-range w-40"
+              className="studio-range w-44"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2.5 text-xs mono-num">
-            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
-              <div className="text-[11px] font-sans text-[var(--ink-muted)]">
+          <div className="grid grid-cols-2 gap-2.5 text-sm mono-num">
+            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3">
+              <div className="text-xs font-sans text-[var(--ink-secondary)]">
                 Exhaustive ({liveCost.n_library_evaluated.toLocaleString()})
               </div>
-              <div className="font-bold text-[var(--ink-primary)] mt-0.5">
+              <div className="font-bold text-base text-[var(--ink-primary)] mt-0.5">
                 ${Math.round(liveCost.exhaustive_screening_cost_usd).toLocaleString()}
               </div>
             </div>
-            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
-              <div className="text-[11px] font-sans text-[var(--ink-muted)]">
+            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3">
+              <div className="text-xs font-sans text-[var(--ink-secondary)]">
                 Top-5% Triage ({liveCost.n_top_screened})
               </div>
-              <div className="font-bold text-[var(--ink-primary)] mt-0.5">
+              <div className="font-bold text-base text-[var(--ink-primary)] mt-0.5">
                 ${Math.round(liveCost.triage_screening_cost_usd).toLocaleString()}
               </div>
             </div>
-            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-2.5">
-              <div className="text-[11px] font-sans text-[var(--ink-muted)]">Random Cost / Hit</div>
-              <div className="font-bold text-[var(--ink-secondary)] mt-0.5">
+            <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3">
+              <div className="text-xs font-sans text-[var(--ink-secondary)]">Random Cost / Hit</div>
+              <div className="font-bold text-base text-[var(--ink-primary)] mt-0.5">
                 ${Math.round(liveCost.random_cost_per_hit_usd).toLocaleString()}
               </div>
             </div>
-            <div className="bg-[var(--selective-soft)] border border-[var(--selective-border)] rounded-lg p-2.5">
-              <div className="text-[11px] font-sans text-[var(--selective)]">Ensemble Cost / Hit</div>
-              <div className="font-bold text-[var(--selective)] mt-0.5">
+            <div className="bg-[var(--selective-soft)] border border-[var(--selective-border)] rounded-lg p-3">
+              <div className="text-xs font-sans font-semibold text-[var(--selective)]">Ensemble Cost / Hit</div>
+              <div className="font-bold text-base text-[var(--selective)] mt-0.5">
                 ${Math.round(liveCost.model_cost_per_hit_usd).toLocaleString()} (-
                 {liveCost.cost_per_hit_reduction_pct.toFixed(1)}%)
               </div>
             </div>
           </div>
-          <p className="text-[11px] text-[var(--ink-muted)]">{liveCost.boundary_condition_note}</p>
+          <p className="text-xs text-[var(--ink-secondary)]">{liveCost.boundary_condition_note}</p>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3 text-xs">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 space-y-3 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-bold text-[var(--ink-primary)]">
                 Y-Randomization &amp; Generalization Audit (SEED = {evalResults.seed})
               </h3>
-              <p className="text-[11px] text-[var(--ink-muted)] mt-0.5">
+              <p className="text-xs text-[var(--ink-secondary)] mt-0.5">
                 Shuffling training affinities collapses test CI to ~0.50, confirming zero memorization shortcut.
               </p>
             </div>
-            <span className="px-2 py-0.5 rounded bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] font-semibold mono-num text-[11px]">
+            <span className="px-2.5 py-0.5 rounded bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] font-bold mono-num text-xs">
               4 / 4 Null Checks PASS
             </span>
           </div>
-          <table className="w-full text-left border-collapse mono-num text-[11px]">
+          <table className="w-full text-left border-collapse mono-num text-xs">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)] font-sans text-[var(--ink-muted)]">
-                <th className="py-1.5">Split</th>
-                <th className="py-1.5 text-right">Train RMSE</th>
-                <th className="py-1.5 text-right">Test RMSE</th>
-                <th className="py-1.5 text-right">Shuffled CI (~0.50)</th>
-                <th className="py-1.5 text-right">Null Check</th>
+              <tr className="border-b border-[var(--border-subtle)] font-sans text-[var(--ink-secondary)]">
+                <th className="py-2">Split</th>
+                <th className="py-2 text-right">Train RMSE</th>
+                <th className="py-2 text-right">Test RMSE</th>
+                <th className="py-2 text-right">Shuffled CI (~0.50)</th>
+                <th className="py-2 text-right">Null Check</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--ink-secondary)]">
+            <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--ink-primary)]">
               {(["cold_drug", "cold_target"] as const).map((sk) => {
                 const gap = benchmark.integrity_audit.generalization_gap_ensemble[sk];
                 const yr = benchmark.integrity_audit.y_randomization[sk];
                 return (
                   <tr key={sk}>
-                    <td className="py-1.5 font-sans font-medium text-[var(--ink-primary)]">{sk}</td>
-                    <td className="py-1.5 text-right">{gap.train_rmse.toFixed(4)}</td>
-                    <td className="py-1.5 text-right">{gap.test_rmse.toFixed(4)}</td>
-                    <td className="py-1.5 text-right">{yr.shuffled_test_ci.toFixed(4)}</td>
-                    <td className="py-1.5 text-right font-bold text-[var(--selective)]">
+                    <td className="py-2 font-sans font-bold text-[var(--ink-primary)]">{sk}</td>
+                    <td className="py-2 text-right">{gap.train_rmse.toFixed(4)}</td>
+                    <td className="py-2 text-right">{gap.test_rmse.toFixed(4)}</td>
+                    <td className="py-2 text-right">{yr.shuffled_test_ci.toFixed(4)}</td>
+                    <td className="py-2 text-right font-bold text-[var(--selective)]">
                       {yr.passed_null_check ? "PASS" : "FAIL"}
                     </td>
                   </tr>
@@ -1493,7 +1502,7 @@ export default function BenchmarkStage({
               })}
             </tbody>
           </table>
-          <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg px-2.5 py-1.5 mono-num text-[11px] text-[var(--accent-ink)]">
+          <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 mono-num text-xs font-semibold text-[var(--accent-ink)]">
             {evalResults.reproduce_command}
           </div>
         </div>

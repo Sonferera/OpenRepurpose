@@ -154,19 +154,19 @@ export default function BranchingGraphStage({
   const crossDisplay = crossEdges.slice(0, 6);
 
   return (
-    <div className="space-y-3.5">
-      <div className={`rounded-xl border px-3.5 py-2.5 text-xs font-medium ${bannerStyle}`}>
+    <div className="space-y-4">
+      <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${bannerStyle}`}>
         {bannerMessage}
       </div>
 
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-subtle)] text-[11px] text-[var(--ink-muted)]">
-          <span className="font-semibold text-[var(--ink-primary)] text-xs">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-subtle)] text-xs text-[var(--ink-secondary)]">
+          <span className="font-bold text-[var(--ink-primary)] text-sm">
             {subMode === "outcome"
               ? `Interactive Outcome Pipeline: ${candidate.drug_name} + ${target.short_name}`
               : `Cross-Pathogen Selectivity Network: ${candidate.drug_name} across Saved Target Pools`}
           </span>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3.5 font-medium">
             <span className="inline-flex items-center gap-1.5">
               <span className="w-3.5 h-0.5 bg-[var(--selective)] inline-block rounded-full" />
               Selective / Pass
@@ -186,7 +186,7 @@ export default function BranchingGraphStage({
           {subMode === "outcome" ? (
             <svg
               viewBox="0 0 770 388"
-              className="w-full min-w-[620px] h-[355px]"
+              className="w-full min-w-[620px] h-[365px]"
               role="img"
               aria-label={`Outcome branching graph for ${candidate.drug_name} paired with ${target.short_name}`}
             >
@@ -194,13 +194,13 @@ export default function BranchingGraphStage({
                 d="M 196 118 C 240 118, 245 194, 284 194"
                 fill="none"
                 stroke="var(--accent-ink)"
-                strokeWidth={2.2}
+                strokeWidth={2.4}
               />
               <path
                 d="M 196 270 C 240 270, 245 194, 284 194"
                 fill="none"
                 stroke="var(--accent-ink)"
-                strokeWidth={2.2}
+                strokeWidth={2.4}
               />
 
               {outcomeBranches.map((b, idx) => {
@@ -213,7 +213,7 @@ export default function BranchingGraphStage({
                     d={`M 464 194 C 500 194, 500 ${y + 29}, 534 ${y + 29}`}
                     fill="none"
                     stroke={p.stroke}
-                    strokeWidth={isSel ? 3 : 1.9}
+                    strokeWidth={isSel ? 3.2 : 2.1}
                     strokeDasharray={p.dash}
                   />
                 );
@@ -222,72 +222,72 @@ export default function BranchingGraphStage({
               {/* Input 1: FDA Drug */}
               <g>
                 <rect
-                  x={12}
-                  y={84}
-                  width={184}
-                  height={68}
+                  x={10}
+                  y={82}
+                  width={188}
+                  height={72}
                   rx={9}
                   fill="var(--bg-subtle)"
                   stroke="var(--accent-ink)"
-                  strokeWidth={1.7}
+                  strokeWidth={1.8}
                 />
                 <text
-                  x={24}
-                  y={105}
+                  x={22}
+                  y={104}
                   fill="var(--accent-ink)"
-                  fontSize={9.5}
+                  fontSize={10.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
                   INPUT 1: APPROVED DRUG
                 </text>
-                <text x={24} y={125} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
-                  {candidate.drug_name.slice(0, 21)}
+                <text x={22} y={126} fill="var(--ink-primary)" fontSize={14} fontWeight={700}>
+                  {candidate.drug_name.slice(0, 19)}
                 </text>
-                <text x={24} y={142} fill="var(--ink-muted)" fontSize={10}>
-                  {(candidate.known_indication || candidate.moa || "FDA Launched").slice(0, 27)}
+                <text x={22} y={144} fill="var(--ink-secondary)" fontSize={11}>
+                  {(candidate.known_indication || candidate.moa || "FDA Launched").slice(0, 25)}
                 </text>
               </g>
 
               {/* Input 2: Target Protein */}
               <g>
                 <rect
-                  x={12}
-                  y={236}
-                  width={184}
-                  height={68}
+                  x={10}
+                  y={234}
+                  width={188}
+                  height={72}
                   rx={9}
                   fill="var(--bg-subtle)"
                   stroke="var(--accent-ink)"
-                  strokeWidth={1.7}
+                  strokeWidth={1.8}
                 />
                 <text
-                  x={24}
-                  y={257}
+                  x={22}
+                  y={256}
                   fill="var(--accent-ink)"
-                  fontSize={9.5}
+                  fontSize={10.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
                   INPUT 2: UNIPROT TARGET
                 </text>
-                <text x={24} y={277} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
-                  {target.short_name.slice(0, 21)}
+                <text x={22} y={278} fill="var(--ink-primary)" fontSize={14} fontWeight={700}>
+                  {target.short_name.slice(0, 19)}
                 </text>
-                <text x={24} y={294} fill="var(--ink-muted)" fontSize={10}>
+                <text x={22} y={296} fill="var(--ink-secondary)" fontSize={11}>
                   {target.uniprot_id} ({target.sequence_length} aa)
                 </text>
               </g>
 
               {/* Center Ensemble Fusion Node */}
               <g>
-                <rect x={284} y={148} width={180} height={92} rx={11} fill="var(--accent)" />
+                <rect x={282} y={146} width={184} height={96} rx={11} fill="var(--accent)" />
                 <text
                   x={374}
-                  y={173}
+                  y={172}
                   textAnchor="middle"
-                  fill="#C7D2FE"
-                  fontSize={9.5}
+                  fill="#FFFFFF"
+                  fontSize={10.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
@@ -295,21 +295,22 @@ export default function BranchingGraphStage({
                 </text>
                 <text
                   x={374}
-                  y={195}
+                  y={196}
                   textAnchor="middle"
-                  fill="var(--accent-on-solid)"
-                  fontSize={12.5}
+                  fill="#FFFFFF"
+                  fontSize={13.5}
                   fontWeight={700}
                 >
                   ESM-2 + RDKit Fusion
                 </text>
                 <text
                   x={374}
-                  y={216}
+                  y={219}
                   textAnchor="middle"
-                  fill="#E0E7FF"
-                  fontSize={10.5}
+                  fill="#FFFFFF"
+                  fontSize={11.5}
                   fontFamily="monospace"
+                  fontWeight={600}
                 >
                   Sel #{candidate.rank_by_selectivity} (Raw #{candidate.rank})
                 </text>
@@ -317,7 +318,7 @@ export default function BranchingGraphStage({
 
               {/* 4 Clickable Output Nodes */}
               {outcomeBranches.map((b, idx) => {
-                const y = 32 + idx * 90;
+                const y = 30 + idx * 90;
                 const p = palette[b.tone];
                 const isSel = idx === selectedBranchIdx;
                 return (
@@ -335,27 +336,27 @@ export default function BranchingGraphStage({
                     }}
                   >
                     <rect
-                      x={534}
+                      x={532}
                       y={y}
-                      width={224}
-                      height={58}
+                      width={228}
+                      height={62}
                       rx={9}
                       fill={isSel ? p.fill : "var(--bg-subtle)"}
                       stroke={p.stroke}
-                      strokeWidth={isSel ? 2.4 : 1.4}
+                      strokeWidth={isSel ? 2.5 : 1.5}
                     />
-                    <text x={547} y={y + 22} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
+                    <text x={545} y={y + 24} fill="var(--ink-primary)" fontSize={12.8} fontWeight={700}>
                       {b.title}
                     </text>
                     <text
-                      x={547}
-                      y={y + 42}
+                      x={545}
+                      y={y + 45}
                       fill={p.stroke}
-                      fontSize={10.2}
+                      fontSize={11.2}
                       fontFamily="monospace"
-                      fontWeight={600}
+                      fontWeight={700}
                     >
-                      {b.shortVal.slice(0, 32)}
+                      {b.shortVal.slice(0, 30)}
                     </text>
                   </g>
                 );
@@ -364,7 +365,7 @@ export default function BranchingGraphStage({
           ) : (
             <svg
               viewBox="0 0 770 388"
-              className="w-full min-w-[620px] h-[355px]"
+              className="w-full min-w-[620px] h-[365px]"
               role="img"
               aria-label={`Cross-target repurposing network for ${candidate.drug_name}`}
             >
@@ -372,27 +373,27 @@ export default function BranchingGraphStage({
                 d="M 235 194 C 330 194, 355 352, 446 352"
                 fill="none"
                 stroke="var(--border-control)"
-                strokeWidth={1.5}
+                strokeWidth={1.6}
                 strokeDasharray="4 4"
               />
               <rect
                 x={446}
-                y={330}
-                width={308}
-                height={44}
+                y={328}
+                width={310}
+                height={48}
                 rx={8}
                 fill="var(--bg-subtle)"
                 stroke="var(--border-control)"
-                strokeWidth={1.2}
+                strokeWidth={1.3}
               />
-              <text x={462} y={349} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
+              <text x={462} y={348} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
                 32-Protein Cross-Family Background Panel
               </text>
               <text
                 x={462}
-                y={365}
-                fill="var(--ink-muted)"
-                fontSize={10.5}
+                y={366}
+                fill="var(--ink-secondary)"
+                fontSize={11.2}
                 fontFamily="monospace"
               >
                 Mean pKd {candidate.background_mean_pkd.toFixed(3)} (SD {candidate.background_std_pkd.toFixed(3)})
@@ -415,25 +416,25 @@ export default function BranchingGraphStage({
                       d={`M 235 194 C 330 194, 355 ${y + 22}, 446 ${y + 22}`}
                       fill="none"
                       stroke={tone.stroke}
-                      strokeWidth={isCurrent ? 3 : 1.9}
+                      strokeWidth={isCurrent ? 3.2 : 2.1}
                       strokeDasharray={tone.dash}
                     />
                     <rect
-                      x={318}
-                      y={y + 11}
-                      width={86}
-                      height={21}
+                      x={315}
+                      y={y + 10}
+                      width={92}
+                      height={23}
                       rx={10}
                       fill={tone.fill}
                       stroke={tone.stroke}
-                      strokeWidth={1}
+                      strokeWidth={1.1}
                     />
                     <text
                       x={361}
                       y={y + 25}
                       textAnchor="middle"
                       fill={tone.stroke}
-                      fontSize={10}
+                      fontSize={11}
                       fontFamily="monospace"
                       fontWeight={700}
                     >
@@ -456,22 +457,23 @@ export default function BranchingGraphStage({
                       <rect
                         x={446}
                         y={y}
-                        width={308}
-                        height={44}
+                        width={310}
+                        height={46}
                         rx={8}
                         fill={isCurrent ? tone.fill : "var(--bg-subtle)"}
                         stroke={tone.stroke}
-                        strokeWidth={isCurrent ? 2.3 : 1.3}
+                        strokeWidth={isCurrent ? 2.4 : 1.4}
                       />
-                      <text x={462} y={y + 18} fill="var(--ink-primary)" fontSize={11.5} fontWeight={700}>
+                      <text x={462} y={y + 19} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
                         {edge.target_short_name} ({edge.disease})
                       </text>
                       <text
                         x={462}
-                        y={y + 34}
+                        y={y + 36}
                         fill={tone.stroke}
-                        fontSize={10.2}
+                        fontSize={11}
                         fontFamily="monospace"
+                        fontWeight={600}
                       >
                         Sel #{edge.rank_by_selectivity} | pKd {edge.predicted_pkd.toFixed(2)} |{" "}
                         {edge.pubmed_count ?? 0} PubMed
@@ -483,34 +485,34 @@ export default function BranchingGraphStage({
 
               {/* Left Selected Drug Anchor */}
               <g>
-                <rect x={20} y={146} width={215} height={96} rx={11} fill="var(--accent)" />
+                <rect x={18} y={144} width={217} height={98} rx={11} fill="var(--accent)" />
                 <text
-                  x={127}
-                  y={172}
+                  x={126}
+                  y={171}
                   textAnchor="middle"
-                  fill="#C7D2FE"
-                  fontSize={9.5}
+                  fill="#FFFFFF"
+                  fontSize={10.5}
                   fontFamily="monospace"
                   fontWeight={700}
                 >
                   SELECTED APPROVED DRUG
                 </text>
                 <text
-                  x={127}
+                  x={126}
                   y={196}
                   textAnchor="middle"
-                  fill="var(--accent-on-solid)"
-                  fontSize={14}
+                  fill="#FFFFFF"
+                  fontSize={15}
                   fontWeight={700}
                 >
-                  {candidate.drug_name.slice(0, 20)}
+                  {candidate.drug_name.slice(0, 19)}
                 </text>
                 <text
-                  x={127}
-                  y={218}
+                  x={126}
+                  y={219}
                   textAnchor="middle"
-                  fill="#E0E7FF"
-                  fontSize={10.5}
+                  fill="#FFFFFF"
+                  fontSize={11.5}
                   fontFamily="monospace"
                 >
                   {crossEdges.length} saved target pool(s)
@@ -521,14 +523,14 @@ export default function BranchingGraphStage({
         </div>
 
         {/* Evidence Explanation Strip */}
-        <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3 text-xs space-y-1">
+        <div className="bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-3.5 text-sm space-y-1">
           {subMode === "outcome" ? (
             <>
               <div className="font-bold text-[var(--ink-primary)]">
                 {activeBranch.title}:{" "}
                 <span className="mono-num text-[var(--accent-ink)]">{activeBranch.shortVal}</span>
               </div>
-              <p className="text-[var(--ink-secondary)]">{activeBranch.detail}</p>
+              <p className="text-[var(--ink-secondary)] leading-relaxed">{activeBranch.detail}</p>
             </>
           ) : (
             <>
@@ -536,7 +538,7 @@ export default function BranchingGraphStage({
                 Cross-Pathogen Selectivity Summary ({crossEdges.length} saved target appearance
                 {crossEdges.length === 1 ? "" : "s"})
               </div>
-              <p className="text-[var(--ink-secondary)]">
+              <p className="text-[var(--ink-secondary)] leading-relaxed">
                 Click any target node on the right to jump directly to that disease target. Note:
                 predictions reflect independent single-drug x single-target binding models (not
                 drug-drug combination synergy).
