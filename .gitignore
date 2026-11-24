@@ -1,0 +1,74 @@
+# Local internal notes & raw workspace prompts (never push)
+.local/
+gemini-code-*.md
+*.local.md
+*.tmp
+*.bak
+*.log
+
+# Python environments & caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Raw downloaded datasets & heavy ML artifacts
+data/*
+!data/.gitkeep
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/run_manifest.json
+tdc_cache/
+.huggingface/
+*.joblib
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.npz
+*.npy
+*.parquet
+*.h5
+*.onnx
+
+# Node.js & Next.js frontend build outputs
+node_modules/
+web/.next/
+web/out/
+web/dist/
+web/.vercel/
+web/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS & editor junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
