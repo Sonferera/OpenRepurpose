@@ -91,12 +91,16 @@ def canonicalize_smiles(smiles: str) -> str | None:
     return canon
 
 
+# Standard medicinal-chemistry organic small-molecule element whitelist (excludes metals/MRI contrast agents)
+ORGANIC_MEDCHEM_ATOMIC_NUMS: frozenset[int] = frozenset({1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53})
+
+
 def is_single_organic_fragment(mol: Chem.Mol) -> bool:
-    """Reject mixtures/salts (multiple fragments) and inorganic molecules without carbon."""
+    """Reject mixtures/salts, inorganic compounds, and organometallic/contrast-agent complexes."""
     if len(Chem.GetMolFrags(mol)) != 1:
         return False
-    has_carbon = any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    return has_carbon
+    atomic_nums = {atom.GetAtomicNum() for atom in mol.GetAtoms()}
+    return (6 in atomic_nums) and atomic_nums.issubset(ORGANIC_MEDCHEM_ATOMIC_NUMS)
 
 
 def strip_salts_to_largest_fragment(smiles: str) -> tuple[Chem.Mol | None, str | None]:

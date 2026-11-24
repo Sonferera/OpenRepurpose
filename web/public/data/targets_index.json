@@ -1,0 +1,601 @@
+{
+  "generated_at_utc": "2026-11-24T11:54:23.203223+00:00",
+  "reproduce_command": "python scripts/precompute_screening.py",
+  "seed": 42,
+  "checkpoint_meta": {
+    "name": "openrepurpose_hybrid",
+    "display_name": "OpenRepurpose Hybrid (ESM-2 + RDKit + Ridge/LightGBM)",
+    "w_lgbm": 0.7329,
+    "w_ridge": 0.2671,
+    "ridge_best_alpha": 10.0,
+    "lgbm_best_iteration": 799,
+    "lgbm_params": {
+      "objective": "regression",
+      "metric": "rmse",
+      "n_estimators": 800,
+      "learning_rate": 0.05,
+      "num_leaves": 63,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.5,
+      "min_child_samples": 20,
+      "random_state": 42,
+      "n_jobs": -1,
+      "verbose": -1
+    }
+  },
+  "fda_library": {
+    "source": "Broad Institute Drug Repurposing Hub (2020-03-24, clinical_phase=Launched)",
+    "source_url": "https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_drugs_20200324.txt",
+    "n_raw_fetched": 2427,
+    "dropped_invalid_or_inorganic": 52,
+    "dropped_mw_out_of_range": 110,
+    "dropped_duplicate_smiles": 16,
+    "n_clean_drugs": 2249,
+    "mw_bounds": [
+      120.0,
+      900.0
+    ],
+    "clean_csv_sha256": "9a77b66b6d29b020e21d495dd812b925667767f8022b285dda3db0cbbede4241"
+  },
+  "top_k_per_target": 50,
+  "unique_molecule_assets_generated": 186,
+  "total_runtime_seconds": 98.0,
+  "targets": [
+    {
+      "id": "mtb_pknb",
+      "name": "M. tuberculosis PknB Kinase",
+      "short_name": "Mtb PknB",
+      "disease": "Tuberculosis",
+      "pathogen": "Mycobacterium tuberculosis (H37Rv)",
+      "uniprot_id": "P9WI81",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P9WI81",
+      "protein_family": "Serine/threonine-protein kinase",
+      "sequence_length": 626,
+      "sequence_region": "Full canonical UniProt sequence (P9WI81)",
+      "in_domain": true,
+      "is_positive_control": false,
+      "domain_label": "In-Domain (Kinase Homolog)",
+      "domain_rationale": "Eukaryotic-like Ser/Thr kinase catalytic fold homologous to the Davis kinase training distribution.",
+      "disease_burden": "10.8M annual cases and 1.25M deaths globally (WHO); rising multidrug-resistant (MDR-TB) burden.",
+      "target_biology": "Essential mycobacterial receptor-like Ser/Thr kinase controlling cell-wall peptidoglycan synthesis and division.",
+      "reference_note": "Mitoxantrone and host-directed tyrosine kinase inhibitors (e.g. Imatinib) have published anti-mycobacterial / PknB research signal.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Mitoxantrone",
+          "drug_id": "BRD-K21680192-300-15-1",
+          "pubchem_cid": "4212",
+          "rank": 1328,
+          "total_screened": 2249,
+          "top_percentile": 41.0,
+          "predicted_pkd": 5.369,
+          "estimated_kd_nm": 4278.78,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Imatinib",
+          "drug_id": "BRD-K92723993-001-12-5",
+          "pubchem_cid": "5291",
+          "rank": 2190,
+          "total_screened": 2249,
+          "top_percentile": 2.67,
+          "predicted_pkd": 5.059,
+          "estimated_kd_nm": 8724.29,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 6.948,
+        "pkd_p95": 5.88,
+        "pkd_median": 5.413
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 18,
+        "emerging": 17,
+        "supported": 15,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/mtb_pknb.json"
+    },
+    {
+      "id": "pf_cdpk1",
+      "name": "P. falciparum PfCDPK1 Kinase",
+      "short_name": "PfCDPK1",
+      "disease": "Malaria",
+      "pathogen": "Plasmodium falciparum (3D7)",
+      "uniprot_id": "P62344",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P62344",
+      "protein_family": "Calcium-dependent protein kinase",
+      "sequence_length": 524,
+      "sequence_region": "Full canonical UniProt sequence (P62344)",
+      "in_domain": true,
+      "is_positive_control": false,
+      "domain_label": "In-Domain (Kinase Homolog)",
+      "domain_rationale": "Canonical Ca2+/calmodulin-like protein kinase catalytic domain closely aligned with Davis CAMK family kinases.",
+      "disease_burden": "263M annual cases and ~597,000 deaths globally (WHO), predominantly children under 5 in sub-Saharan Africa.",
+      "target_biology": "Essential blood-stage parasite kinase regulating motor complex phosphorylation required for red blood cell invasion.",
+      "reference_note": "ATP-competitive human kinase inhibitors (including Imatinib and multi-kinase scaffolds) have been explored for antimalarial repurposing.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Dasatinib",
+          "drug_id": "BRD-K49328571-001-19-2",
+          "pubchem_cid": "3062316",
+          "rank": 36,
+          "total_screened": 2249,
+          "top_percentile": 98.44,
+          "predicted_pkd": 5.847,
+          "estimated_kd_nm": 1422.55,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Sunitinib",
+          "drug_id": "BRD-K42828737-001-03-3",
+          "pubchem_cid": "5329102",
+          "rank": 13,
+          "total_screened": 2249,
+          "top_percentile": 99.47,
+          "predicted_pkd": 6.006,
+          "estimated_kd_nm": 985.96,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Imatinib",
+          "drug_id": "BRD-K92723993-001-12-5",
+          "pubchem_cid": "5291",
+          "rank": 1997,
+          "total_screened": 2249,
+          "top_percentile": 11.25,
+          "predicted_pkd": 5.117,
+          "estimated_kd_nm": 7630.18,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 6.51,
+        "pkd_p95": 5.712,
+        "pkd_median": 5.283
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 26,
+        "emerging": 17,
+        "supported": 7,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/pf_cdpk1.json"
+    },
+    {
+      "id": "ld_crk3",
+      "name": "L. donovani CRK3 Kinase",
+      "short_name": "LdCRK3",
+      "disease": "Visceral Leishmaniasis",
+      "pathogen": "Leishmania donovani",
+      "uniprot_id": "Q7K8Z1",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/Q7K8Z1",
+      "protein_family": "Cyclin-dependent protein kinase",
+      "sequence_length": 311,
+      "sequence_region": "Full canonical UniProt sequence (Q7K8Z1)",
+      "in_domain": true,
+      "is_positive_control": false,
+      "domain_label": "In-Domain (Kinase Homolog)",
+      "domain_rationale": "Cyclin-dependent kinase (CMGC group) sharing conserved ATP-binding hinge architecture with Davis CDK targets.",
+      "disease_burden": "50,000-90,000 visceral leishmaniasis cases/year; >95% fatal if untreated, with toxic or costly current regimens.",
+      "target_biology": "Essential cell-cycle CDK homolog governing G2/M progression in Leishmania amastigotes.",
+      "reference_note": "FDA protein kinase inhibitors (e.g. Lapatinib, Sunitinib) have been investigated as antileishmanial repurposing leads.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Sunitinib",
+          "drug_id": "BRD-K42828737-001-03-3",
+          "pubchem_cid": "5329102",
+          "rank": 6,
+          "total_screened": 2249,
+          "top_percentile": 99.78,
+          "predicted_pkd": 5.702,
+          "estimated_kd_nm": 1985.65,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Sorafenib",
+          "drug_id": "BRD-K23984367-075-15-2",
+          "pubchem_cid": "216239",
+          "rank": 741,
+          "total_screened": 2249,
+          "top_percentile": 67.1,
+          "predicted_pkd": 5.242,
+          "estimated_kd_nm": 5722.19,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Lapatinib",
+          "drug_id": "BRD-K19687926-001-10-8",
+          "pubchem_cid": "208908",
+          "rank": 2245,
+          "total_screened": 2249,
+          "top_percentile": 0.22,
+          "predicted_pkd": 4.934,
+          "estimated_kd_nm": 11654.49,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 5.835,
+        "pkd_p95": 5.431,
+        "pkd_median": 5.188
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 37,
+        "emerging": 11,
+        "supported": 2,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/ld_crk3.json"
+    },
+    {
+      "id": "tc_gsk3",
+      "name": "T. cruzi GSK-3 Kinase",
+      "short_name": "TcGSK3",
+      "disease": "Chagas Disease",
+      "pathogen": "Trypanosoma cruzi (CL Brener)",
+      "uniprot_id": "Q4DH61",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/Q4DH61",
+      "protein_family": "Glycogen synthase kinase-3 (CMGC kinase)",
+      "sequence_length": 486,
+      "sequence_region": "Full canonical UniProt sequence (Q4DH61)",
+      "in_domain": true,
+      "is_positive_control": false,
+      "domain_label": "In-Domain (Kinase Homolog)",
+      "domain_rationale": "CMGC-family Ser/Thr kinase closely homologous to human GSK3A/GSK3B represented in the Davis benchmark.",
+      "disease_burden": "6-7 million people infected worldwide (WHO), causing chronic cardiomyopathy with only two toxic legacy drugs.",
+      "target_biology": "Essential trypanosomatid kinase regulating parasite proliferation and survival; validated NTD drug target.",
+      "reference_note": "Multiple FDA kinase inhibitors have been screened against Trypanosoma cruzi kinases in repurposing literature.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Imatinib",
+          "drug_id": "BRD-K92723993-001-12-5",
+          "pubchem_cid": "5291",
+          "rank": 2230,
+          "total_screened": 2249,
+          "top_percentile": 0.89,
+          "predicted_pkd": 4.936,
+          "estimated_kd_nm": 11600.22,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Sorafenib",
+          "drug_id": "BRD-K23984367-075-15-2",
+          "pubchem_cid": "216239",
+          "rank": 562,
+          "total_screened": 2249,
+          "top_percentile": 75.06,
+          "predicted_pkd": 5.236,
+          "estimated_kd_nm": 5805.68,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Sunitinib",
+          "drug_id": "BRD-K42828737-001-03-3",
+          "pubchem_cid": "5329102",
+          "rank": 12,
+          "total_screened": 2249,
+          "top_percentile": 99.51,
+          "predicted_pkd": 5.611,
+          "estimated_kd_nm": 2450.79,
+          "in_top_k": true
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 5.898,
+        "pkd_p95": 5.386,
+        "pkd_median": 5.149
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 37,
+        "emerging": 11,
+        "supported": 2,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/tc_gsk3.json"
+    },
+    {
+      "id": "human_abl1",
+      "name": "Human ABL1 Kinase (Positive Control)",
+      "short_name": "ABL1 Control",
+      "disease": "Positive Control Validation (CML Kinase)",
+      "pathogen": "Homo sapiens (Reference Positive Control)",
+      "uniprot_id": "P00519",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P00519",
+      "protein_family": "Non-receptor tyrosine-protein kinase",
+      "sequence_length": 1130,
+      "sequence_region": "Full canonical UniProt sequence (P00519)",
+      "in_domain": true,
+      "is_positive_control": true,
+      "domain_label": "In-Domain (Human Positive Control)",
+      "domain_rationale": "Canonical human tyrosine kinase included explicitly so judges can verify that clinically proven FDA BCR-ABL inhibitors rank at the top.",
+      "disease_burden": "Reference validation benchmark \u2014 confirms end-to-end screening sanity before trusting NTD prioritization rankings.",
+      "target_biology": "Tyrosine-protein kinase ABL1; validated clinical target of FDA-approved inhibitors Dasatinib, Nilotinib, Bosutinib, Ponatinib, and Imatinib.",
+      "reference_note": "FDA-approved clinical ABL1 inhibitors (Dasatinib, Nilotinib, Bosutinib, Ponatinib, Imatinib) serve as ground-truth positive controls.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Dasatinib",
+          "drug_id": "BRD-K49328571-001-19-2",
+          "pubchem_cid": "3062316",
+          "rank": 1,
+          "total_screened": 2249,
+          "top_percentile": 100.0,
+          "predicted_pkd": 7.723,
+          "estimated_kd_nm": 18.94,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Nilotinib",
+          "drug_id": "BRD-K81528515-001-15-9",
+          "pubchem_cid": "644241",
+          "rank": 11,
+          "total_screened": 2249,
+          "top_percentile": 99.56,
+          "predicted_pkd": 6.356,
+          "estimated_kd_nm": 440.73,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Bosutinib",
+          "drug_id": "BRD-K99964838-001-15-9",
+          "pubchem_cid": "5328940",
+          "rank": 2,
+          "total_screened": 2249,
+          "top_percentile": 99.96,
+          "predicted_pkd": 7.029,
+          "estimated_kd_nm": 93.57,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Ponatinib",
+          "drug_id": "BRD-K44227013-001-08-0",
+          "pubchem_cid": "24826799",
+          "rank": 39,
+          "total_screened": 2249,
+          "top_percentile": 98.31,
+          "predicted_pkd": 6.054,
+          "estimated_kd_nm": 883.09,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Imatinib",
+          "drug_id": "BRD-K92723993-001-12-5",
+          "pubchem_cid": "5291",
+          "rank": 18,
+          "total_screened": 2249,
+          "top_percentile": 99.24,
+          "predicted_pkd": 6.24,
+          "estimated_kd_nm": 575.67,
+          "in_top_k": true
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 2,
+        "pkd_max": 7.723,
+        "pkd_p95": 5.886,
+        "pkd_median": 5.506
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 25,
+        "emerging": 11,
+        "supported": 14,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/human_abl1.json"
+    },
+    {
+      "id": "denv2_ns3",
+      "name": "Dengue Virus NS3 Protease/Helicase",
+      "short_name": "DENV-2 NS3",
+      "disease": "Dengue Fever",
+      "pathogen": "Dengue virus type 2 (Thailand/16681)",
+      "uniprot_id": "P29990",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P29990",
+      "protein_family": "Flaviviral serine protease / RNA helicase",
+      "sequence_length": 618,
+      "sequence_region": "UniProt mature chain aa 1476-2093 (from polyprotein P29990)",
+      "in_domain": false,
+      "is_positive_control": false,
+      "domain_label": "Out-of-Domain (Non-Kinase \u2014 High Uncertainty)",
+      "domain_rationale": "Chymotrypsin-like serine protease and SF2 RNA helicase fold NOT present in the Davis kinase training distribution; rankings carry high domain-shift uncertainty.",
+      "disease_burden": "Estimated 100-400 million infections annually across >100 tropical countries with zero FDA-approved direct-acting antivirals.",
+      "target_biology": "Mature NS3 chain (polyprotein residues 1476-2093) essential for viral polyprotein cleavage and RNA replication.",
+      "reference_note": "Non-kinase viral target; rankings are exploratory only and require orthogonal docking / protease assay validation.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Sunitinib",
+          "drug_id": "BRD-K42828737-001-03-3",
+          "pubchem_cid": "5329102",
+          "rank": 1,
+          "total_screened": 2249,
+          "top_percentile": 100.0,
+          "predicted_pkd": 6.366,
+          "estimated_kd_nm": 430.9,
+          "in_top_k": true
+        },
+        {
+          "drug_name": "Erlotinib",
+          "drug_id": "BRD-K70401845-001-15-7",
+          "pubchem_cid": "176870",
+          "rank": 952,
+          "total_screened": 2249,
+          "top_percentile": 57.71,
+          "predicted_pkd": 5.62,
+          "estimated_kd_nm": 2396.99,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Dasatinib",
+          "drug_id": "BRD-K49328571-001-19-2",
+          "pubchem_cid": "3062316",
+          "rank": 220,
+          "total_screened": 2249,
+          "top_percentile": 90.26,
+          "predicted_pkd": 5.847,
+          "estimated_kd_nm": 1421.85,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 6.366,
+        "pkd_p95": 5.941,
+        "pkd_median": 5.593
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 31,
+        "emerging": 13,
+        "supported": 6,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/denv2_ns3.json"
+    },
+    {
+      "id": "pf_dhfr",
+      "name": "P. falciparum DHFR-TS",
+      "short_name": "PfDHFR-TS",
+      "disease": "Malaria",
+      "pathogen": "Plasmodium falciparum (K1)",
+      "uniprot_id": "P13922",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P13922",
+      "protein_family": "Dihydrofolate reductase-thymidylate synthase",
+      "sequence_length": 608,
+      "sequence_region": "Full canonical UniProt sequence (P13922)",
+      "in_domain": false,
+      "is_positive_control": false,
+      "domain_label": "Out-of-Domain (Non-Kinase \u2014 High Uncertainty)",
+      "domain_rationale": "Folate-pathway oxidoreductase outside the Davis kinase training distribution; explicitly flagged to prevent over-reliance on non-kinase affinity extrapolations.",
+      "disease_burden": "Widespread antifolate resistance (pyrimethamine/sulfadoxine) in P. falciparum threatens preventive malaria care.",
+      "target_biology": "Bifunctional folate biosynthesis enzyme essential for parasite thymidylate and DNA synthesis.",
+      "reference_note": "Known clinical antifolates (Pyrimethamine, Methotrexate) are tagged as reference drugs to honestly inspect out-of-domain recall limits.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Pyrimethamine",
+          "drug_id": "BRD-K88429204-001-38-5",
+          "pubchem_cid": "4993",
+          "rank": 1589,
+          "total_screened": 2249,
+          "top_percentile": 29.39,
+          "predicted_pkd": 5.326,
+          "estimated_kd_nm": 4717.45,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Methotrexate",
+          "drug_id": "BRD-K59456551-001-22-6",
+          "pubchem_cid": "126941",
+          "rank": 1048,
+          "total_screened": 2249,
+          "top_percentile": 53.45,
+          "predicted_pkd": 5.431,
+          "estimated_kd_nm": 3704.78,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Trimethoprim",
+          "drug_id": "BRD-K07208025-001-31-3",
+          "pubchem_cid": "5578",
+          "rank": 2246,
+          "total_screened": 2249,
+          "top_percentile": 0.18,
+          "predicted_pkd": 5.024,
+          "estimated_kd_nm": 9451.97,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 6.313,
+        "pkd_p95": 5.754,
+        "pkd_median": 5.417
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 24,
+        "emerging": 17,
+        "supported": 9,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/pf_dhfr.json"
+    },
+    {
+      "id": "mtb_inha",
+      "name": "M. tuberculosis InhA Reductase",
+      "short_name": "Mtb InhA",
+      "disease": "Tuberculosis",
+      "pathogen": "Mycobacterium tuberculosis (H37Rv)",
+      "uniprot_id": "P9WGR1",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P9WGR1",
+      "protein_family": "Enoyl-ACP reductase (NADH-dependent)",
+      "sequence_length": 269,
+      "sequence_region": "Full canonical UniProt sequence (P9WGR1)",
+      "in_domain": false,
+      "is_positive_control": false,
+      "domain_label": "Out-of-Domain (Non-Kinase \u2014 High Uncertainty)",
+      "domain_rationale": "Short-chain dehydrogenase/reductase (SDR) Rossmann fold outside Davis kinase training distribution; high uncertainty outside kinase space.",
+      "disease_burden": "Isoniazid-resistant TB (katG/inhA mutations) affects >1M patients annually, requiring direct InhA inhibitors.",
+      "target_biology": "Essential FAS-II mycolic acid biosynthesis reductase; clinical target of activated Isoniazid and Ethionamide.",
+      "reference_note": "Known clinical TB drugs (Isoniazid prodrug, Ethionamide) are tagged to transparently illustrate non-kinase domain shift.",
+      "reference_control_ranks": [
+        {
+          "drug_name": "Isoniazid",
+          "drug_id": "BRD-K87202646-001-39-9",
+          "pubchem_cid": "3767",
+          "rank": 989,
+          "total_screened": 2249,
+          "top_percentile": 56.07,
+          "predicted_pkd": 5.356,
+          "estimated_kd_nm": 4409.29,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Ethionamide",
+          "drug_id": "BRD-K33710385-001-05-9",
+          "pubchem_cid": "2761171",
+          "rank": 1454,
+          "total_screened": 2249,
+          "top_percentile": 35.39,
+          "predicted_pkd": 5.276,
+          "estimated_kd_nm": 5298.36,
+          "in_top_k": false
+        },
+        {
+          "drug_name": "Triclosan",
+          "drug_id": "BRD-K41731458-001-15-1",
+          "pubchem_cid": "5564",
+          "rank": 2035,
+          "total_screened": 2249,
+          "top_percentile": 9.56,
+          "predicted_pkd": 5.159,
+          "estimated_kd_nm": 6930.91,
+          "in_top_k": false
+        }
+      ],
+      "library_stats": {
+        "n_drugs_screened": 2249,
+        "n_predicted_active_pkd7": 0,
+        "pkd_max": 6.257,
+        "pkd_p95": 5.746,
+        "pkd_median": 5.332
+      },
+      "novelty_breakdown_top_k": {
+        "unexplored": 18,
+        "emerging": 15,
+        "supported": 17,
+        "unavailable": 0
+      },
+      "screening_file": "/data/screening/mtb_inha.json"
+    }
+  ]
+}

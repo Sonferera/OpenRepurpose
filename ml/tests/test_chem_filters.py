@@ -33,6 +33,11 @@ def test_salt_stripping_keeps_largest_organic_fragment() -> None:
     assert mol is not None and canon is not None
     assert "." not in canon
     assert mol.GetNumHeavyAtoms() > 30
+    # Reject metal-containing / contrast complexes (e.g., Gadolinium, Platinum)
+    m_metal, c_metal = strip_salts_to_largest_fragment("[Gd+3].O=C([O-])CN(CCN(CC(=O)[O-])CC(=O)[O-])CCO")
+    assert m_metal is None or c_metal is None or "Gd" not in c_metal
+    m_pt, c_pt = strip_salts_to_largest_fragment("N.N.Cl[Pt]Cl")
+    assert m_pt is None and c_pt is None
 
 
 def test_medchem_lipinski_and_pains_detection() -> None:

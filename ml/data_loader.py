@@ -24,14 +24,12 @@ logger = logging.getLogger(__name__)
 
 # Official Therapeutics Data Commons (TDC) Harvard Dataverse datafile for DAVIS (tdc/metadata.py: 4291557)
 DAVIS_TDC_DATAVERSE_URL = "https://dataverse.harvard.edu/api/access/datafile/4291557"
-# Official ChEMBL REST API for FDA/globally approved small-molecule drugs (max_phase=4)
-CHEMBL_APPROVED_API = (
-    "https://www.ebi.ac.uk/chembl/api/data/molecule.json"
-    "?max_phase=4&molecule_type=Small%20molecule&limit=1000"
+# Official Broad Institute Drug Repurposing Hub (Corsello et al., Nature Medicine 2017)
+BROAD_REPURPOSING_DRUGS_URL = (
+    "https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_drugs_20200324.txt"
 )
-CHEMBL_INDICATIONS_API = (
-    "https://www.ebi.ac.uk/chembl/api/data/drug_indication.json"
-    "?max_phase_for_ind=4&limit=1000"
+BROAD_REPURPOSING_SAMPLES_URL = (
+    "https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_samples_20200324.txt"
 )
 
 
@@ -199,69 +197,68 @@ def load_davis_dataset(
     return df_clean, meta
 
 
-def _fetch_chembl_approved_drugs(max_drugs: int = 2500) -> list[dict[str, Any]]:
-    """Fetch FDA/globally approved small molecules from the official ChEMBL REST API."""
-    drugs: list[dict[str, Any]] = []
-    next_url: str | None = CHEMBL_APPROVED_API
-    session = requests.Session()
-    session.headers.update({"Accept": "application/json", "User-Agent": "OpenRepurpose/0.1"})
+def _fetch_broad_launched_drugs(raw_dir: Path) -> list[dict[str, Any]]:
+    """Fetch clinically Launched small molecules from Broad Institute Drug Repurposing Hub."""
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    drugs_path = raw_dir / "repurposing_drugs_20200324.txt"
+    samples_path = raw_dir / "repurposing_samples_20200324.txt"
 
-    while next_url and len(drugs) < max_drugs:
-        resp = session.get(next_url, timeout=60)
+    if not drugs_path.exists():
+        resp = requests.get(BROAD_REPURPOSING_DRUGS_URL, timeout=60)
         resp.raise_for_status()
-        payload = resp.json()
-        for mol in payload.get("molecules", []):
-            structs = mol.get("molecule_structures") or {}
-            smi = structs.get("canonical_smiles")
-            name = mol.get("pref_name")
-            chembl_id = mol.get("molecule_chembl_id")
-            if not smi or not name:
-                continue
-            drugs.append(
-                {
-                    "chembl_id": str(chembl_id or ""),
-                    "drug_name": str(name).strip().title(),
-                    "raw_smiles": str(smi),
-                    "first_approval": mol.get("first_approval"),
-                    "indication_class": str(mol.get("indication_class") or "").strip(),
-                    "oral": bool(mol.get("oral", False)),
-                }
-            )
-        next_rel = (payload.get("page_meta") or {}).get("next")
-        next_url = f"https://www.ebi.ac.uk{next_rel}" if next_rel else None
+        drugs_path.write_bytes(resp.content)
+    if not samples_path.exists():
+        resp = requests.get(BROAD_REPURPOSING_SAMPLES_URL, timeout=60)
+        resp.raise_for_status()
+        samples_path.write_bytes(resp.content)
 
-    # Enrich primary indications from ChEMBL drug_indication endpoint (best-effort)
-    indication_map: dict[str, str] = {}
-    try:
-        ind_url: str | None = CHEMBL_INDICATIONS_API
-        pages = 0
-        while ind_url and pages < 4:
-            resp = session.get(ind_url, timeout=45)
-            resp.raise_for_status()
-            payload = resp.json()
-            for item in payload.get("drug_indications", []):
-                cid = item.get("molecule_chembl_id")
-                mesh = item.get("mesh_heading")
-                if cid and mesh and cid not in indication_map:
-                    indication_map[str(cid)] = str(mesh)
-            next_rel = (payload.get("page_meta") or {}).get("next")
-            ind_url = f"https://www.ebi.ac.uk{next_rel}" if next_rel else None
-            pages += 1
-    except Exception as exc:
-        logger.warning("ChEMBL indication enrichment skipped: %s", exc)
+    drugs_df = pd.read_csv(drugs_path, sep="\t", comment="!")
+    samples_df = pd.read_csv(samples_path, sep="\t", comment="!")
 
-    for entry in drugs:
-        if not entry["indication_class"] and entry["chembl_id"] in indication_map:
-            entry["indication_class"] = indication_map[entry["chembl_id"]]
+    launched = drugs_df[drugs_df["clinical_phase"].astype(str).str.strip() == "Launched"].copy()
+    valid_samples = (
+        samples_df[["pert_iname", "broad_id", "smiles", "pubchem_cid"]]
+        .dropna(subset=["pert_iname", "smiles"])
+        .drop_duplicates(subset=["pert_iname"], keep="first")
+    )
+    merged = launched.merge(valid_samples, on="pert_iname", how="inner")
 
-    return drugs
+    def _clean_text(val: Any, max_items: int = 2) -> str:
+        if pd.isna(val):
+            return ""
+        parts = [p.strip() for p in str(val).split("|") if p.strip()]
+        return "; ".join(parts[:max_items])
+
+    records: list[dict[str, Any]] = []
+    for _, row in merged.iterrows():
+        raw_name = str(row["pert_iname"]).strip()
+        indication = _clean_text(row.get("indication"), max_items=2)
+        disease_area = _clean_text(row.get("disease_area"), max_items=2)
+        moa = _clean_text(row.get("moa"), max_items=2)
+        known_ind = indication or disease_area or moa or "Clinically launched therapeutic"
+
+        cid_val = row.get("pubchem_cid")
+        pubchem_cid = str(int(float(cid_val))) if pd.notna(cid_val) and str(cid_val).strip() else ""
+
+        records.append(
+            {
+                "drug_id": str(row.get("broad_id") or "").strip(),
+                "pubchem_cid": pubchem_cid,
+                "drug_name": raw_name[:1].upper() + raw_name[1:] if raw_name.islower() else raw_name,
+                "raw_smiles": str(row["smiles"]).strip(),
+                "moa": moa or "Clinical small molecule",
+                "known_indication": known_ind,
+                "disease_area": disease_area,
+            }
+        )
+    return records
 
 
 def load_fda_approved_library(
     data_dir: Path = DATA_DIR,
     force_rebuild: bool = False,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Load, filter (120 <= MW <= 900, single organic fragment, valid RDKit), and cache approved drugs."""
+    """Load, filter (120 <= MW <= 900, single organic fragment, valid RDKit), and cache Launched drugs."""
     ensure_directories()
     fda_csv = data_dir / "fda_approved_clean.csv"
     fda_meta = data_dir / "fda_approved_meta.json"
@@ -271,7 +268,7 @@ def load_fda_approved_library(
         meta = json.loads(fda_meta.read_text(encoding="utf-8"))
         return df, meta
 
-    raw_drugs = _fetch_chembl_approved_drugs()
+    raw_drugs = _fetch_broad_launched_drugs(data_dir / "raw_broad_hub")
     seen_smiles: set[str] = set()
     clean_rows: list[dict[str, Any]] = []
     dropped_invalid = 0
@@ -298,13 +295,14 @@ def load_fda_approved_library(
         seen_smiles.add(canon)
         clean_rows.append(
             {
-                "chembl_id": entry["chembl_id"],
+                "drug_id": entry["drug_id"],
+                "pubchem_cid": entry["pubchem_cid"],
                 "drug_name": entry["drug_name"],
                 "canonical_smiles": profile.canonical_smiles,
                 "scaffold_smiles": profile.scaffold_smiles,
-                "first_approval": entry.get("first_approval"),
-                "known_indication": entry.get("indication_class") or "Approved small-molecule therapeutic",
-                "oral": bool(entry.get("oral", False)),
+                "moa": entry["moa"],
+                "known_indication": entry["known_indication"],
+                "disease_area": entry["disease_area"],
                 "mol_wt": profile.mol_wt,
                 "logp": profile.logp,
                 "hbd": profile.hbd,
@@ -323,7 +321,8 @@ def load_fda_approved_library(
     df.to_csv(fda_csv, index=False)
 
     meta = {
-        "source": "ChEMBL REST API (max_phase=4, Small molecule)",
+        "source": "Broad Institute Drug Repurposing Hub (2020-03-24, clinical_phase=Launched)",
+        "source_url": BROAD_REPURPOSING_DRUGS_URL,
         "n_raw_fetched": len(raw_drugs),
         "dropped_invalid_or_inorganic": dropped_invalid,
         "dropped_mw_out_of_range": dropped_mw,
