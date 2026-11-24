@@ -13,8 +13,8 @@ transformers>=4.40.0,<5.0.0
 # Cheminformatics & molecular geometry
 rdkit>=2023.9.5
 
-# Benchmark data retrieval & PubMed E-utilities
-PyTDC>=0.4.1
+# Benchmark data retrieval (official TDC Harvard Dataverse + ChEMBL + PubMed)
+# Note: PyTDC is optional because PyTDC>=1.0 pulls tiledbsoma (no Windows wheel).
 requests>=2.31.0,<3.0.0
 tqdm>=4.66.0,<5.0.0
 
