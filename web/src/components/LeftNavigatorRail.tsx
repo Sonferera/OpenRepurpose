@@ -190,7 +190,7 @@ export default function LeftNavigatorRail({
           </select>
         </div>
 
-        {/* Step 2: Approved FDA Drugs Controls */}
+        {/* FDA Drugs Controls */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -209,14 +209,48 @@ export default function LeftNavigatorRail({
             <button
               type="button"
               onClick={onToggleSortOrder}
-              className="text-xs font-semibold text-[var(--accent-ink)] hover:underline mono-num whitespace-nowrap shrink-0"
+              aria-label={`Sort by: ${sortOrder === "delta" ? "Delta pKd" : "Raw pKd"} (click to toggle)`}
+              title={`Sorted by ${sortOrder === "delta" ? "Delta pKd" : "Raw pKd"} — click to switch`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-surface)] border border-transparent hover:border-[var(--border-subtle)] transition-colors shrink-0"
             >
-              Sort: {sortOrder === "delta" ? "Delta pKd" : "Raw pKd"}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5 text-[var(--accent-ink)]"
+                aria-hidden="true"
+              >
+                <path d="m3 16 4 4 4-4" />
+                <path d="M7 20V4" />
+                <path d="m21 8-4-4-4 4" />
+                <path d="M17 4v16" />
+              </svg>
+              <span className="mono-num text-[11px] font-medium">
+                {sortOrder === "delta" ? "Δ pKd" : "Raw"}
+              </span>
             </button>
           </div>
 
+          <div>
+            <label htmlFor="drug-stream-search" className="sr-only">
+              Filter drugs by name, mechanism, or indication
+            </label>
+            <input
+              id="drug-stream-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => onChangeSearchQuery(e.target.value)}
+              placeholder="Search drug name or indication..."
+              className="w-full min-h-[38px] px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
+            />
+          </div>
+
           <div
-            className="grid grid-cols-4 gap-1 bg-[var(--bg-subtle)] p-1 rounded-lg border border-[var(--border-subtle)]"
+            className="flex items-center gap-1 overflow-x-auto studio-scroll pb-1 no-scrollbar"
             role="group"
             aria-label="Quick candidate filters"
           >
@@ -233,29 +267,15 @@ export default function LeftNavigatorRail({
                 type="button"
                 onClick={() => onChangeQuickChip(key)}
                 aria-pressed={quickChip === key}
-                className={`min-h-[32px] px-1 py-1 text-xs whitespace-nowrap rounded-md font-semibold transition-colors ${
+                className={`min-h-[28px] px-2.5 py-1 text-xs whitespace-nowrap rounded-md font-semibold shrink-0 transition-colors ${
                   quickChip === key
                     ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                    : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+                    : "bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 {label}
               </button>
             ))}
-          </div>
-
-          <div>
-            <label htmlFor="drug-stream-search" className="sr-only">
-              Filter drugs by name, mechanism, or indication
-            </label>
-            <input
-              id="drug-stream-search"
-              type="search"
-              value={searchQuery}
-              onChange={(e) => onChangeSearchQuery(e.target.value)}
-              placeholder="Search drug name or indication..."
-              className="w-full min-h-[38px] px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
-            />
           </div>
         </div>
       </div>
