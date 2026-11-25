@@ -284,14 +284,24 @@ export default function LeftNavigatorRail({
               <span className="truncate">Pathogen Target</span>
             </button>
             {activeTarget && (
-              <span
-                className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold leading-none shrink-0 ${domainBadgeClass}`}
-              >
-                {activeTarget.is_positive_control
-                  ? "Control"
-                  : activeTarget.in_domain
-                    ? "In-Domain"
-                    : "Out-of-Domain"}
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--ink-secondary)] shrink-0">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    activeTarget.is_positive_control
+                      ? "bg-[var(--accent-ink)]"
+                      : activeTarget.in_domain
+                        ? "bg-[var(--selective)]"
+                        : "bg-[var(--alert)]"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span className="font-medium">
+                  {activeTarget.is_positive_control
+                    ? "Control"
+                    : activeTarget.in_domain
+                      ? "In-Domain"
+                      : "Out-of-Domain"}
+                </span>
               </span>
             )}
           </div>
@@ -547,7 +557,7 @@ export default function LeftNavigatorRail({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="font-semibold text-xs truncate">
-                      <span className="mono-num text-[var(--ink-muted)] font-medium mr-1">
+                      <span className="mono-num text-[var(--ink-muted)] font-normal mr-1">
                         #{shownRank}
                       </span>
                       {c.drug_name}
@@ -563,9 +573,9 @@ export default function LeftNavigatorRail({
 
                   {/* Secondary info: hidden by default, visible on hover or when selected */}
                   <div
-                    className={`items-center gap-1.5 mt-0.5 text-[11px] truncate ${
-                      isSelected ? "text-[var(--accent-ink)]" : "text-[var(--ink-secondary)]"
-                    } ${isSelected ? "flex" : "hidden group-hover:flex"}`}
+                    className={`items-center gap-1.5 mt-0.5 text-[11px] truncate text-[var(--ink-secondary)] ${
+                      isSelected ? "flex" : "hidden group-hover:flex"
+                    }`}
                   >
                     <span className="truncate">
                       {c.known_indication || c.moa || "Launched clinical compound"}
@@ -575,7 +585,7 @@ export default function LeftNavigatorRail({
                         <>
                           <span className="text-[var(--ink-muted)] shrink-0">•</span>
                           <span
-                            className="mono-num shrink-0 px-1 py-0.2 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[9px] font-bold leading-none"
+                            className="mono-num shrink-0 px-1 py-0.2 rounded bg-[var(--bg-subtle)] text-[var(--ink-muted)] text-[9px] font-medium border border-[var(--border-subtle)] leading-none"
                             title="0 PubMed co-occurrence hits"
                           >
                             0 lit
