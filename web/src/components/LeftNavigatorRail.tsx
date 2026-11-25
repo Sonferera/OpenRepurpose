@@ -2,10 +2,9 @@
 
 import React from "react";
 import type { ScreeningCandidate, TargetSummary } from "@/lib/types";
+import type { QuickFilterChip, SortOrder, StudioTheme, TriageShortlistEntry } from "@/lib/types";
 
-export type QuickFilterChip = "all" | "novel" | "selective" | "bias";
-export type SortOrder = "delta" | "raw";
-export type StudioTheme = "paper" | "dark";
+export type { QuickFilterChip, SortOrder, StudioTheme } from "@/lib/types";
 
 interface LeftNavigatorRailProps {
   theme: StudioTheme;
@@ -24,8 +23,9 @@ interface LeftNavigatorRailProps {
   onChangeSearchQuery: (q: string) => void;
   onResetFilters: () => void;
   onOpenCustomModal: () => void;
-  localApiOnline: boolean;
   totalScreened: number;
+  shortlistDrugIds: string[];
+  onToggleShortlist: (drugId: string) => void;
 }
 
 export default function LeftNavigatorRail({
@@ -45,8 +45,9 @@ export default function LeftNavigatorRail({
   onChangeSearchQuery,
   onResetFilters,
   onOpenCustomModal,
-  localApiOnline,
   totalScreened,
+  shortlistDrugIds,
+  onToggleShortlist,
 }: LeftNavigatorRailProps) {
   const activeTarget = targets.find((t) => t.id === activeTargetId) ?? targets[0];
   const inDomainKinases = targets.filter((t) => t.in_domain && !t.is_positive_control);
@@ -204,7 +205,7 @@ export default function LeftNavigatorRail({
               onClick={onToggleSortOrder}
               className="text-xs font-semibold text-[var(--accent-ink)] hover:underline mono-num whitespace-nowrap shrink-0"
             >
-              Sort: {sortOrder === "delta" ? "ΔpKd" : "Raw pKd"}
+              Sort: {sortOrder === "delta" ? "Delta pKd" : "Raw pKd"}
             </button>
           </div>
 
@@ -263,7 +264,7 @@ export default function LeftNavigatorRail({
             <button
               type="button"
               onClick={onResetFilters}
-              className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-md"
+              className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-lg"
             >
               Reset all filters
             </button>
@@ -271,6 +272,7 @@ export default function LeftNavigatorRail({
         ) : (
           candidates.map((c) => {
             const isSelected = c.drug_id === selectedDrugId;
+            const isInShortlist = shortlistDrugIds.includes(c.drug_id);
             const shownRank = sortOrder === "delta" ? c.rank_by_selectivity : c.rank;
             const deltaColor =
               c.specificity_tier === "low_promiscuous_bias"
@@ -280,47 +282,64 @@ export default function LeftNavigatorRail({
                   : "text-[var(--review)]";
 
             return (
-              <button
+              <div
                 key={c.drug_id}
-                type="button"
-                onClick={() => onSelectDrug(c.drug_id)}
-                aria-current={isSelected ? "true" : undefined}
-                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors min-h-[56px] ${
-                  isSelected
-                    ? "bg-[var(--bg-surface)] border-[var(--accent-ink)] ring-1 ring-[var(--accent-ink)] shadow-2xs"
-                    : "bg-transparent border-transparent hover:bg-[var(--bg-surface)] hover:border-[var(--border-subtle)]"
-                }`}
+                className="flex items-center gap-2"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-sm text-[var(--ink-primary)] truncate">
-                    <span className="mono-num text-[var(--ink-muted)] font-semibold mr-1.5">
-                      #{shownRank}
-                    </span>
-                    {c.drug_name}
-                  </span>
-                  <span
-                    className={`mono-num text-[13px] font-bold shrink-0 ${deltaColor}`}
-                    title={`Selectivity Delta-pKd: ${c.target_selectivity_delta.toFixed(3)} | Raw pKd: ${c.predicted_pkd.toFixed(2)}`}
-                  >
-                    {c.target_selectivity_delta >= 0 ? "+" : ""}
-                    {c.target_selectivity_delta.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2 mt-1 text-xs text-[var(--ink-secondary)]">
-                  <span className="truncate">
-                    {c.known_indication || c.moa || "Launched clinical compound"}
-                  </span>
-                  {c.novelty.pubmed_count === 0 &&
-                    c.specificity_tier !== "low_promiscuous_bias" && (
-                      <span
-                        className="mono-num shrink-0 px-1.5 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[10px] font-bold leading-none"
-                        title="0 PubMed co-occurrence hits"
-                      >
-                        0 lit
+                <button
+                  type="button"
+                  onClick={() => onSelectDrug(c.drug_id)}
+                  aria-current={isSelected ? "true" : undefined}
+                  className={`flex-1 text-left px-3 py-2.5 rounded-lg border transition-colors min-h-[56px] ${
+                    isSelected
+                      ? "bg-[var(--bg-surface)] border-[var(--accent-ink)] ring-1 ring-[var(--accent-ink)] shadow-2xs"
+                      : "bg-transparent border-transparent hover:bg-[var(--bg-surface)] hover:border-[var(--border-subtle)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-[var(--ink-primary)] truncate">
+                      <span className="mono-num text-[var(--ink-muted)] font-semibold mr-1.5">
+                        #{shownRank}
                       </span>
-                    )}
-                </div>
-              </button>
+                      {c.drug_name}
+                    </span>
+                    <span
+                      className={`mono-num text-[13px] font-bold shrink-0 ${deltaColor}`}
+                      title={`Selectivity Delta-pKd: ${c.target_selectivity_delta.toFixed(3)} | Raw pKd: ${c.predicted_pkd.toFixed(2)}`}
+                    >
+                      {c.target_selectivity_delta >= 0 ? "+" : ""}
+                      {c.target_selectivity_delta.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-1 text-xs text-[var(--ink-secondary)]">
+                    <span className="truncate">
+                      {c.known_indication || c.moa || "Launched clinical compound"}
+                    </span>
+                    {c.novelty.pubmed_count === 0 &&
+                      c.specificity_tier !== "low_promiscuous_bias" && (
+                        <span
+                          className="mono-num shrink-0 px-1.5 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[10px] font-bold leading-none"
+                          title="0 PubMed co-occurrence hits"
+                        >
+                          0 lit
+                        </span>
+                      )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleShortlist(c.drug_id)}
+                  aria-label={isInShortlist ? `Remove ${c.drug_name} from triage set` : `Add ${c.drug_name} to triage set`}
+                  aria-pressed={isInShortlist}
+                  className={`flex-shrink-0 w-11 h-11 rounded-lg font-bold text-sm flex items-center justify-center transition-colors ${
+                    isInShortlist
+                      ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                      : "bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`}
+                >
+                  {isInShortlist ? "✓" : "+"}
+                </button>
+              </div>
             );
           })
         )}
@@ -333,13 +352,6 @@ export default function LeftNavigatorRail({
           onClick={onOpenCustomModal}
           className="w-full min-h-[42px] px-3 py-2 text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-2"
         >
-          {localApiOnline && (
-            <span
-              className="w-2 h-2 rounded-full bg-[var(--selective)]"
-              title="Local FastAPI inference server online"
-              aria-hidden="true"
-            />
-          )}
           <span>Score Custom FASTA + SMILES</span>
         </button>
         <p className="text-xs text-[var(--ink-secondary)] leading-snug">

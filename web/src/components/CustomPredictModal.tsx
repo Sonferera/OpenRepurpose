@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import type { CustomPredictionResponse } from "@/lib/types";
-import type { StudioTheme } from "./LeftNavigatorRail";
+import type { StudioTheme } from "@/lib/types";
+import { copyText } from "@/lib/clipboard";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 
 interface CustomPredictModalProps {
@@ -45,6 +46,10 @@ export default function CustomPredictModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<CustomPredictionResponse | null>(null);
 
+  // F5: Detect platform for startup command
+  const [startupCommand, setStartupCommand] = useState<string>("");
+  const [copyCmdLabel, setCopyCmdLabel] = useState<string>("Copy command");
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -53,6 +58,29 @@ export default function CustomPredictModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // F5: Determine startup command based on platform
+  useEffect(() => {
+    if (!open) return;
+
+    // Try navigator.userAgentData.platform (Chrome 119+)
+    // Fall back to navigator.platform
+    const platform = (navigator as any).userAgentData?.platform;
+    const platformFallback = navigator.platform;
+
+    let detectedPlatform = "win32"; // default to Windows
+    if (typeof platform === "string" && platform.trim()) {
+      detectedPlatform = platform.toLowerCase();
+    } else if (typeof platformFallback === "string" && platformFallback.trim()) {
+      detectedPlatform = platformFallback.toLowerCase();
+    }
+
+    if (detectedPlatform.startsWith("win")) {
+      setStartupCommand(".venv\\Scripts\\python.exe -m uvicorn api.server:app --host 127.0.0.1 --port 8000");
+    } else {
+      setStartupCommand(".venv/bin/python -m uvicorn api.server:app --host 127.0.0.1 --port 8000");
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -96,6 +124,16 @@ export default function CustomPredictModal({
     }
   };
 
+  // F5: Handle copy command
+  const handleCopyCommand = async () => {
+    if (!startupCommand) return;
+    const success = await copyText(startupCommand);
+    if (success) {
+      setCopyCmdLabel("Copied");
+      setTimeout(() => setCopyCmdLabel("Copy command"), 2000);
+    }
+  };
+
   const activeSvgMarkup =
     result && (theme === "dark" && result.svg_2d_dark ? result.svg_2d_dark : result.svg_2d);
 
@@ -136,8 +174,15 @@ export default function CustomPredictModal({
               and SMILES on your GPU or CPU, start the local FastAPI bridge:
             </p>
             <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-2.5 mono-num text-xs text-[var(--accent-ink)] select-all">
-              .venv\Scripts\python.exe -m uvicorn api.server:app --host 127.0.0.1 --port 8000
+              {startupCommand}
             </div>
+            <button
+              type="button"
+              onClick={handleCopyCommand}
+              className="text-xs text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] underline"
+            >
+              {copyCmdLabel}
+            </button>
             {errorMsg && <p className="text-[var(--alert)] font-medium">{errorMsg}</p>}
             <div className="flex items-center justify-end gap-2">
               <button

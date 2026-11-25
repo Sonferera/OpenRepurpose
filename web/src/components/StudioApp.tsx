@@ -9,29 +9,53 @@ import {
   loadAllScreeningsWithCrossMap,
 } from "@/lib/data";
 import type {
+  CenterStageMode,
   CrossTargetEdge,
   ErrorAnalysisPayload,
   EvalResultsPayload,
+  QuickFilterChip,
   ScatterSamplesPayload,
   ScreeningCandidate,
+  SortOrder,
+  StudioSession,
+  StudioTheme,
   TargetScreeningPayload,
   TargetsIndexPayload,
+  TriageShortlistEntry,
 } from "@/lib/types";
+import {
+  buildWorkspaceHash,
+  isStorageAvailable,
+  loadShortlist,
+  loadStoredSession,
+  parseWorkspaceHash,
+  saveShortlist,
+  saveStoredSession,
+  toggleShortlistEntry,
+} from "@/lib/workspaceState";
+import { copyText } from "@/lib/clipboard";
 import BenchmarkStage from "./BenchmarkStage";
 import BranchingGraphStage, { type GraphSubMode } from "./BranchingGraphStage";
 import CompareMatrixStage from "./CompareMatrixStage";
 import CustomPredictModal from "./CustomPredictModal";
 import LabTriageModal from "./LabTriageModal";
-import LeftNavigatorRail, {
-  type QuickFilterChip,
-  type SortOrder,
-  type StudioTheme,
-} from "./LeftNavigatorRail";
+import LeftNavigatorRail from "./LeftNavigatorRail";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 import RightMoleculeDock from "./RightMoleculeDock";
 import SafetyRisksStage from "./SafetyRisksStage";
 
-type CenterStageMode = "graph" | "3d" | "matrix" | "benchmark" | "risks";
+const DEFAULT_SESSION: StudioSession = {
+  stageMode: "graph",
+  targetId: "mtb_pknb",
+  drugId: null,
+  quickChip: "all",
+  sortOrder: "delta",
+  searchQuery: "",
+  minPkd: 5.8,
+  ro5Only: false,
+  noPains: false,
+  excludeInTrain: false,
+};
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
@@ -72,6 +96,21 @@ export default function StudioApp() {
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
 
+  // Triage shortlist state (F1)
+  const [shortlist, setShortlist] = useState<TriageShortlistEntry[]>(() => loadShortlist());
+
+  // Copy link feedback state (F2)
+  const [copyLinkLabel, setCopyLinkLabel] = useState<string>("Copy link");
+
+  // Assay cost input state (F1)
+  const [assayCost, setAssayCost] = useState<string>("");
+
+  // Restore applied flag to prevent overwriting URL before restore completes (F2)
+  const [restoreApplied, setRestoreApplied] = useState<boolean>(false);
+
+  const [provenanceCopyLabel, setProvenanceCopyLabel] = useState<string>("Copy command");
+  const [storageAvailable, setStorageAvailable] = useState<boolean>(true);
+
   // Sync initial theme from html[data-theme] / localStorage and responsive inspector default
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -80,6 +119,7 @@ export default function StudioApp() {
       setTheme(attr);
     }
     setInspectorOpen(window.matchMedia("(min-width: 1280px)").matches);
+    setStorageAvailable(isStorageAvailable());
   }, []);
 
   const handleToggleTheme = useCallback((next: StudioTheme) => {
@@ -159,18 +199,11 @@ export default function StudioApp() {
     }
   }, []);
 
+  // F2: Session restore after artifacts loads
   useEffect(() => {
     loadInitialData();
     checkLocalApi();
   }, [loadInitialData, checkLocalApi]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const h = window.location.hash.replace("#", "");
-    if (h === "3d" || h === "matrix" || h === "benchmark" || h === "risks" || h === "graph") {
-      setStageMode(h);
-    }
-  }, []);
 
   useEffect(() => {
     if ((stageMode === "benchmark" || stageMode === "risks") && !evalResults && !evalLoading) {
@@ -178,15 +211,231 @@ export default function StudioApp() {
     }
   }, [stageMode, evalResults, evalLoading, loadEvaluationArtifacts]);
 
-  const handleChangeStage = (mode: CenterStageMode) => {
-    setStageMode(mode);
+  // F2: Restore URL hash or stored session after artifacts load
+  useEffect(() => {
+    if (initLoading || restoreApplied) return;
+
+    const allCandidatesMap: Record<string, ScreeningCandidate[]> = {};
+    for (const [tid, sp] of Object.entries(screeningsByTarget)) {
+      allCandidatesMap[tid] = sp.candidates;
+    }
+
+    // URL state wins over the stored session; the stored session fills what the URL omits
+    const stored = loadStoredSession();
+    const fromUrl =
+      typeof window !== "undefined" && window.location.hash
+        ? parseWorkspaceHash(window.location.hash)
+        : null;
+    const restoredSession: Partial<StudioSession> | null =
+      fromUrl || stored ? { ...(stored ?? {}), ...(fromUrl ?? {}) } : null;
+
+    if (restoredSession && restoredSession.stageMode) {
+      // Validate targetId exists in loaded candidates
+      if (restoredSession.targetId && !allCandidatesMap[restoredSession.targetId]) {
+        restoredSession.targetId = undefined;
+      }
+      // Validate drugId exists in target's candidate pool
+      if (restoredSession.targetId && restoredSession.drugId) {
+        const pool = allCandidatesMap[restoredSession.targetId] || [];
+        const drugExists = pool.some((c) => c.drug_id === restoredSession.drugId);
+        if (!drugExists) {
+          restoredSession.drugId = null;
+        }
+      }
+
+      // Apply defaults for missing values
+      const merged: StudioSession = {
+        ...DEFAULT_SESSION,
+        stageMode: restoredSession.stageMode,
+        targetId: restoredSession.targetId || DEFAULT_SESSION.targetId,
+        drugId: restoredSession.drugId || DEFAULT_SESSION.drugId,
+        quickChip: restoredSession.quickChip ?? DEFAULT_SESSION.quickChip,
+        sortOrder: restoredSession.sortOrder ?? DEFAULT_SESSION.sortOrder,
+        searchQuery: restoredSession.searchQuery ?? DEFAULT_SESSION.searchQuery,
+        minPkd: restoredSession.minPkd ?? DEFAULT_SESSION.minPkd,
+        ro5Only: restoredSession.ro5Only ?? DEFAULT_SESSION.ro5Only,
+        noPains: restoredSession.noPains ?? DEFAULT_SESSION.noPains,
+        excludeInTrain: restoredSession.excludeInTrain ?? DEFAULT_SESSION.excludeInTrain,
+      };
+
+      setStageMode(merged.stageMode);
+      setActiveTargetId(merged.targetId);
+      setSelectedDrugId(merged.drugId || "");
+      setQuickChip(merged.quickChip);
+      setSortOrder(merged.sortOrder);
+      setSearchQuery(merged.searchQuery);
+      setMinPkd(merged.minPkd);
+      setRo5Only(merged.ro5Only);
+      setNoPains(merged.noPains);
+      setExcludeInTrain(merged.excludeInTrain);
+
+      // Write URL with history.replaceState (F2)
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", buildWorkspaceHash(merged));
+      }
+
+      // Persist to localStorage
+      saveStoredSession(merged);
+
+      setRestoreApplied(true);
+    } else {
+      setRestoreApplied(true);
+    }
+  }, [initLoading, restoreApplied, screeningsByTarget]);
+
+  // Apply a shared link pasted into the same tab: a hash change does not reload the page
+  useEffect(() => {
+    const onHashChange = () => {
+      const parsed = parseWorkspaceHash(window.location.hash);
+      if (!parsed) return;
+      if (parsed.stageMode) setStageMode(parsed.stageMode);
+      if (parsed.targetId) setActiveTargetId(parsed.targetId);
+      if (parsed.drugId) setSelectedDrugId(parsed.drugId);
+      if (parsed.quickChip) setQuickChip(parsed.quickChip);
+      if (parsed.sortOrder) setSortOrder(parsed.sortOrder);
+      if (parsed.searchQuery !== undefined) setSearchQuery(parsed.searchQuery);
+      if (parsed.minPkd !== undefined) setMinPkd(parsed.minPkd);
+      if (parsed.ro5Only !== undefined) setRo5Only(parsed.ro5Only);
+      if (parsed.noPains !== undefined) setNoPains(parsed.noPains);
+      if (parsed.excludeInTrain !== undefined) setExcludeInTrain(parsed.excludeInTrain);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  // Persist session on relevant changes (F2)
+  useEffect(() => {
+    if (!restoreApplied) return;
+    const session: StudioSession = {
+      stageMode,
+      targetId: activeTargetId,
+      drugId: selectedDrugId || null,
+      quickChip,
+      sortOrder,
+      searchQuery,
+      minPkd,
+      ro5Only,
+      noPains,
+      excludeInTrain,
+    };
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `#${mode}`);
+      window.history.replaceState(null, "", buildWorkspaceHash(session));
+    }
+    saveStoredSession(session);
+  }, [
+    stageMode,
+    activeTargetId,
+    selectedDrugId,
+    quickChip,
+    sortOrder,
+    searchQuery,
+    minPkd,
+    ro5Only,
+    noPains,
+    excludeInTrain,
+    restoreApplied,
+  ]);
+
+  // Persist shortlist on change (F1)
+  useEffect(() => {
+    saveShortlist(shortlist);
+  }, [shortlist]);
+
+  const handleSelectTarget = (targetId: string) => {
+    setActiveTargetId(targetId);
+    if (quickChip === "bias") {
+      setQuickChip("all");
     }
   };
 
+  const handleChangeQuickChip = (chip: QuickFilterChip) => {
+    setQuickChip(chip);
+    if (chip === "bias") {
+      setMinPkd(5.0);
+      setSortOrder("raw");
+    } else if (minPkd < 5.8) {
+      setMinPkd(5.8);
+      setSortOrder("delta");
+    }
+  };
+
+  const handleResetFilters = () => {
+    setQuickChip("all");
+    setSortOrder("delta");
+    setSearchQuery("");
+    setMinPkd(5.8);
+    setRo5Only(false);
+    setNoPains(false);
+    setExcludeInTrain(false);
+  };
+
+  const handleSelectCrossTarget = (targetId: string, drugId: string) => {
+    setActiveTargetId(targetId);
+    setQuickChip("all");
+    setMinPkd(5.0);
+    setSelectedDrugId(drugId);
+    setGraphSubMode("outcome");
+  };
+
+  // Derive activeScreening and activeTarget after loading check
   const activeScreening = screeningsByTarget[activeTargetId] || null;
   const activeTarget = activeScreening?.target || targetsIndex?.targets[0] || null;
+
+  // F1: Toggle shortlist entry
+  const handleToggleShortlist = (drugId: string) => {
+    setShortlist((prev) =>
+      toggleShortlistEntry(prev, { targetId: activeTargetId, drugId, addedAt: Date.now() })
+    );
+  };
+
+  // F1: Get shortlist drug IDs for current target
+  const shortlistDrugIds = useMemo(() => {
+    return shortlist
+      .filter((e) => e.targetId === activeTargetId)
+      .map((e) => e.drugId);
+  }, [shortlist, activeTargetId]);
+
+  // F1: Get shortlist entries as candidate objects for modal
+  const shortlistCandidates = useMemo(() => {
+    if (!activeScreening) return [];
+    const candidates = activeScreening.candidates;
+    const result: ScreeningCandidate[] = [];
+    for (const entry of shortlist) {
+      if (entry.targetId === activeTargetId) {
+        const candidate = candidates.find((c) => c.drug_id === entry.drugId);
+        if (candidate) result.push(candidate);
+      }
+    }
+    return result;
+  }, [shortlist, activeTargetId, activeScreening]);
+
+  const activeShortlistEntries = useMemo(
+    () => shortlist.filter((e) => e.targetId === activeTargetId),
+    [shortlist, activeTargetId]
+  );
+
+  // F2: Copy link handler with feedback
+  const handleCopyLink = async () => {
+    if (typeof window === "undefined") return;
+    const success = await copyText(window.location.href);
+    if (success) {
+      setCopyLinkLabel("Copied");
+      setTimeout(() => setCopyLinkLabel("Copy link"), 2000);
+    } else {
+      setCopyLinkLabel("Copy failed");
+      setTimeout(() => setCopyLinkLabel("Copy link"), 2000);
+    }
+  };
+
+  // Remove entry from shortlist (F1)
+  const handleRemoveShortlist = (drugId: string) => {
+    setShortlist((prev) => prev.filter((e) => !(e.targetId === activeTargetId && e.drugId === drugId)));
+  };
+
+  // Clear shortlist
+  const handleClearShortlist = () => {
+    setShortlist((prev) => prev.filter((e) => e.targetId !== activeTargetId));
+  };
 
   const filteredCandidates = useMemo<ScreeningCandidate[]>(() => {
     if (!activeScreening) return [];
@@ -253,42 +502,27 @@ export default function StudioApp() {
     );
   }, [activeScreening, filteredCandidates, selectedDrugId]);
 
-  const handleSelectTarget = (targetId: string) => {
-    setActiveTargetId(targetId);
-    if (quickChip === "bias") {
-      setQuickChip("all");
-    }
+  const handleChangeStage = (mode: CenterStageMode) => {
+    setStageMode(mode);
   };
 
-  const handleChangeQuickChip = (chip: QuickFilterChip) => {
-    setQuickChip(chip);
-    if (chip === "bias") {
-      setMinPkd(5.0);
-      setSortOrder("raw");
-    } else if (minPkd < 5.8) {
-      setMinPkd(5.8);
-      setSortOrder("delta");
-    }
-  };
+  // F4: Provenance line data
+  const provenanceLine = useMemo(() => {
+    if (!targetsIndex) return null;
+    return {
+      modelKey: targetsIndex.winner_model_key,
+      seed: targetsIndex.seed,
+      generatedAt: activeScreening?.generated_at_utc || targetsIndex.generated_at_utc,
+      reproduceCommand: targetsIndex.reproduce_command,
+    };
+  }, [targetsIndex, activeScreening]);
 
-  const handleResetFilters = () => {
-    setQuickChip("all");
-    setSortOrder("delta");
-    setSearchQuery("");
-    setMinPkd(5.8);
-    setRo5Only(false);
-    setNoPains(false);
-    setExcludeInTrain(false);
+  const handleCopyProvenance = async () => {
+    if (!provenanceLine) return;
+    const success = await copyText(provenanceLine.reproduceCommand);
+    setProvenanceCopyLabel(success ? "Copied" : "Copy failed");
+    setTimeout(() => setProvenanceCopyLabel("Copy command"), 2000);
   };
-
-  const handleSelectCrossTarget = (targetId: string, drugId: string) => {
-    setActiveTargetId(targetId);
-    setQuickChip("all");
-    setMinPkd(5.0);
-    setSelectedDrugId(drugId);
-    setGraphSubMode("outcome");
-  };
-
   if (initLoading) {
     return (
       <div className="min-h-[600px] flex items-center justify-center p-8 text-center">
@@ -356,8 +590,9 @@ export default function StudioApp() {
         onChangeSearchQuery={setSearchQuery}
         onResetFilters={handleResetFilters}
         onOpenCustomModal={() => setCustomModalOpen(true)}
-        localApiOnline={localApiOnline}
         totalScreened={targetsIndex.fda_library.n_clean_drugs}
+        shortlistDrugIds={shortlistDrugIds}
+        onToggleShortlist={handleToggleShortlist}
       />
 
       {/* PANE 2: CENTER SPATIAL STAGE */}
@@ -399,12 +634,31 @@ export default function StudioApp() {
           </nav>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* F1: Print Triage button with shortlist count */}
             <button
               type="button"
               onClick={() => setPrintModalOpen(true)}
               className="text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold whitespace-nowrap transition-colors"
             >
-              Print Triage
+              Print Triage{activeShortlistEntries.length > 0 ? ` (${activeShortlistEntries.length})` : ""}
+            </button>
+            {/* F2: Copy link control */}
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+            >
+              {copyLinkLabel}
+            </button>
+            {/* F5: Local API status button */}
+            <button
+              type="button"
+              onClick={() => setCustomModalOpen(true)}
+              className={`text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors ${
+                localApiOnline ? "text-[var(--selective)]" : "text-[var(--ink-secondary)]"
+              }`}
+            >
+              Local API: {localApiOnline ? "online" : "offline"}
             </button>
             <button
               type="button"
@@ -523,6 +777,33 @@ export default function StudioApp() {
             onRetry={loadEvaluationArtifacts}
           />
         )}
+
+        {/* Provenance of the scores on screen */}
+        {provenanceLine && (
+          <div className="border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--ink-secondary)] flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="mono-num">
+                <span className="font-medium text-[var(--ink-primary)]">Model:</span>{" "}
+                {provenanceLine.modelKey}
+              </span>
+              <span className="mono-num">
+                <span className="font-medium text-[var(--ink-primary)]">Seed:</span>{" "}
+                {provenanceLine.seed}
+              </span>
+              <span className="mono-num">
+                <span className="font-medium text-[var(--ink-primary)]">Generated:</span>{" "}
+                {new Date(provenanceLine.generatedAt).toUTCString()}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyProvenance}
+              className="mono-num text-[var(--accent-ink)] hover:underline text-[13px] font-medium"
+            >
+              {provenanceCopyLabel}
+            </button>
+          </div>
+        )}
       </main>
 
       {/* PANE 3: COLLAPSIBLE RIGHT MOLECULE INSPECTOR */}
@@ -555,6 +836,12 @@ export default function StudioApp() {
         target={activeTarget}
         candidates={filteredCandidates}
         selectedCandidate={selectedCandidate}
+        shortlistCandidates={shortlistCandidates}
+        onRemoveShortlist={handleRemoveShortlist}
+        clearShortlist={handleClearShortlist}
+        assayCost={assayCost}
+        onAssayCostChange={setAssayCost}
+        storageAvailable={storageAvailable}
       />
 
       <CustomPredictModal

@@ -490,3 +490,28 @@ export interface CustomPredictionResponse {
   svg_2d_dark?: string | null;
   sdf_3d: string | null;
 }
+
+// F1-F5 types from add-triage-workflow
+export type QuickFilterChip = "all" | "novel" | "selective" | "bias";
+export type SortOrder = "delta" | "raw";
+export type StudioTheme = "paper" | "dark";
+export type CenterStageMode = "graph" | "3d" | "matrix" | "benchmark" | "risks";
+
+export interface TriageShortlistEntry {
+  targetId: string;
+  drugId: string;
+  addedAt: number;
+}
+
+export interface StudioSession {
+  stageMode: CenterStageMode;
+  targetId: string;
+  drugId: string | null;
+  quickChip: QuickFilterChip;
+  sortOrder: SortOrder;
+  searchQuery: string;
+  minPkd: number;
+  ro5Only: boolean;
+  noPains: boolean;
+  excludeInTrain: boolean;
+}
