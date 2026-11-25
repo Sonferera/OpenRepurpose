@@ -281,7 +281,7 @@ export default function LeftNavigatorRail({
       </div>
 
       {/* Elastic Full-Height Candidate Stream */}
-      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-3 py-2 space-y-1 max-md:max-h-[380px]">
+      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-2 py-1.5 space-y-0.5 max-md:max-h-[380px]">
         {candidates.length === 0 ? (
           <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-4 text-center space-y-2 my-2">
             <p className="text-sm text-[var(--ink-secondary)]">
@@ -310,41 +310,47 @@ export default function LeftNavigatorRail({
             return (
               <div
                 key={c.drug_id}
-                className="flex items-center gap-2"
+                className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors ${
+                  isSelected
+                    ? "bg-[var(--bg-surface)] shadow-xs ring-1 ring-[var(--accent-ink)]"
+                    : "hover:bg-[var(--bg-surface)]/80"
+                }`}
               >
                 <button
                   type="button"
                   onClick={() => onSelectDrug(c.drug_id)}
                   aria-current={isSelected ? "true" : undefined}
-                  className={`flex-1 text-left px-3 py-2.5 rounded-lg border transition-colors min-h-[56px] ${
-                    isSelected
-                      ? "bg-[var(--bg-surface)] border-[var(--accent-ink)] ring-1 ring-[var(--accent-ink)] shadow-2xs"
-                      : "bg-transparent border-transparent hover:bg-[var(--bg-surface)] hover:border-[var(--border-subtle)]"
-                  }`}
+                  className="flex-1 text-left min-w-0"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm text-[var(--ink-primary)] truncate">
-                      <span className="mono-num text-[var(--ink-muted)] font-semibold mr-1.5">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="font-semibold text-xs text-[var(--ink-primary)] truncate">
+                      <span className="mono-num text-[var(--ink-muted)] font-medium mr-1">
                         #{shownRank}
                       </span>
                       {c.drug_name}
                     </span>
                     <span
-                      className={`mono-num text-[13px] font-bold shrink-0 ${deltaColor}`}
+                      className={`mono-num text-xs font-bold shrink-0 ${deltaColor}`}
                       title={`Selectivity Delta-pKd: ${c.target_selectivity_delta.toFixed(3)} | Raw pKd: ${c.predicted_pkd.toFixed(2)}`}
                     >
                       {c.target_selectivity_delta >= 0 ? "+" : ""}
                       {c.target_selectivity_delta.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 mt-1 text-xs text-[var(--ink-secondary)]">
+
+                  {/* Secondary info: hidden by default, visible on hover or when selected */}
+                  <div
+                    className={`items-center justify-between gap-2 mt-0.5 text-[11px] text-[var(--ink-secondary)] ${
+                      isSelected ? "flex" : "hidden group-hover:flex"
+                    }`}
+                  >
                     <span className="truncate">
                       {c.known_indication || c.moa || "Launched clinical compound"}
                     </span>
                     {c.novelty.pubmed_count === 0 &&
                       c.specificity_tier !== "low_promiscuous_bias" && (
                         <span
-                          className="mono-num shrink-0 px-1.5 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[10px] font-bold leading-none"
+                          className="mono-num shrink-0 px-1 py-0.2 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[9px] font-bold leading-none"
                           title="0 PubMed co-occurrence hits"
                         >
                           0 lit
@@ -352,18 +358,49 @@ export default function LeftNavigatorRail({
                       )}
                   </div>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => onToggleShortlist(c.drug_id)}
                   aria-label={isInShortlist ? `Remove ${c.drug_name} from triage set` : `Add ${c.drug_name} to triage set`}
                   aria-pressed={isInShortlist}
-                  className={`flex-shrink-0 w-11 h-11 rounded-lg font-bold text-sm flex items-center justify-center transition-colors ${
+                  title={isInShortlist ? "Remove from triage set" : "Add to triage set"}
+                  className={`shrink-0 w-7 h-7 rounded-md text-sm font-semibold flex items-center justify-center transition-colors ${
                     isInShortlist
-                      ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                      : "bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
+                      ? "text-[var(--accent-ink)] bg-[var(--accent-soft)]"
+                      : "text-[var(--ink-muted)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
                   }`}
                 >
-                  {isInShortlist ? "✓" : "+"}
+                  {isInShortlist ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4 text-[var(--accent-ink)]"
+                      aria-hidden="true"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4"
+                      aria-hidden="true"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  )}
                 </button>
               </div>
             );
