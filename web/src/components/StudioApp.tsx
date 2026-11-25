@@ -94,6 +94,7 @@ export default function StudioApp() {
   const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
 
   // Triage shortlist state (F1)
@@ -566,8 +567,18 @@ export default function StudioApp() {
 
   return (
     <div
-      className={`min-h-dvh grid grid-cols-1 md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)] ${
-        inspectorOpen ? "xl:grid-cols-[328px_minmax(0,1fr)_356px]" : "xl:grid-cols-[320px_minmax(0,1fr)]"
+      className={`min-h-dvh grid grid-cols-1 ${
+        sidebarCollapsed
+          ? "md:grid-cols-[56px_minmax(0,1fr)] lg:grid-cols-[56px_minmax(0,1fr)]"
+          : "md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)]"
+      } ${
+        inspectorOpen
+          ? sidebarCollapsed
+            ? "xl:grid-cols-[56px_minmax(0,1fr)_356px]"
+            : "xl:grid-cols-[328px_minmax(0,1fr)_356px]"
+          : sidebarCollapsed
+            ? "xl:grid-cols-[56px_minmax(0,1fr)]"
+            : "xl:grid-cols-[320px_minmax(0,1fr)]"
       } items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]`}
     >
       {/* PANE 1: LEFT NAVIGATOR RAIL */}
@@ -593,6 +604,8 @@ export default function StudioApp() {
         totalScreened={targetsIndex.fda_library.n_clean_drugs}
         shortlistDrugIds={shortlistDrugIds}
         onToggleShortlist={handleToggleShortlist}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
       />
 
       {/* PANE 2: CENTER SPATIAL STAGE */}

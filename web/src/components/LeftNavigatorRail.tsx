@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import type { ScreeningCandidate, TargetSummary } from "@/lib/types";
 import type { QuickFilterChip, SortOrder, StudioTheme, TriageShortlistEntry } from "@/lib/types";
 
@@ -26,6 +26,8 @@ interface LeftNavigatorRailProps {
   totalScreened: number;
   shortlistDrugIds: string[];
   onToggleShortlist: (drugId: string) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export default function LeftNavigatorRail({
@@ -48,7 +50,10 @@ export default function LeftNavigatorRail({
   totalScreened,
   shortlistDrugIds,
   onToggleShortlist,
+  collapsed = false,
+  onToggleCollapse,
 }: LeftNavigatorRailProps) {
+  const [targetAccordionOpen, setTargetAccordionOpen] = useState<boolean>(true);
   const activeTarget = targets.find((t) => t.id === activeTargetId) ?? targets[0];
   const inDomainKinases = targets.filter((t) => t.in_domain && !t.is_positive_control);
   const posControls = targets.filter((t) => t.is_positive_control);
@@ -60,6 +65,104 @@ export default function LeftNavigatorRail({
       ? "text-[var(--selective)] bg-[var(--selective-soft)] border-[var(--selective-border)]"
       : "text-[var(--alert)] bg-[var(--alert-soft)] border-[var(--alert-border)]";
 
+  if (collapsed) {
+    return (
+      <aside
+        aria-label="Target and candidate navigator"
+        className="no-print w-14 shrink-0 md:sticky md:top-0 md:h-dvh bg-[var(--bg-rail)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)] flex flex-col items-center py-3.5 justify-between select-none"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="w-8 h-8 rounded-md bg-[var(--accent)] flex items-center justify-center text-[var(--accent-on-solid)] font-bold mono-num text-xs hover:opacity-90 transition-opacity"
+          >
+            OR
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="w-8 h-8 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-4 h-4"
+              aria-hidden="true"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          {activeTarget && (
+            <div
+              title={`${activeTarget.disease}: ${activeTarget.short_name}`}
+              className="w-8 h-8 rounded-md bg-[var(--bg-surface)] border border-[var(--border-control)] flex items-center justify-center text-[10px] font-bold text-[var(--accent-ink)]"
+            >
+              {activeTarget.short_name.slice(0, 3)}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => onToggleTheme(theme === "paper" ? "dark" : "paper")}
+            aria-label={theme === "paper" ? "Switch to Dark theme" : "Switch to Paper theme"}
+            title={theme === "paper" ? "Switch to Dark theme" : "Switch to Paper theme"}
+            className="w-8 h-8 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
+          >
+            {theme === "paper" ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+                aria-hidden="true"
+              >
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       aria-label="Target and candidate navigator"
@@ -67,9 +170,32 @@ export default function LeftNavigatorRail({
     >
       {/* Top Pinned Controls */}
       <div className="shrink-0 p-4 pb-3 space-y-3.5 border-b border-[var(--border-subtle)]">
-        {/* Studio Brand Header + Paper/Dark Theme Switcher */}
+        {/* Studio Brand Header + Paper/Dark Theme Switcher + Collapse Button */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar (<)"
+                className="w-7 h-7 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors shrink-0"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-3.5 h-3.5"
+                  aria-hidden="true"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+            )}
             <div
               className="w-8 h-8 rounded-md bg-[var(--accent)] flex items-center justify-center text-[var(--accent-on-solid)] font-bold mono-num text-xs shrink-0"
               aria-hidden="true"
@@ -77,11 +203,11 @@ export default function LeftNavigatorRail({
               OR
             </div>
             <div className="min-w-0">
-              <h1 className="text-base font-bold tracking-tight text-[var(--ink-primary)] leading-none">
+              <h1 className="text-sm font-bold tracking-tight text-[var(--ink-primary)] leading-none truncate">
                 OpenRepurpose
               </h1>
-              <p className="text-xs text-[var(--ink-secondary)] mt-0.5 truncate">
-                Molecular Triage Studio
+              <p className="text-[11px] text-[var(--ink-secondary)] mt-0.5 truncate">
+                Triage Studio
               </p>
             </div>
           </div>
@@ -133,21 +259,36 @@ export default function LeftNavigatorRail({
           </button>
         </div>
 
-        {/* Step 1: Pathogen Protein Target */}
-        <div className="space-y-1.5">
+        {/* Step 1: Pathogen Protein Target (Collapsible Accordion) */}
+        <div className="space-y-1.5 border border-[var(--border-subtle)] bg-[var(--bg-surface)] rounded-lg p-2">
           <div className="flex items-center justify-between gap-2">
-            <label
-              htmlFor="pathogen-target-select"
-              className="block text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)]"
+            <button
+              type="button"
+              onClick={() => setTargetAccordionOpen((prev) => !prev)}
+              aria-expanded={targetAccordionOpen}
+              className="flex items-center gap-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] min-w-0"
             >
-              Pathogen Target
-            </label>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`w-3 h-3 transition-transform ${targetAccordionOpen ? "rotate-90" : ""}`}
+                aria-hidden="true"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              <span className="truncate">Pathogen Target</span>
+            </button>
             {activeTarget && (
               <span
-                className={`px-2 py-0.5 rounded border text-[11px] font-semibold leading-none ${domainBadgeClass}`}
+                className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold leading-none shrink-0 ${domainBadgeClass}`}
               >
                 {activeTarget.is_positive_control
-                  ? "Positive Control"
+                  ? "Control"
                   : activeTarget.in_domain
                     ? "In-Domain"
                     : "Out-of-Domain"}
@@ -155,39 +296,56 @@ export default function LeftNavigatorRail({
             )}
           </div>
 
-          <select
-            id="pathogen-target-select"
-            value={activeTargetId}
-            onChange={(e) => onSelectTarget(e.target.value)}
-            title={
-              activeTarget
-                ? `UniProt ${activeTarget.uniprot_id} (${activeTarget.sequence_length} aa) • ${candidates.length} shown`
-                : undefined
-            }
-            className="w-full min-h-[42px] text-sm font-semibold text-[var(--ink-primary)] bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg px-2.5 py-1.5"
-          >
-            <optgroup label="In-Domain NTD Kinases">
-              {inDomainKinases.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.disease}: {t.short_name} ({t.uniprot_id})
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Pipeline Positive Control">
-              {posControls.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.disease}: {t.short_name} ({t.uniprot_id})
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Out-of-Domain (High Uncertainty)">
-              {outOfDomain.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.disease}: {t.short_name} ({t.uniprot_id})
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          {/* Collapsed summary single-line */}
+          {!targetAccordionOpen && activeTarget && (
+            <div
+              onClick={() => setTargetAccordionOpen(true)}
+              className="text-xs font-semibold text-[var(--ink-primary)] truncate cursor-pointer hover:text-[var(--accent-ink)] transition-colors pt-0.5"
+              title="Click to change target"
+            >
+              <span className="text-[var(--ink-muted)] font-normal">{activeTarget.disease}:</span>{" "}
+              {activeTarget.short_name}{" "}
+              <span className="text-[10px] mono-num text-[var(--ink-secondary)] font-normal">
+                ({activeTarget.uniprot_id})
+              </span>
+            </div>
+          )}
+
+          {targetAccordionOpen && (
+            <select
+              id="pathogen-target-select"
+              value={activeTargetId}
+              onChange={(e) => onSelectTarget(e.target.value)}
+              title={
+                activeTarget
+                  ? `UniProt ${activeTarget.uniprot_id} (${activeTarget.sequence_length} aa) • ${candidates.length} shown`
+                  : undefined
+              }
+              className="w-full min-h-[38px] text-xs font-semibold text-[var(--ink-primary)] bg-[var(--bg-canvas)] border border-[var(--border-control)] rounded-md px-2 py-1 mt-1"
+            >
+              <optgroup label="In-Domain NTD Kinases">
+                {inDomainKinases.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.disease}: {t.short_name} ({t.uniprot_id})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Pipeline Positive Control">
+                {posControls.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.disease}: {t.short_name} ({t.uniprot_id})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Out-of-Domain (High Uncertainty)">
+                {outOfDomain.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.disease}: {t.short_name} ({t.uniprot_id})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          )}
         </div>
 
         {/* FDA Drugs Controls */}
