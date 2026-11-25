@@ -403,79 +403,60 @@ export default function LeftNavigatorRail({
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <div className="relative flex-1">
-              <label htmlFor="drug-stream-search" className="sr-only">
-                Filter drugs by name, mechanism, or indication
-              </label>
-              <input
-                id="drug-stream-search"
-                type="search"
-                value={searchQuery}
-                onChange={(e) => onChangeSearchQuery(e.target.value)}
-                placeholder="Search drug or paste SMILES..."
-                className="w-full min-h-[38px] px-3 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
-              />
-            </div>
-            {onOpenCustomModal && (
-              <button
-                type="button"
-                onClick={onOpenCustomModal}
-                aria-label="Score Custom FASTA + SMILES"
-                title="Score Custom FASTA + SMILES (input SMILES / protein sequence)"
-                className="w-[38px] h-[38px] rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--accent-ink)] hover:bg-[var(--bg-hover)] flex items-center justify-center shrink-0 transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4"
-                  aria-hidden="true"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </button>
-            )}
+          <div>
+            <label htmlFor="drug-stream-search" className="sr-only">
+              Filter drugs by name, mechanism, or indication
+            </label>
+            <input
+              id="drug-stream-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => onChangeSearchQuery(e.target.value)}
+              placeholder="Search drug or indication..."
+              className="w-full min-h-[38px] px-3 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
+            />
           </div>
 
-          <div
-            className="flex items-center gap-1 overflow-x-auto studio-scroll pb-1 no-scrollbar"
-            role="group"
-            aria-label="Quick candidate filters"
-          >
-            {(
-              [
-                ["all", "All Top"],
-                ["novel", "0 PubMed"],
-                ["selective", "High Sel"],
-                ["bias", "Bias Demo"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onChangeQuickChip(key)}
-                aria-pressed={quickChip === key}
-                className={`min-h-[28px] px-2.5 py-1 text-xs whitespace-nowrap rounded-md font-semibold shrink-0 transition-colors ${
-                  quickChip === key
-                    ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                    : "bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="relative">
+            <div
+              className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5"
+              role="group"
+              aria-label="Quick candidate filters"
+            >
+              {(
+                [
+                  ["all", "All Top"],
+                  ["novel", "0 PubMed"],
+                  ["selective", "High Sel"],
+                  ["bias", "Bias Demo"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onChangeQuickChip(key)}
+                  aria-pressed={quickChip === key}
+                  className={`min-h-[28px] px-2.5 py-1 text-xs whitespace-nowrap rounded-md font-semibold shrink-0 transition-colors ${
+                    quickChip === key
+                      ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                      : "bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Subtle right edge fade indicator */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute right-0 top-0 bottom-0.5 w-6 bg-gradient-to-l from-[var(--bg-rail)] to-transparent"
+            />
           </div>
         </div>
       </div>
 
       {/* Elastic Full-Height Candidate Stream */}
-      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-2 py-1.5 space-y-0.5 max-md:max-h-[380px]">
+      <div className="flex-1 min-h-0 overflow-y-auto studio-scroll px-2 pt-2 pb-1.5 space-y-0.5 max-md:max-h-[380px]">
         {candidates.length === 0 ? (
           <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-4 text-center space-y-2 my-2">
             <p className="text-sm text-[var(--ink-secondary)]">
