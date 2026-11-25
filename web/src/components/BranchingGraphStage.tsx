@@ -197,7 +197,7 @@ export default function BranchingGraphStage({
                 aria-pressed={subMode === "outcome"}
                 className={`min-h-[28px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                   subMode === "outcome"
-                    ? "bg-[var(--bg-surface)] text-[var(--accent-ink)] shadow-2xs border border-[var(--border-subtle)]"
+                    ? "bg-[var(--bg-surface)] text-[var(--ink-primary)] border border-[var(--border-control)]"
                     : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
                 }`}
               >
@@ -209,7 +209,7 @@ export default function BranchingGraphStage({
                 aria-pressed={subMode === "cross"}
                 className={`min-h-[28px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
                   subMode === "cross"
-                    ? "bg-[var(--bg-surface)] text-[var(--accent-ink)] shadow-2xs border border-[var(--border-subtle)]"
+                    ? "bg-[var(--bg-surface)] text-[var(--ink-primary)] border border-[var(--border-control)]"
                     : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
                 }`}
               >
@@ -599,9 +599,9 @@ export default function BranchingGraphStage({
         </div>
       </div>
 
-      {/* 4-Card Horizontal KPI Summary Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
+      {/* Unified Center KPI Summary Strip (Swiss Editorial divide-x) */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)]">
+        <div className="p-3.5 space-y-1">
           <div className="text-xs font-semibold text-[var(--ink-secondary)]">
             Target Affinity
           </div>
@@ -613,7 +613,7 @@ export default function BranchingGraphStage({
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
+        <div className="p-3.5 space-y-1">
           <div className="text-xs font-semibold text-[var(--ink-secondary)]">
             Selectivity Delta
           </div>
@@ -633,7 +633,7 @@ export default function BranchingGraphStage({
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
+        <div className="p-3.5 space-y-1">
           <div className="text-xs font-semibold text-[var(--ink-secondary)]">
             MedChem & Gates
           </div>
@@ -648,7 +648,7 @@ export default function BranchingGraphStage({
           </div>
         </div>
 
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 space-y-1">
+        <div className="p-3.5 space-y-1">
           <div className="text-xs font-semibold text-[var(--ink-secondary)]">
             PubMed Evidence
           </div>

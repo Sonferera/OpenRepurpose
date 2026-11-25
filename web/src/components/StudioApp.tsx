@@ -618,7 +618,7 @@ export default function StudioApp() {
           <nav
             role="tablist"
             aria-label="Workspace stage views"
-            className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-1 shadow-2xs"
+            className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-1"
           >
             {(
               [
