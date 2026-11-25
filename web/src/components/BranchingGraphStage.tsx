@@ -14,6 +14,7 @@ interface BranchingGraphStageProps {
   candidate: ScreeningCandidate;
   crossEdges: CrossTargetEdge[];
   subMode: GraphSubMode;
+  onChangeSubMode: (mode: GraphSubMode) => void;
   onSelectCrossTarget: (targetId: string, drugId: string) => void;
 }
 
@@ -22,6 +23,7 @@ export default function BranchingGraphStage({
   candidate,
   crossEdges,
   subMode,
+  onChangeSubMode,
   onSelectCrossTarget,
 }: BranchingGraphStageProps) {
   const [selectedBranchIdx, setSelectedBranchIdx] = useState<number>(0);
@@ -41,6 +43,11 @@ export default function BranchingGraphStage({
   const outcomeBranches = [
     {
       title: "1. Binding & Selectivity",
+      badgeLabel: isBias
+        ? "BIAS ALERT"
+        : candidate.specificity_tier === "high"
+          ? `HIGH SEL (${candidate.target_selectivity_delta >= 0 ? "+" : ""}${candidate.target_selectivity_delta.toFixed(2)})`
+          : `MODERATE (${candidate.target_selectivity_delta >= 0 ? "+" : ""}${candidate.target_selectivity_delta.toFixed(2)})`,
       shortVal: `pKd ${candidate.predicted_pkd.toFixed(2)} | Delta ${
         candidate.target_selectivity_delta >= 0 ? "+" : ""
       }${candidate.target_selectivity_delta.toFixed(2)}`,
@@ -71,6 +78,10 @@ export default function BranchingGraphStage({
     },
     {
       title: "2. Chemical Motif Driver",
+      badgeLabel:
+        candidate.explainability.top_motifs.length > 0
+          ? `TOP MOTIF (${candidate.explainability.top_motifs[0].importance_pct.toFixed(1)}%)`
+          : `${candidate.explainability.n_active_morgan_bits} MORGAN BITS`,
       shortVal: topMotifText,
       tone: "selective" as const,
       detail:
@@ -83,6 +94,9 @@ export default function BranchingGraphStage({
     },
     {
       title: "3. MedChem & Domain Gates",
+      badgeLabel: isSteroidCaution
+        ? "ALERT: STEROID"
+        : `${candidate.triage_gates.passed_count}/${candidate.triage_gates.total_gates} ${candidate.triage_gates.overall_status}`,
       shortVal: isSteroidCaution
         ? "ALERT: Immunosuppressive Steroid"
         : `${candidate.triage_gates.passed_count}/${candidate.triage_gates.total_gates} Gates (${candidate.triage_gates.overall_status})`,
@@ -100,6 +114,9 @@ export default function BranchingGraphStage({
     },
     {
       title: "4. PubMed & Triage Action",
+      badgeLabel: isBias
+        ? `DEMOTED (#${candidate.rank} -> #${candidate.rank_by_selectivity})`
+        : `${candidate.novelty.pubmed_count ?? 0} PUBMED · ${candidate.novelty.novelty_tier.toUpperCase()}`,
       shortVal: isBias
         ? `Demoted (Raw #${candidate.rank} -> Sel #${candidate.rank_by_selectivity})`
         : `${candidate.novelty.pubmed_count ?? 0} PubMed (${candidate.novelty.novelty_tier})`,
@@ -151,21 +168,55 @@ export default function BranchingGraphStage({
         ? `Clinical Caution (${target.short_name}): WHO antimalarial Artesunate rises from raw #245 to sel #5, while top hydrocortisone esters carry immunosuppressive risk and are contraindicated for infections.`
         : `${target.domain_label}: ${target.target_biology}`;
 
+  const truncate = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+
   const crossDisplay = crossEdges.slice(0, 6);
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${bannerStyle}`}>
+      <div className={`rounded-lg border-l-[3px] px-3.5 py-2.5 text-[13px] font-medium ${bannerStyle}`}>
         {bannerMessage}
       </div>
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-subtle)] text-xs text-[var(--ink-secondary)]">
-          <span className="font-bold text-[var(--ink-primary)] text-sm">
-            {subMode === "outcome"
-              ? `Interactive Outcome Pipeline: ${candidate.drug_name} + ${target.short_name}`
-              : `Cross-Pathogen Selectivity Network: ${candidate.drug_name} across Saved Target Pools`}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-bold text-[var(--ink-primary)] text-sm">
+              {subMode === "outcome"
+                ? `Outcome Pipeline: ${candidate.drug_name} + ${target.short_name}`
+                : `Cross-Pathogen Network: ${candidate.drug_name}`}
+            </span>
+            <div
+              className="inline-flex bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded-lg p-0.5 text-xs"
+              role="group"
+              aria-label="Graph visualization mode"
+            >
+              <button
+                type="button"
+                onClick={() => onChangeSubMode("outcome")}
+                aria-pressed={subMode === "outcome"}
+                className={`min-h-[28px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
+                  subMode === "outcome"
+                    ? "bg-[var(--bg-surface)] text-[var(--ink-primary)] border border-[var(--border-control)]"
+                    : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                }`}
+              >
+                Drug × Target
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeSubMode("cross")}
+                aria-pressed={subMode === "cross"}
+                className={`min-h-[28px] px-2.5 py-0.5 rounded-md font-semibold transition-colors ${
+                  subMode === "cross"
+                    ? "bg-[var(--bg-surface)] text-[var(--ink-primary)] border border-[var(--border-control)]"
+                    : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                }`}
+              >
+                8-Target Reach
+              </button>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-3.5 font-medium">
             <span className="inline-flex items-center gap-1.5">
               <span className="w-3.5 h-0.5 bg-[var(--selective)] inline-block rounded-full" />
@@ -242,10 +293,10 @@ export default function BranchingGraphStage({
                   INPUT 1: APPROVED DRUG
                 </text>
                 <text x={22} y={126} fill="var(--ink-primary)" fontSize={14} fontWeight={700}>
-                  {candidate.drug_name.slice(0, 19)}
+                  {truncate(candidate.drug_name, 20)}
                 </text>
                 <text x={22} y={144} fill="var(--ink-secondary)" fontSize={11}>
-                  {(candidate.known_indication || candidate.moa || "FDA Launched").slice(0, 25)}
+                  {truncate(candidate.known_indication || candidate.moa || "FDA Launched", 25)}
                 </text>
               </g>
 
@@ -272,7 +323,7 @@ export default function BranchingGraphStage({
                   INPUT 2: UNIPROT TARGET
                 </text>
                 <text x={22} y={278} fill="var(--ink-primary)" fontSize={14} fontWeight={700}>
-                  {target.short_name.slice(0, 19)}
+                  {truncate(target.short_name, 20)}
                 </text>
                 <text x={22} y={296} fill="var(--ink-secondary)" fontSize={11}>
                   {target.uniprot_id} ({target.sequence_length} aa)
@@ -356,7 +407,7 @@ export default function BranchingGraphStage({
                       fontFamily="monospace"
                       fontWeight={700}
                     >
-                      {b.shortVal.slice(0, 30)}
+                      {b.badgeLabel}
                     </text>
                   </g>
                 );
@@ -545,6 +596,76 @@ export default function BranchingGraphStage({
               </p>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Unified Center KPI Summary Strip (Swiss Editorial divide-x) */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)]">
+        <div className="p-3.5 space-y-1">
+          <div className="text-xs font-semibold text-[var(--ink-secondary)]">
+            Target Affinity
+          </div>
+          <div className="text-lg font-bold mono-num text-[var(--ink-primary)]">
+            {candidate.predicted_pkd.toFixed(3)} pKd
+          </div>
+          <div className="text-xs text-[var(--ink-muted)] mono-num">
+            {candidate.estimated_kd_nm.toFixed(1)} nM est. Kd · {target.short_name}
+          </div>
+        </div>
+
+        <div className="p-3.5 space-y-1">
+          <div className="text-xs font-semibold text-[var(--ink-secondary)]">
+            Selectivity Delta
+          </div>
+          <div
+            className={`text-lg font-bold mono-num ${
+              candidate.target_selectivity_delta >= 0
+                ? "text-[var(--selective)]"
+                : "text-[var(--alert)]"
+            }`}
+          >
+            {candidate.target_selectivity_delta >= 0 ? "+" : ""}
+            {candidate.target_selectivity_delta.toFixed(3)} pKd
+          </div>
+          <div className="text-xs text-[var(--ink-muted)] mono-num">
+            Z = {candidate.selectivity_zscore >= 0 ? "+" : ""}
+            {candidate.selectivity_zscore.toFixed(2)} vs bg ({candidate.background_mean_pkd.toFixed(2)})
+          </div>
+        </div>
+
+        <div className="p-3.5 space-y-1">
+          <div className="text-xs font-semibold text-[var(--ink-secondary)]">
+            MedChem & Gates
+          </div>
+          <div className="text-lg font-bold mono-num text-[var(--ink-primary)]">
+            {candidate.triage_gates.passed_count}/{candidate.triage_gates.total_gates}{" "}
+            <span className="text-sm font-bold">({candidate.triage_gates.overall_status})</span>
+          </div>
+          <div className="text-xs text-[var(--ink-muted)] mono-num">
+            Ro5 {candidate.medchem.ro5_violations} ·{" "}
+            {candidate.medchem.has_pains ? "PAINS Alert" : "PAINS Clear"} · QED{" "}
+            {candidate.medchem.qed.toFixed(2)}
+          </div>
+        </div>
+
+        <div className="p-3.5 space-y-1">
+          <div className="text-xs font-semibold text-[var(--ink-secondary)]">
+            PubMed Evidence
+          </div>
+          <div className="text-lg font-bold mono-num text-[var(--ink-primary)]">
+            {candidate.novelty.pubmed_count ?? 0} hits{" "}
+            <span className="text-xs font-semibold text-[var(--ink-secondary)]">
+              ({candidate.novelty.novelty_tier})
+            </span>
+          </div>
+          <a
+            href={candidate.novelty.pubmed_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-xs font-semibold text-[var(--accent-ink)] hover:underline"
+          >
+            Verify on PubMed ↗
+          </a>
         </div>
       </div>
     </div>

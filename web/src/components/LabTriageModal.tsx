@@ -9,6 +9,12 @@ interface LabTriageModalProps {
   target: TargetSummary;
   candidates: ScreeningCandidate[];
   selectedCandidate: ScreeningCandidate | null;
+  shortlistCandidates: ScreeningCandidate[];
+  onRemoveShortlist: (drugId: string) => void;
+  clearShortlist: () => void;
+  assayCost: string;
+  onAssayCostChange: (value: string) => void;
+  storageAvailable: boolean;
 }
 
 export default function LabTriageModal({
@@ -17,6 +23,12 @@ export default function LabTriageModal({
   target,
   candidates,
   selectedCandidate,
+  shortlistCandidates,
+  onRemoveShortlist,
+  clearShortlist,
+  assayCost,
+  onAssayCostChange,
+  storageAvailable,
 }: LabTriageModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -29,16 +41,28 @@ export default function LabTriageModal({
 
   if (!open) return null;
 
-  const topList: ScreeningCandidate[] = [];
-  if (selectedCandidate) {
-    topList.push(selectedCandidate);
-  }
-  for (const c of candidates) {
-    if (topList.length >= 10) break;
-    if (!topList.some((x) => x.drug_id === c.drug_id)) {
-      topList.push(c);
-    }
-  }
+  // The sheet prints the shortlist when it holds candidates, otherwise the automatic top ten
+  const isUsingShortlist = shortlistCandidates.length > 0;
+  const printList: ScreeningCandidate[] = isUsingShortlist
+    ? shortlistCandidates
+    : (() => {
+        const topList: ScreeningCandidate[] = [];
+        if (selectedCandidate) {
+          topList.push(selectedCandidate);
+        }
+        for (const c of candidates) {
+          if (topList.length >= 10) break;
+          if (!topList.some((x) => x.drug_id === c.drug_id)) {
+            topList.push(c);
+          }
+        }
+        return topList;
+      })();
+
+  // F1: Calculate totals
+  const compoundCount = printList.length;
+  const perCompoundCost = parseFloat(assayCost) || 0;
+  const totalCost = perCompoundCost * compoundCount;
 
   return (
     <div
@@ -70,13 +94,59 @@ export default function LabTriageModal({
           </div>
         </div>
 
-        {/* Printable Dossier Body (warm paper on screen, crisp black-on-white in @media print) */}
+        {/* Non-printing shortlist area */}
+        {!storageAvailable && (
+          <p className="no-print text-xs text-[var(--ink-secondary)]">
+            Shortlist is not saved in this browser session.
+          </p>
+        )}
+        {isUsingShortlist && (
+          <div className="no-print border-b border-[var(--border-subtle)] pb-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-[var(--ink-primary)]">
+                Triage Shortlist ({shortlistCandidates.length})
+              </h3>
+              <button
+                type="button"
+                onClick={clearShortlist}
+                className="text-xs text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] underline"
+              >
+                Clear set
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+              {shortlistCandidates.map((c) => (
+                <span
+                  key={c.drug_id}
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs bg-[var(--bg-subtle)] border border-[var(--border-subtle)] rounded mono-num"
+                >
+                  {c.drug_name}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveShortlist(c.drug_id)}
+                    className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] font-bold"
+                    aria-label={`Remove ${c.drug_name} from shortlist`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Printable Dossier Body */}
         <div className="space-y-3 text-[13px] text-[var(--ink-primary)]">
           <div className="flex flex-wrap items-start justify-between gap-2 border-b-2 border-[var(--ink-primary)] pb-2">
             <div>
               <div className="font-bold text-sm tracking-tight">
                 OPENREPURPOSE WET-LAB BIOCHEMICAL ASSAY TRIAGE SHEET
               </div>
+              {!isUsingShortlist && (
+                <div className="text-[var(--ink-secondary)] mt-0.5 italic">
+                  Automatic top ten (no shortlist set)
+                </div>
+              )}
               <div className="text-[var(--ink-secondary)] mt-0.5">
                 Target: <strong>{target.name}</strong> ({target.disease} · UniProt{" "}
                 {target.uniprot_id}, {target.sequence_length} aa · SHA-256 {target.sequence_sha256})
@@ -111,7 +181,7 @@ export default function LabTriageModal({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
-              {topList.map((c) => (
+              {printList.map((c) => (
                 <tr key={c.drug_id}>
                   <td className="py-1.5 pr-2 font-bold">#{c.rank_by_selectivity}</td>
                   <td className="py-1.5 px-2 font-sans">
@@ -132,6 +202,41 @@ export default function LabTriageModal({
               ))}
             </tbody>
           </table>
+
+          {/* Assay cost: count always, cost lines only when the researcher entered a cost */}
+          <div className="border-t border-[var(--border-subtle)] pt-3 space-y-2">
+            <div className="text-xs text-[var(--ink-secondary)]">
+              Compound count: <span className="font-semibold text-[var(--ink-primary)]">{compoundCount}</span>
+            </div>
+            <div className="no-print">
+              <label htmlFor="assay-cost" className="block text-xs font-medium text-[var(--ink-primary)] mb-1">
+                Assay cost per compound (USD), optional
+              </label>
+              <input
+                id="assay-cost"
+                type="number"
+                value={assayCost}
+                onChange={(e) => onAssayCostChange(e.target.value)}
+                placeholder="Enter per-compound cost"
+                className="w-full md:w-32 min-h-[36px] px-2.5 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
+              />
+            </div>
+            {perCompoundCost > 0 && (
+              <>
+                <div className="text-xs text-[var(--ink-secondary)]">
+                  Assay cost per compound:{" "}
+                  <span className="font-semibold text-[var(--ink-primary)]">
+                    ${perCompoundCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="text-xs text-[var(--ink-secondary)]">
+                  Total cost: <span className="font-semibold text-[var(--ink-primary)]">
+                    ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
