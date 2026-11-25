@@ -86,36 +86,51 @@ export default function LeftNavigatorRail({
             </div>
           </div>
 
-          <div
-            role="group"
-            aria-label="Color theme"
-            className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5 text-xs shrink-0"
+          <button
+            type="button"
+            onClick={() => onToggleTheme(theme === "paper" ? "dark" : "paper")}
+            aria-label={theme === "paper" ? "Switch to Dark theme" : "Switch to Paper theme"}
+            title={theme === "paper" ? "Switch to Dark theme" : "Switch to Paper theme"}
+            className="w-8 h-8 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors shrink-0"
           >
-            <button
-              type="button"
-              onClick={() => onToggleTheme("paper")}
-              aria-pressed={theme === "paper"}
-              className={`min-h-[28px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
-                theme === "paper"
-                  ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                  : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
-              }`}
-            >
-              Paper
-            </button>
-            <button
-              type="button"
-              onClick={() => onToggleTheme("dark")}
-              aria-pressed={theme === "dark"}
-              className={`min-h-[28px] px-2.5 py-0.5 rounded font-semibold transition-colors ${
-                theme === "dark"
-                  ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                  : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]"
-              }`}
-            >
-              Dark
-            </button>
-          </div>
+            {theme === "paper" ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4"
+                aria-hidden="true"
+              >
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Step 1: Pathogen Protein Target */}
@@ -125,7 +140,7 @@ export default function LeftNavigatorRail({
               htmlFor="pathogen-target-select"
               className="block text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)]"
             >
-              1. Pathogen Target
+              Pathogen Target
             </label>
             {activeTarget && (
               <span
@@ -144,6 +159,11 @@ export default function LeftNavigatorRail({
             id="pathogen-target-select"
             value={activeTargetId}
             onChange={(e) => onSelectTarget(e.target.value)}
+            title={
+              activeTarget
+                ? `UniProt ${activeTarget.uniprot_id} (${activeTarget.sequence_length} aa) • ${candidates.length} shown`
+                : undefined
+            }
             className="w-full min-h-[42px] text-sm font-semibold text-[var(--ink-primary)] bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg px-2.5 py-1.5"
           >
             <optgroup label="In-Domain NTD Kinases">
@@ -168,20 +188,6 @@ export default function LeftNavigatorRail({
               ))}
             </optgroup>
           </select>
-
-          {activeTarget && (
-            <div className="flex items-center justify-between gap-1.5 text-xs text-[var(--ink-secondary)]">
-              <a
-                href={activeTarget.uniprot_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mono-num text-[var(--accent-ink)] font-semibold hover:underline"
-              >
-                UniProt {activeTarget.uniprot_id} ({activeTarget.sequence_length} aa)
-              </a>
-              <span className="mono-num font-medium">{candidates.length} shown</span>
-            </div>
-          )}
         </div>
 
         {/* Step 2: Approved FDA Drugs Controls */}
@@ -189,7 +195,7 @@ export default function LeftNavigatorRail({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)] whitespace-nowrap">
-                2. FDA Drugs ({totalScreened.toLocaleString()})
+                FDA Drugs ({totalScreened.toLocaleString()})
               </span>
               <span
                 tabIndex={0}
