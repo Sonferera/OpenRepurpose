@@ -103,10 +103,25 @@ export default function RightMoleculeDock({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close molecule inspector"
-                className="xl:hidden px-2 py-0.5 text-xs font-semibold rounded border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+                aria-label="Collapse molecule inspector"
+                title="Collapse Inspector (◫)"
+                className="w-7 h-7 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors"
               >
-                Close
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-3.5 h-3.5"
+                  aria-hidden="true"
+                >
+                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                  <path d="M15 3v18" />
+                  <path d="m10 15 3-3-3-3" />
+                </svg>
               </button>
             )}
           </div>

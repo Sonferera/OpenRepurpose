@@ -613,8 +613,9 @@ export default function StudioApp() {
         id="main-stage"
         className="no-print w-full min-w-0 bg-[var(--bg-canvas)] p-4 sm:p-5 flex flex-col gap-4"
       >
-        {/* Top Stage Switcher Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-0.5">
+        {/* Streamlined Single-Row Top Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-1 min-h-[46px]">
+          {/* Left: Stage Switcher Tabs */}
           <nav
             role="tablist"
             aria-label="Workspace stage views"
@@ -635,7 +636,7 @@ export default function StudioApp() {
                 role="tab"
                 aria-selected={stageMode === mode}
                 onClick={() => handleChangeStage(mode)}
-                className={`min-h-[36px] px-3 py-1.5 text-[13.5px] whitespace-nowrap rounded-lg font-semibold transition-colors ${
+                className={`min-h-[32px] px-2.5 py-1 text-xs whitespace-nowrap rounded-md font-semibold transition-colors ${
                   stageMode === mode
                     ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
                     : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
@@ -646,20 +647,23 @@ export default function StudioApp() {
             ))}
           </nav>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* F1: Print Triage button with shortlist count */}
+          {/* Right: Actions & Panel Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Primary Action: Print Triage */}
             <button
               type="button"
               onClick={() => setPrintModalOpen(true)}
-              className="text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold whitespace-nowrap transition-colors"
+              className="text-xs min-h-[32px] inline-flex items-center px-3 py-1 rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold whitespace-nowrap transition-colors"
             >
               Print Triage{activeShortlistEntries.length > 0 ? ` (${activeShortlistEntries.length})` : ""}
             </button>
-            {/* Score Custom FASTA + SMILES in top bar */}
+
+            {/* Ghost Action: Score Custom FASTA + SMILES */}
             <button
               type="button"
               onClick={() => setCustomModalOpen(true)}
-              className="text-[13px] min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+              title="Score custom FASTA target sequence and SMILES molecules"
+              className="text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -675,46 +679,93 @@ export default function StudioApp() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>Score Custom FASTA + SMILES</span>
+              <span>Score Custom</span>
             </button>
-            {/* F2: Copy link control */}
+
+            {/* Ghost Action: Copy Shareable Link */}
             <button
               type="button"
               onClick={handleCopyLink}
-              className="text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+              title="Copy link to current workspace selection"
+              className="text-xs min-h-[32px] inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
             >
-              {copyLinkLabel}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+                aria-hidden="true"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              <span>{copyLinkLabel}</span>
             </button>
-            {/* F5: Local API status button */}
+
+            {/* Ghost Action: Local API status */}
             <button
               type="button"
               onClick={() => setCustomModalOpen(true)}
-              className={`text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors ${
-                localApiOnline ? "text-[var(--selective)]" : "text-[var(--ink-secondary)]"
+              title={`Local Python API: ${localApiOnline ? "Online" : "Offline"}`}
+              className={`text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors ${
+                localApiOnline ? "text-[var(--selective)]" : "text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]"
               }`}
             >
-              Local API: {localApiOnline ? "online" : "offline"}
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  localApiOnline ? "bg-[var(--selective)]" : "bg-[var(--ink-muted)]"
+                }`}
+                aria-hidden="true"
+              />
+              <span className="mono-num text-[11px]">API</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setInspectorOpen((prev) => !prev)}
-              aria-pressed={inspectorOpen}
-              className={`text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg border font-semibold whitespace-nowrap transition-colors ${
-                inspectorOpen
-                  ? "bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-ink)]"
-                  : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
-              }`}
-            >
-              {inspectorOpen ? "Hide Inspector" : "Inspector"}
-            </button>
+
+            {/* Ghost Action: GitHub Repo */}
             <a
               href="https://github.com/Sonferera/OpenRepurpose"
               target="_blank"
               rel="noopener noreferrer"
-              className="mono-num text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] font-semibold whitespace-nowrap"
+              title="View OpenRepurpose source on GitHub"
+              className="text-xs min-h-[32px] inline-flex items-center px-2 py-1 rounded-md text-[var(--ink-muted)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
             >
               GitHub
             </a>
+
+            <div className="w-[1px] h-4 bg-[var(--border-subtle)] mx-0.5" aria-hidden="true" />
+
+            {/* Inspector Toggle Button: At the far right corner */}
+            <button
+              type="button"
+              onClick={() => setInspectorOpen((prev) => !prev)}
+              aria-pressed={inspectorOpen}
+              aria-label="Toggle Molecule Inspector"
+              title={inspectorOpen ? "Hide Inspector (◫)" : "Show Inspector (◫)"}
+              className={`min-h-[32px] px-2.5 py-1 rounded-md border text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                inspectorOpen
+                  ? "bg-[var(--bg-surface)] border-[var(--border-control)] text-[var(--ink-primary)]"
+                  : "bg-transparent border-transparent text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+                aria-hidden="true"
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M15 3v18" />
+              </svg>
+              <span>Inspector</span>
+            </button>
           </div>
         </div>
 
