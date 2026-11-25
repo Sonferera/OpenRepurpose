@@ -393,18 +393,44 @@ export default function LeftNavigatorRail({
             </button>
           </div>
 
-          <div>
-            <label htmlFor="drug-stream-search" className="sr-only">
-              Filter drugs by name, mechanism, or indication
-            </label>
-            <input
-              id="drug-stream-search"
-              type="search"
-              value={searchQuery}
-              onChange={(e) => onChangeSearchQuery(e.target.value)}
-              placeholder="Search drug name or indication..."
-              className="w-full min-h-[38px] px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
-            />
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <label htmlFor="drug-stream-search" className="sr-only">
+                Filter drugs by name, mechanism, or indication
+              </label>
+              <input
+                id="drug-stream-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => onChangeSearchQuery(e.target.value)}
+                placeholder="Search drug or paste SMILES..."
+                className="w-full min-h-[38px] px-3 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
+              />
+            </div>
+            {onOpenCustomModal && (
+              <button
+                type="button"
+                onClick={onOpenCustomModal}
+                aria-label="Score Custom FASTA + SMILES"
+                title="Score Custom FASTA + SMILES (input SMILES / protein sequence)"
+                className="w-[38px] h-[38px] rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--accent-ink)] hover:bg-[var(--bg-hover)] flex items-center justify-center shrink-0 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           <div
@@ -468,20 +494,59 @@ export default function LeftNavigatorRail({
             return (
               <div
                 key={c.drug_id}
-                className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors ${
+                onClick={() => onSelectDrug(c.drug_id)}
+                className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors ${
                   isSelected
-                    ? "bg-[var(--bg-surface)] shadow-xs ring-1 ring-[var(--accent-ink)]"
-                    : "hover:bg-[var(--bg-surface)]/80"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-ink)] ring-1 ring-[var(--accent-border)] shadow-xs"
+                    : "hover:bg-[var(--bg-surface)]/80 text-[var(--ink-primary)]"
                 }`}
               >
+                {/* Pin / Shortlist toggle checkbox or star */}
                 <button
                   type="button"
-                  onClick={() => onSelectDrug(c.drug_id)}
-                  aria-current={isSelected ? "true" : undefined}
-                  className="flex-1 text-left min-w-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleShortlist(c.drug_id);
+                  }}
+                  aria-label={isInShortlist ? `Remove ${c.drug_name} from triage shortlist` : `Pin ${c.drug_name} to triage shortlist`}
+                  aria-pressed={isInShortlist}
+                  title={isInShortlist ? "Pinned in shortlist" : "Pin to shortlist"}
+                  className={`shrink-0 w-4 h-4 flex items-center justify-center transition-opacity ${
+                    isInShortlist
+                      ? "opacity-100 text-[var(--accent-ink)]"
+                      : "opacity-0 group-hover:opacity-70 hover:!opacity-100 text-[var(--ink-muted)]"
+                  }`}
                 >
+                  {isInShortlist ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-3.5 h-3.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-3.5 h-3.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  )}
+                </button>
+
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1.5">
-                    <span className="font-semibold text-xs text-[var(--ink-primary)] truncate">
+                    <span className="font-semibold text-xs truncate">
                       <span className="mono-num text-[var(--ink-muted)] font-medium mr-1">
                         #{shownRank}
                       </span>
@@ -498,9 +563,9 @@ export default function LeftNavigatorRail({
 
                   {/* Secondary info: hidden by default, visible on hover or when selected */}
                   <div
-                    className={`items-center gap-1.5 mt-0.5 text-[11px] text-[var(--ink-secondary)] truncate ${
-                      isSelected ? "flex" : "hidden group-hover:flex"
-                    }`}
+                    className={`items-center gap-1.5 mt-0.5 text-[11px] truncate ${
+                      isSelected ? "text-[var(--accent-ink)]" : "text-[var(--ink-secondary)]"
+                    } ${isSelected ? "flex" : "hidden group-hover:flex"}`}
                   >
                     <span className="truncate">
                       {c.known_indication || c.moa || "Launched clinical compound"}
@@ -518,72 +583,22 @@ export default function LeftNavigatorRail({
                         </>
                       )}
                   </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onToggleShortlist(c.drug_id)}
-                  aria-label={isInShortlist ? `Remove ${c.drug_name} from triage set` : `Add ${c.drug_name} to triage set`}
-                  aria-pressed={isInShortlist}
-                  title={isInShortlist ? "Remove from triage set" : "Add to triage set"}
-                  className={`shrink-0 w-7 h-7 rounded-md text-sm font-semibold flex items-center justify-center transition-colors ${
-                    isInShortlist
-                      ? "text-[var(--accent-ink)] bg-[var(--accent-soft)]"
-                      : "text-[var(--ink-muted)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
-                  }`}
-                >
-                  {isInShortlist ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-4 h-4 text-[var(--accent-ink)]"
-                      aria-hidden="true"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-4 h-4"
-                      aria-hidden="true"
-                    >
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                  )}
-                </button>
+                </div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Bottom Pinned Action Strip */}
-      <div className="shrink-0 p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onOpenCustomModal}
-          className="flex-1 min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-        >
-          <span>Score Custom FASTA + SMILES</span>
-        </button>
+      {/* Bottom Pinned Footer Strip */}
+      <div className="shrink-0 p-2.5 px-3 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex items-center justify-between text-xs text-[var(--ink-muted)]">
+        <span className="text-[11px]">Triage Stream</span>
         <span
           tabIndex={0}
           role="note"
           aria-label="Research triage only: single-target pKd estimates require 3D docking and wet-lab validation."
           title="Research triage only: single-target pKd estimates require 3D docking and wet-lab validation."
-          className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] text-xs font-bold cursor-help shrink-0 transition-colors"
+          className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] text-[10px] font-bold cursor-help shrink-0 transition-colors"
         >
           i
         </span>

@@ -655,6 +655,28 @@ export default function StudioApp() {
             >
               Print Triage{activeShortlistEntries.length > 0 ? ` (${activeShortlistEntries.length})` : ""}
             </button>
+            {/* Score Custom FASTA + SMILES in top bar */}
+            <button
+              type="button"
+              onClick={() => setCustomModalOpen(true)}
+              className="text-[13px] min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5 text-[var(--accent-ink)]"
+                aria-hidden="true"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Score Custom FASTA + SMILES</span>
+            </button>
             {/* F2: Copy link control */}
             <button
               type="button"
