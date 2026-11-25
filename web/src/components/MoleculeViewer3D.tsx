@@ -102,6 +102,7 @@ interface MoleculeViewer3DProps {
   moleculeName: string;
   theme: StudioTheme;
   heightClass?: string;
+  compactToolbar?: boolean;
   onExpandStage?: () => void;
 }
 
@@ -111,10 +112,12 @@ export default function MoleculeViewer3D({
   moleculeName,
   theme,
   heightClass = "h-[215px]",
+  compactToolbar = false,
   onExpandStage,
 }: MoleculeViewer3DProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<ThreeDMolViewer | null>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
   const [styleMode, setStyleMode] = useState<MoleculeStyleMode>("stick");
   const [stageOverride, setStageOverride] = useState<"paper" | "dark" | null>(null);
@@ -352,13 +355,84 @@ export default function MoleculeViewer3D({
   };
 
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden relative">
       <div className="px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex flex-wrap items-center justify-between gap-1.5 text-xs">
         <span className="font-bold text-[var(--ink-primary)] truncate">
           3D Conformer
         </span>
-        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="3D display controls">
-          <div className="inline-flex rounded-md bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-0.5">
+        {compactToolbar ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setOptionsOpen((prev) => !prev)}
+              aria-expanded={optionsOpen}
+              className={`px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] border ${
+                optionsOpen
+                  ? "bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-ink)]"
+                  : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              Options
+            </button>
+            {onExpandStage && (
+              <button
+                type="button"
+                onClick={onExpandStage}
+                className="px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] bg-[var(--accent)] text-[var(--accent-on-solid)] hover:bg-[var(--accent-hover)]"
+              >
+                Expand
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="3D display controls">
+            <div className="inline-flex rounded-md bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-0.5">
+              {(["stick", "ball", "surface"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setStyleMode(m)}
+                  aria-pressed={styleMode === m}
+                  className={`px-2 py-0.5 rounded text-xs font-semibold min-h-[26px] ${
+                    styleMode === m
+                      ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                      : "text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+                  }`}
+                >
+                  {m === "stick" ? "Stick" : m === "ball" ? "Ball" : "Surface"}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSpinning((s) => !s)}
+              aria-pressed={spinning}
+              className={`px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] border ${
+                spinning
+                  ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-on-solid)]"
+                  : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              {spinning ? "Pause" : "Spin"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStageOverride(effectiveDark ? "paper" : "dark")}
+              className="px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+            >
+              {effectiveDark ? "Paper 3D" : "Dark 3D"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {compactToolbar && optionsOpen && (
+        <div
+          className="px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-wrap items-center justify-between gap-1.5 text-xs"
+          role="group"
+          aria-label="3D display controls"
+        >
+          <div className="inline-flex rounded-md bg-[var(--bg-subtle)] border border-[var(--border-subtle)] p-0.5">
             {(["stick", "ball", "surface"] as const).map((m) => (
               <button
                 key={m}
@@ -375,27 +449,29 @@ export default function MoleculeViewer3D({
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setSpinning((s) => !s)}
-            aria-pressed={spinning}
-            className={`px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] border ${
-              spinning
-                ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-on-solid)]"
-                : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
-            }`}
-          >
-            {spinning ? "Pause" : "Spin"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setStageOverride(effectiveDark ? "paper" : "dark")}
-            className="px-2 py-0.5 rounded-md text-xs font-semibold min-h-[28px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
-          >
-            {effectiveDark ? "Paper 3D" : "Dark 3D"}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSpinning((s) => !s)}
+              aria-pressed={spinning}
+              className={`px-2 py-0.5 rounded-md text-xs font-semibold min-h-[26px] border ${
+                spinning
+                  ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-on-solid)]"
+                  : "bg-[var(--bg-subtle)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              {spinning ? "Pause" : "Spin"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStageOverride(effectiveDark ? "paper" : "dark")}
+              className="px-2 py-0.5 rounded-md text-xs font-semibold min-h-[26px] bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+            >
+              {effectiveDark ? "Paper 3D" : "Dark 3D"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         className={`relative w-full ${heightClass} ${

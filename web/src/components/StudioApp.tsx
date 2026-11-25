@@ -70,14 +70,16 @@ export default function StudioApp() {
   const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
+  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
 
-  // Sync initial theme from html[data-theme] / localStorage
+  // Sync initial theme from html[data-theme] / localStorage and responsive inspector default
   useEffect(() => {
     if (typeof window === "undefined") return;
     const attr = document.documentElement.getAttribute("data-theme");
     if (attr === "dark" || attr === "paper") {
       setTheme(attr);
     }
+    setInspectorOpen(window.matchMedia("(min-width: 1280px)").matches);
   }, []);
 
   const handleToggleTheme = useCallback((next: StudioTheme) => {
@@ -329,7 +331,11 @@ export default function StudioApp() {
     : [];
 
   return (
-    <div className="min-h-dvh grid grid-cols-1 md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)_344px] xl:grid-cols-[328px_minmax(0,1fr)_356px] items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+    <div
+      className={`min-h-dvh grid grid-cols-1 md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)] ${
+        inspectorOpen ? "xl:grid-cols-[328px_minmax(0,1fr)_356px]" : "xl:grid-cols-[320px_minmax(0,1fr)]"
+      } items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]`}
+    >
       {/* PANE 1: LEFT NAVIGATOR RAIL */}
       <LeftNavigatorRail
         theme={theme}
@@ -392,37 +398,26 @@ export default function StudioApp() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            {stageMode === "graph" && (
-              <div
-                className="inline-flex bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-0.5 text-[13px]"
-                role="group"
-                aria-label="Graph visualization mode"
-              >
-                <button
-                  type="button"
-                  onClick={() => setGraphSubMode("outcome")}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                    graphSubMode === "outcome"
-                      ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
-                  }`}
-                >
-                  Drug x Target
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGraphSubMode("cross")}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                    graphSubMode === "cross"
-                      ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                      : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
-                  }`}
-                >
-                  8-Target Reach
-                </button>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPrintModalOpen(true)}
+              className="text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold whitespace-nowrap transition-colors"
+            >
+              Print Triage
+            </button>
+            <button
+              type="button"
+              onClick={() => setInspectorOpen((prev) => !prev)}
+              aria-pressed={inspectorOpen}
+              className={`text-[13px] min-h-[36px] inline-flex items-center px-3 py-1 rounded-lg border font-semibold whitespace-nowrap transition-colors ${
+                inspectorOpen
+                  ? "bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-ink)]"
+                  : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+              }`}
+            >
+              {inspectorOpen ? "Hide Inspector" : "Inspector"}
+            </button>
             <a
               href="https://github.com/Sonferera/OpenRepurpose"
               target="_blank"
@@ -441,6 +436,7 @@ export default function StudioApp() {
             candidate={selectedCandidate}
             crossEdges={activeCrossEdges}
             subMode={graphSubMode}
+            onChangeSubMode={setGraphSubMode}
             onSelectCrossTarget={handleSelectCrossTarget}
           />
         )}
@@ -529,14 +525,28 @@ export default function StudioApp() {
         )}
       </main>
 
-      {/* PANE 3: RIGHT MOLECULE & WET-LAB ACTION DOCK */}
-      <RightMoleculeDock
-        theme={theme}
-        target={activeTarget}
-        candidate={selectedCandidate}
-        onExpand3DStage={() => handleChangeStage("3d")}
-        onOpenPrintModal={() => setPrintModalOpen(true)}
-      />
+      {/* PANE 3: COLLAPSIBLE RIGHT MOLECULE INSPECTOR */}
+      {inspectorOpen && (
+        <>
+          <div
+            className="no-print xl:hidden fixed inset-0 z-30 bg-black/40"
+            aria-hidden="true"
+            onClick={() => setInspectorOpen(false)}
+          />
+          <RightMoleculeDock
+            theme={theme}
+            target={activeTarget}
+            candidate={selectedCandidate}
+            onExpand3DStage={() => {
+              handleChangeStage("3d");
+              if (typeof window !== "undefined" && !window.matchMedia("(min-width: 1280px)").matches) {
+                setInspectorOpen(false);
+              }
+            }}
+            onClose={() => setInspectorOpen(false)}
+          />
+        </>
+      )}
 
       {/* MODALS */}
       <LabTriageModal

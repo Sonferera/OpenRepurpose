@@ -186,15 +186,25 @@ export default function LeftNavigatorRail({
         {/* Step 2: Approved FDA Drugs Controls */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)]">
-              2. Approved Drugs ({totalScreened.toLocaleString()})
-            </span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold uppercase tracking-wide text-[var(--ink-secondary)] whitespace-nowrap">
+                2. FDA Drugs ({totalScreened.toLocaleString()})
+              </span>
+              <span
+                tabIndex={0}
+                title="Delta-pKd color key: Green = High Selectivity (>= +0.45), Amber = Moderate (+0.15..+0.45), Red = Cross-Target Bias (< +0.15)"
+                aria-label="Delta-pKd color key: Green High Selectivity, Amber Moderate, Red Cross-Target Bias"
+                className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-[var(--border-control)] bg-[var(--bg-surface)] text-[10px] font-bold text-[var(--ink-secondary)] cursor-help shrink-0"
+              >
+                ?
+              </span>
+            </div>
             <button
               type="button"
               onClick={onToggleSortOrder}
-              className="text-xs font-semibold text-[var(--accent-ink)] hover:underline mono-num"
+              className="text-xs font-semibold text-[var(--accent-ink)] hover:underline mono-num whitespace-nowrap shrink-0"
             >
-              Sort: {sortOrder === "delta" ? "Delta-pKd" : "Raw pKd"}
+              Sort: {sortOrder === "delta" ? "ΔpKd" : "Raw pKd"}
             </button>
           </div>
 
@@ -239,25 +249,6 @@ export default function LeftNavigatorRail({
               placeholder="Search drug name or indication..."
               className="w-full min-h-[38px] px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)]"
             />
-          </div>
-
-          {/* Explicit Legend for Candidate Stream */}
-          <div className="flex items-center justify-between gap-1 pt-0.5 text-xs text-[var(--ink-secondary)] font-medium">
-            <span>Rank · Drug</span>
-            <div className="flex items-center gap-2.5 mono-num" title="Target Selectivity Delta-pKd color key">
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[var(--selective)]" />
-                Sel
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[var(--review)]" />
-                Mod
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[var(--alert)]" />
-                Bias
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -319,16 +310,15 @@ export default function LeftNavigatorRail({
                   <span className="truncate">
                     {c.known_indication || c.moa || "Launched clinical compound"}
                   </span>
-                  <span
-                    className={`mono-num shrink-0 font-medium ${
-                      c.novelty.pubmed_count === 0 &&
-                      c.specificity_tier !== "low_promiscuous_bias"
-                        ? "text-[var(--accent-ink)] font-bold"
-                        : "text-[var(--ink-muted)]"
-                    }`}
-                  >
-                    {c.novelty.pubmed_count ?? 0} PubMed
-                  </span>
+                  {c.novelty.pubmed_count === 0 &&
+                    c.specificity_tier !== "low_promiscuous_bias" && (
+                      <span
+                        className="mono-num shrink-0 px-1.5 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[10px] font-bold leading-none"
+                        title="0 PubMed co-occurrence hits"
+                      >
+                        0 lit
+                      </span>
+                    )}
                 </div>
               </button>
             );

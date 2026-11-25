@@ -72,3 +72,8 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
+*.code-workspace
+
+# Local AI / spec tooling
+openspec/
+.codegraph/
