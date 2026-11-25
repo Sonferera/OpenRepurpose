@@ -340,7 +340,7 @@ export default function LeftNavigatorRail({
 
                   {/* Secondary info: hidden by default, visible on hover or when selected */}
                   <div
-                    className={`items-center justify-between gap-2 mt-0.5 text-[11px] text-[var(--ink-secondary)] ${
+                    className={`items-center gap-1.5 mt-0.5 text-[11px] text-[var(--ink-secondary)] truncate ${
                       isSelected ? "flex" : "hidden group-hover:flex"
                     }`}
                   >
@@ -349,12 +349,15 @@ export default function LeftNavigatorRail({
                     </span>
                     {c.novelty.pubmed_count === 0 &&
                       c.specificity_tier !== "low_promiscuous_bias" && (
-                        <span
-                          className="mono-num shrink-0 px-1 py-0.2 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[9px] font-bold leading-none"
-                          title="0 PubMed co-occurrence hits"
-                        >
-                          0 lit
-                        </span>
+                        <>
+                          <span className="text-[var(--ink-muted)] shrink-0">•</span>
+                          <span
+                            className="mono-num shrink-0 px-1 py-0.2 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] text-[9px] font-bold leading-none"
+                            title="0 PubMed co-occurrence hits"
+                          >
+                            0 lit
+                          </span>
+                        </>
                       )}
                   </div>
                 </button>
@@ -408,19 +411,24 @@ export default function LeftNavigatorRail({
         )}
       </div>
 
-      {/* Bottom Pinned Action & Research Scope Strip */}
-      <div className="shrink-0 p-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] space-y-2">
+      {/* Bottom Pinned Action Strip */}
+      <div className="shrink-0 p-3 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex items-center gap-2">
         <button
           type="button"
           onClick={onOpenCustomModal}
-          className="w-full min-h-[42px] px-3 py-2 text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-2"
+          className="flex-1 min-h-[38px] px-3 py-1.5 text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
         >
           <span>Score Custom FASTA + SMILES</span>
         </button>
-        <p className="text-xs text-[var(--ink-secondary)] leading-snug">
-          <strong className="text-[var(--review)]">Research triage only:</strong> single-target pKd
-          estimates require 3D docking and wet-lab validation.
-        </p>
+        <span
+          tabIndex={0}
+          role="note"
+          aria-label="Research triage only: single-target pKd estimates require 3D docking and wet-lab validation."
+          title="Research triage only: single-target pKd estimates require 3D docking and wet-lab validation."
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] text-xs font-bold cursor-help shrink-0 transition-colors"
+        >
+          i
+        </span>
       </div>
     </aside>
   );

@@ -794,6 +794,10 @@ export default function StudioApp() {
                 <span className="font-medium text-[var(--ink-primary)]">Generated:</span>{" "}
                 {new Date(provenanceLine.generatedAt).toUTCString()}
               </span>
+              <span className="text-[var(--ink-muted)] hidden md:inline">|</span>
+              <span className="text-[var(--ink-secondary)] text-[11px]">
+                <strong className="text-[var(--review)] font-semibold">Research triage only:</strong> single-target pKd estimates require 3D docking & wet-lab validation.
+              </span>
             </div>
             <button
               type="button"
