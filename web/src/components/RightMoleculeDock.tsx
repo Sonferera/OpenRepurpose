@@ -10,6 +10,8 @@ interface RightMoleculeDockProps {
   target: TargetSummary;
   candidate: ScreeningCandidate | null;
   onExpand3DStage: () => void;
+  onSendToMixLab?: (candidate: ScreeningCandidate) => void;
+  isInMixQueue?: boolean;
   onClose?: () => void;
 }
 
@@ -18,6 +20,8 @@ export default function RightMoleculeDock({
   target,
   candidate,
   onExpand3DStage,
+  onSendToMixLab,
+  isInMixQueue = false,
   onClose,
 }: RightMoleculeDockProps) {
   const [copiedSmiles, setCopiedSmiles] = useState(false);
@@ -150,6 +154,19 @@ export default function RightMoleculeDock({
           >
             {copiedSmiles ? "SMILES Copied" : "Copy SMILES"}
           </button>
+          {onSendToMixLab && (
+            <button
+              type="button"
+              onClick={() => onSendToMixLab(candidate)}
+              className={`px-2.5 py-0.5 rounded font-semibold transition-colors ${
+                isInMixQueue
+                  ? "bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)] hover:bg-[var(--bg-hover)]"
+                  : "bg-[var(--accent)] text-[var(--accent-on-solid)] hover:bg-[var(--accent-hover)]"
+              }`}
+            >
+              {isInMixQueue ? "Open in Mix Lab" : "+ Send to Mix Lab"}
+            </button>
+          )}
         </div>
       </div>
 

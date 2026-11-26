@@ -34,7 +34,7 @@ export function parseWorkspaceHash(hash: string): Partial<StudioSession> | null 
   if (!stage) return null;
 
   // Validate stage
-  const validStages: CenterStageMode[] = ["graph", "3d", "matrix", "benchmark", "risks"];
+  const validStages: CenterStageMode[] = ["graph", "3d", "matrix", "mix", "benchmark", "risks"];
   if (!validStages.includes(stage as CenterStageMode)) return null;
 
   const result: Partial<StudioSession> = { stageMode: stage as CenterStageMode };

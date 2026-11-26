@@ -1,8 +1,14 @@
 import type {
+  ApiHealthPayload,
+  CatalogSearchResponse,
   CostImpact,
   CrossTargetEdge,
+  DDIEvalResultsPayload,
   ErrorAnalysisPayload,
   EvalResultsPayload,
+  McpCreateKeyResponse,
+  McpKeysListResponse,
+  MixApiResponse,
   ScatterSamplesPayload,
   ScreeningCandidate,
   TargetScreeningPayload,
@@ -38,6 +44,109 @@ export function fetchScatterSamples(signal?: AbortSignal): Promise<ScatterSample
 
 export function fetchErrorAnalysis(signal?: AbortSignal): Promise<ErrorAnalysisPayload> {
   return fetchJson<ErrorAnalysisPayload>("/data/error_analysis.json", signal);
+}
+
+export function fetchDDIEvalResults(signal?: AbortSignal): Promise<DDIEvalResultsPayload> {
+  return fetchJson<DDIEvalResultsPayload>("/data/ddi_eval_results.json", signal);
+}
+
+export async function fetchApiHealth(
+  apiBaseUrl: string,
+  timeoutMs = 2000
+): Promise<ApiHealthPayload | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(`${apiBaseUrl}/api/health`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    return (await res.json()) as ApiHealthPayload;
+  } catch {
+    return null;
+  }
+}
+
+export async function searchApiCatalog(
+  apiBaseUrl: string,
+  query: string,
+  kind: "all" | "drugs" | "targets" = "all",
+  limit = 16,
+  signal?: AbortSignal
+): Promise<CatalogSearchResponse> {
+  const params = new URLSearchParams({
+    q: query,
+    kind,
+    limit: String(limit),
+  });
+  const res = await fetch(`${apiBaseUrl}/api/catalog/search?${params.toString()}`, { signal });
+  if (!res.ok) {
+    throw new Error(`Catalog search failed (HTTP ${res.status})`);
+  }
+  return (await res.json()) as CatalogSearchResponse;
+}
+
+export async function postRegimenMix(
+  apiBaseUrl: string,
+  payload: {
+    drugs: string[];
+    targets: string[];
+    in_domain?: boolean | null;
+    include_structures?: boolean;
+  },
+  signal?: AbortSignal
+): Promise<MixApiResponse> {
+  const res = await fetch(`${apiBaseUrl}/api/mix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail =
+      body && typeof body.detail === "string"
+        ? body.detail
+        : `Mix evaluation failed (HTTP ${res.status})`;
+    throw new Error(detail);
+  }
+  return body as MixApiResponse;
+}
+
+export async function fetchMcpKeys(apiBaseUrl: string): Promise<McpKeysListResponse> {
+  const res = await fetch(`${apiBaseUrl}/api/mcp/keys`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch MCP keys (HTTP ${res.status})`);
+  }
+  return (await res.json()) as McpKeysListResponse;
+}
+
+export async function createMcpApiKey(
+  apiBaseUrl: string,
+  label: string
+): Promise<McpCreateKeyResponse> {
+  const res = await fetch(`${apiBaseUrl}/api/mcp/keys`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(
+      body && typeof body.detail === "string"
+        ? body.detail
+        : `Failed to generate MCP API key (HTTP ${res.status})`
+    );
+  }
+  return body as McpCreateKeyResponse;
+}
+
+export async function revokeMcpApiKey(apiBaseUrl: string, keyId: string): Promise<void> {
+  const res = await fetch(`${apiBaseUrl}/api/mcp/keys/${encodeURIComponent(keyId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to revoke MCP key (HTTP ${res.status})`);
+  }
 }
 
 export async function loadAllScreeningsWithCrossMap(

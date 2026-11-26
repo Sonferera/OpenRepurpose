@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  fetchApiHealth,
+  fetchDDIEvalResults,
   fetchErrorAnalysis,
   fetchEvalResults,
   fetchScatterSamples,
@@ -9,10 +11,14 @@ import {
   loadAllScreeningsWithCrossMap,
 } from "@/lib/data";
 import type {
+  ApiHealthPayload,
   CenterStageMode,
   CrossTargetEdge,
+  DDIEvalResultsPayload,
   ErrorAnalysisPayload,
   EvalResultsPayload,
+  MixDrugQueueItem,
+  MixTargetQueueItem,
   QuickFilterChip,
   ScatterSamplesPayload,
   ScreeningCandidate,
@@ -40,6 +46,8 @@ import CompareMatrixStage from "./CompareMatrixStage";
 import CustomPredictModal from "./CustomPredictModal";
 import LabTriageModal from "./LabTriageModal";
 import LeftNavigatorRail from "./LeftNavigatorRail";
+import McpConnectModal from "./McpConnectModal";
+import MixLabStage from "./MixLabStage";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 import RightMoleculeDock from "./RightMoleculeDock";
 import SafetyRisksStage from "./SafetyRisksStage";
@@ -73,10 +81,15 @@ export default function StudioApp() {
   const [initError, setInitError] = useState<string | null>(null);
 
   const [evalResults, setEvalResults] = useState<EvalResultsPayload | null>(null);
+  const [ddiEvalResults, setDdiEvalResults] = useState<DDIEvalResultsPayload | null>(null);
   const [scatterSamples, setScatterSamples] = useState<ScatterSamplesPayload | null>(null);
   const [errorAnalysis, setErrorAnalysis] = useState<ErrorAnalysisPayload | null>(null);
   const [evalLoading, setEvalLoading] = useState<boolean>(false);
   const [evalError, setEvalError] = useState<string | null>(null);
+
+  const [mixDrugs, setMixDrugs] = useState<MixDrugQueueItem[]>([]);
+  const [mixTargets, setMixTargets] = useState<MixTargetQueueItem[]>([]);
+  const [apiHealth, setApiHealth] = useState<ApiHealthPayload | null>(null);
 
   const [activeTargetId, setActiveTargetId] = useState<string>("mtb_pknb");
   const [selectedDrugId, setSelectedDrugId] = useState<string>("");
@@ -93,6 +106,7 @@ export default function StudioApp() {
 
   const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
+  const [mcpModalOpen, setMcpModalOpen] = useState<boolean>(false);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
@@ -136,18 +150,11 @@ export default function StudioApp() {
   }, []);
 
   const checkLocalApi = useCallback(async (): Promise<boolean> => {
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 1800);
-      const res = await fetch(`${API_BASE_URL}/api/health`, { signal: ctrl.signal });
-      clearTimeout(timer);
-      const ok = res.ok;
-      setLocalApiOnline(ok);
-      return ok;
-    } catch {
-      setLocalApiOnline(false);
-      return false;
-    }
+    const health = await fetchApiHealth(API_BASE_URL, 6500);
+    const ok = Boolean(health && health.status === "ok");
+    setApiHealth(health);
+    setLocalApiOnline(ok);
+    return ok;
   }, []);
 
   const loadInitialData = useCallback(async () => {
@@ -183,14 +190,16 @@ export default function StudioApp() {
     setEvalLoading(true);
     setEvalError(null);
     try {
-      const [ev, sc, ea] = await Promise.all([
+      const [ev, sc, ea, ddiEv] = await Promise.all([
         fetchEvalResults(),
         fetchScatterSamples(),
         fetchErrorAnalysis(),
+        fetchDDIEvalResults().catch(() => null),
       ]);
       setEvalResults(ev);
       setScatterSamples(sc);
       setErrorAnalysis(ea);
+      setDdiEvalResults(ddiEv);
       setEvalLoading(false);
     } catch (err: unknown) {
       setEvalError(
@@ -504,8 +513,200 @@ export default function StudioApp() {
   }, [activeScreening, filteredCandidates, selectedDrugId]);
 
   const handleChangeStage = (mode: CenterStageMode) => {
+    if (mode === "mix" && mixTargets.length === 0 && activeTarget) {
+      setMixTargets([
+        {
+          key: activeTarget.id,
+          input: activeTarget.id,
+          name: activeTarget.name,
+          shortName: activeTarget.short_name,
+          subtitle: `${activeTarget.disease} · ${activeTarget.uniprot_id}`,
+          inDomain: activeTarget.in_domain,
+          targetId: activeTarget.id,
+          source: "curated_ntd",
+        },
+      ]);
+    }
     setStageMode(mode);
   };
+
+  // Phase C: Iterative Workflow Chaining & Mix Lab Queue Handlers
+  const handleAddMixDrug = useCallback((item: MixDrugQueueItem) => {
+    setMixDrugs((prev) => {
+      if (prev.length >= 4) return prev;
+      if (
+        prev.some(
+          (x) =>
+            x.key === item.key ||
+            (item.smiles && x.smiles && x.smiles === item.smiles) ||
+            x.name.toLowerCase() === item.name.toLowerCase()
+        )
+      ) {
+        return prev;
+      }
+      return [...prev, item];
+    });
+  }, []);
+
+  const handleRemoveMixDrug = useCallback((key: string) => {
+    setMixDrugs((prev) => prev.filter((x) => x.key !== key));
+  }, []);
+
+  const handleAddMixTarget = useCallback((item: MixTargetQueueItem) => {
+    setMixTargets((prev) => {
+      if (prev.length >= 2) return prev;
+      if (prev.some((x) => x.key === item.key || x.input === item.input)) {
+        return prev;
+      }
+      return [...prev, item];
+    });
+  }, []);
+
+  const handleRemoveMixTarget = useCallback((key: string) => {
+    setMixTargets((prev) => prev.filter((x) => x.key !== key));
+  }, []);
+
+  const handleClearMixQueue = useCallback(() => {
+    setMixDrugs([]);
+    setMixTargets([]);
+  }, []);
+
+  const handleSendCandidateToMix = useCallback(
+    (candidate: ScreeningCandidate, openStage = true) => {
+      handleAddMixDrug({
+        key: candidate.drug_id,
+        input: candidate.canonical_smiles,
+        name: candidate.drug_name,
+        subtitle: candidate.known_indication || candidate.moa,
+        smiles: candidate.canonical_smiles,
+        drugId: candidate.drug_id,
+        source: "screening",
+      });
+      if (activeTarget) {
+        setMixTargets((prev) =>
+          prev.length > 0
+            ? prev
+            : [
+                {
+                  key: activeTarget.id,
+                  input: activeTarget.id,
+                  name: activeTarget.name,
+                  shortName: activeTarget.short_name,
+                  subtitle: `${activeTarget.disease} · ${activeTarget.uniprot_id}`,
+                  inDomain: activeTarget.in_domain,
+                  targetId: activeTarget.id,
+                  source: "curated_ntd",
+                },
+              ]
+        );
+      }
+      if (openStage) {
+        setStageMode("mix");
+      }
+    },
+    [handleAddMixDrug, activeTarget]
+  );
+
+  const handleSendShortlistToMix = useCallback(() => {
+    const top4 = shortlistCandidates.slice(0, 4);
+    for (const c of top4) {
+      handleAddMixDrug({
+        key: c.drug_id,
+        input: c.canonical_smiles,
+        name: c.drug_name,
+        subtitle: c.known_indication || c.moa,
+        smiles: c.canonical_smiles,
+        drugId: c.drug_id,
+        source: "screening",
+      });
+    }
+    if (activeTarget) {
+      setMixTargets((prev) =>
+        prev.length > 0
+          ? prev
+          : [
+              {
+                key: activeTarget.id,
+                input: activeTarget.id,
+                name: activeTarget.name,
+                shortName: activeTarget.short_name,
+                subtitle: `${activeTarget.disease} · ${activeTarget.uniprot_id}`,
+                inDomain: activeTarget.in_domain,
+                targetId: activeTarget.id,
+                source: "curated_ntd",
+              },
+            ]
+      );
+    }
+    setStageMode("mix");
+  }, [shortlistCandidates, handleAddMixDrug, activeTarget]);
+
+  const handleLoadMixPreset = useCallback(() => {
+    setMixDrugs([
+      {
+        key: "preset_imatinib",
+        input: "Imatinib",
+        name: "Imatinib",
+        subtitle: "BCR-ABL tyrosine kinase inhibitor",
+        source: "fda_approved",
+      },
+      {
+        key: "preset_warfarin",
+        input: "Warfarin",
+        name: "Warfarin",
+        subtitle: "Vitamin K antagonist anticoagulant",
+        source: "fda_approved",
+      },
+    ]);
+    const presetTargets: MixTargetQueueItem[] = [];
+    const t1 = targetsIndex?.targets.find((t) => t.id === "mtb_pknb") || targetsIndex?.targets[0];
+    const t2 = targetsIndex?.targets.find((t) => t.id === "pf_cdpk1") || targetsIndex?.targets[1];
+    if (t1) {
+      presetTargets.push({
+        key: t1.id,
+        input: t1.id,
+        name: t1.name,
+        shortName: t1.short_name,
+        subtitle: `${t1.disease} · ${t1.uniprot_id}`,
+        inDomain: t1.in_domain,
+        targetId: t1.id,
+        source: "curated_ntd",
+      });
+    }
+    if (t2 && t2.id !== t1?.id) {
+      presetTargets.push({
+        key: t2.id,
+        input: t2.id,
+        name: t2.name,
+        shortName: t2.short_name,
+        subtitle: `${t2.disease} · ${t2.uniprot_id}`,
+        inDomain: t2.in_domain,
+        targetId: t2.id,
+        source: "curated_ntd",
+      });
+    }
+    if (presetTargets.length > 0) {
+      setMixTargets(presetTargets);
+    }
+  }, [targetsIndex]);
+
+  const handleChainFromMixToStudio = useCallback(
+    (targetId: string, drugId?: string) => {
+      if (screeningsByTarget[targetId]) {
+        setActiveTargetId(targetId);
+        if (drugId && screeningsByTarget[targetId].candidates.some((c) => c.drug_id === drugId)) {
+          setSelectedDrugId(drugId);
+        }
+        setStageMode("graph");
+      }
+    },
+    [screeningsByTarget]
+  );
+
+  const mixQueueDrugIds = useMemo(
+    () => mixDrugs.map((d) => d.drugId || d.key),
+    [mixDrugs]
+  );
 
   // F4: Provenance line data
   const provenanceLine = useMemo(() => {
@@ -626,7 +827,8 @@ export default function StudioApp() {
                 ["graph", "Branching Graph"],
                 ["3d", "3D Stage"],
                 ["matrix", "Compare Matrix"],
-                ["benchmark", "9-Model Benchmark"],
+                ["mix", mixDrugs.length > 0 ? `Mix Lab (${mixDrugs.length})` : "Mix Lab"],
+                ["benchmark", "Benchmarks"],
                 ["risks", "Errors & Risks"],
               ] as const
             ).map(([mode, label]) => (
@@ -722,6 +924,17 @@ export default function StudioApp() {
                 aria-hidden="true"
               />
               <span className="mono-num text-[11px]">API</span>
+            </button>
+
+            {/* Ghost Action: Connect MCP (API Key & Config) */}
+            <button
+              type="button"
+              onClick={() => setMcpModalOpen(true)}
+              title="Generate MCP API Key and copy AI client configuration"
+              className="text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+            >
+              <span className="mono-num text-[11px] text-[var(--accent-ink)]">MCP</span>
+              <span>Connect</span>
             </button>
 
             {/* Ghost Action: GitHub Repo */}
@@ -841,6 +1054,31 @@ export default function StudioApp() {
             onChangeExcludeInTrain={setExcludeInTrain}
             onResetFilters={handleResetFilters}
             referenceControls={activeScreening.reference_control_ranks}
+            onSendToMixLab={(c) => handleSendCandidateToMix(c, false)}
+            mixQueueDrugIds={mixQueueDrugIds}
+          />
+        )}
+
+        {stageMode === "mix" && (
+          <MixLabStage
+            theme={theme}
+            apiBaseUrl={API_BASE_URL}
+            apiOnline={localApiOnline}
+            apiHealth={apiHealth}
+            onRecheckApi={checkLocalApi}
+            targets={targetsIndex.targets}
+            screeningsByTarget={screeningsByTarget}
+            activeTarget={activeTarget}
+            selectedCandidate={selectedCandidate}
+            mixDrugs={mixDrugs}
+            mixTargets={mixTargets}
+            onAddDrug={handleAddMixDrug}
+            onRemoveDrug={handleRemoveMixDrug}
+            onAddTarget={handleAddMixTarget}
+            onRemoveTarget={handleRemoveMixTarget}
+            onClearQueue={handleClearMixQueue}
+            onLoadPresetExample={handleLoadMixPreset}
+            onChainToStudio={handleChainFromMixToStudio}
           />
         )}
 
@@ -849,6 +1087,7 @@ export default function StudioApp() {
             theme={theme}
             evalResults={evalResults}
             scatterSamples={scatterSamples}
+            ddiEvalResults={ddiEvalResults}
             loading={evalLoading}
             error={evalError}
             onRetry={loadEvaluationArtifacts}
@@ -914,6 +1153,10 @@ export default function StudioApp() {
                 setInspectorOpen(false);
               }
             }}
+            onSendToMixLab={(c) => handleSendCandidateToMix(c, true)}
+            isInMixQueue={
+              selectedCandidate ? mixQueueDrugIds.includes(selectedCandidate.drug_id) : false
+            }
             onClose={() => setInspectorOpen(false)}
           />
         </>
@@ -932,12 +1175,21 @@ export default function StudioApp() {
         assayCost={assayCost}
         onAssayCostChange={setAssayCost}
         storageAvailable={storageAvailable}
+        onSendShortlistToMixLab={handleSendShortlistToMix}
       />
 
       <CustomPredictModal
         theme={theme}
         open={customModalOpen}
         onClose={() => setCustomModalOpen(false)}
+        apiBaseUrl={API_BASE_URL}
+        apiOnline={localApiOnline}
+        onRecheckApi={checkLocalApi}
+      />
+
+      <McpConnectModal
+        open={mcpModalOpen}
+        onClose={() => setMcpModalOpen(false)}
         apiBaseUrl={API_BASE_URL}
         apiOnline={localApiOnline}
         onRecheckApi={checkLocalApi}
