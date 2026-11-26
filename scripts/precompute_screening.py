@@ -369,6 +369,7 @@ def main() -> None:
                 svg_rel = f"data/molecules/{slug}.svg"
                 sdf_path = MOLECULES_DIR / f"{slug}.sdf"
                 svg_path = MOLECULES_DIR / f"{slug}.svg"
+                svg_dark_path = MOLECULES_DIR / f"{slug}_dark.svg"
 
                 sdf_str = generate_3d_sdf(smi, name=drug_name, seed=SEED)
                 has_3d = False
@@ -380,11 +381,20 @@ def main() -> None:
                     smiles=smi,
                     morgan_bit_importances=morgan_importances,
                     top_k_bits=5,
+                    dark_mode=False,
+                )
+                svg_dark_str, _ = render_attributed_2d_svg(
+                    smiles=smi,
+                    morgan_bit_importances=morgan_importances,
+                    top_k_bits=5,
+                    dark_mode=True,
                 )
                 has_2d = False
                 if svg_str:
                     svg_path.write_text(svg_str, encoding="utf-8")
                     has_2d = True
+                if svg_dark_str:
+                    svg_dark_path.write_text(svg_dark_str, encoding="utf-8")
 
                 mol_assets_cache[slug] = {
                     "sdf_path": f"/{sdf_rel}" if has_3d else None,

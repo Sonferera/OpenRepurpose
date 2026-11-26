@@ -26,6 +26,8 @@ interface CompareMatrixStageProps {
   onChangeExcludeInTrain: (val: boolean) => void;
   onResetFilters: () => void;
   referenceControls: ReferenceControlRank[];
+  onSendToMixLab?: (candidate: ScreeningCandidate) => void;
+  mixQueueDrugIds?: string[];
 }
 
 export default function CompareMatrixStage({
@@ -45,6 +47,8 @@ export default function CompareMatrixStage({
   onChangeExcludeInTrain,
   onResetFilters,
   referenceControls,
+  onSendToMixLab,
+  mixQueueDrugIds = [],
 }: CompareMatrixStageProps) {
   const handleDownloadCsv = () => {
     const csv = buildCandidatesCsv(target.id, target.name, candidates);
@@ -220,11 +224,13 @@ export default function CompareMatrixStage({
                 <th className="py-2.5 px-2 text-right">pKd (Kd nM)</th>
                 <th className="py-2.5 px-2">Ro5 / PAINS</th>
                 <th className="py-2.5 px-2 text-right">PubMed</th>
+                {onSendToMixLab && <th className="py-2.5 px-2 text-right">Mix Lab</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
               {candidates.map((c) => {
                 const isSel = c.drug_id === selectedDrugId;
+                const inMix = mixQueueDrugIds.includes(c.drug_id);
                 const dColor =
                   c.specificity_tier === "low_promiscuous_bias"
                     ? "text-[var(--alert)]"
@@ -279,6 +285,24 @@ export default function CompareMatrixStage({
                     <td className="py-2.5 px-2 text-right mono-num font-bold text-[var(--accent-ink)]">
                       {c.novelty.pubmed_count ?? 0}
                     </td>
+                    {onSendToMixLab && (
+                      <td className="py-2.5 px-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSendToMixLab(c);
+                          }}
+                          className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+                            inMix
+                              ? "bg-[var(--selective-soft)] border border-[var(--selective-border)] text-[var(--selective)]"
+                              : "bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--accent)] hover:text-[var(--accent-on-solid)] hover:border-transparent"
+                          }`}
+                        >
+                          {inMix ? "In Mix" : "+ Mix"}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

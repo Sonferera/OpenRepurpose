@@ -495,7 +495,7 @@ export interface CustomPredictionResponse {
 export type QuickFilterChip = "all" | "novel" | "selective" | "bias";
 export type SortOrder = "delta" | "raw";
 export type StudioTheme = "paper" | "dark";
-export type CenterStageMode = "graph" | "3d" | "matrix" | "benchmark" | "risks";
+export type CenterStageMode = "graph" | "3d" | "matrix" | "mix" | "benchmark" | "risks";
 
 export interface TriageShortlistEntry {
   targetId: string;
@@ -514,4 +514,340 @@ export interface StudioSession {
   ro5Only: boolean;
   noPains: boolean;
   excludeInTrain: boolean;
+}
+
+// Phase B & C: Full-DB Catalog, Multi-Drug Mix, & Model 2 DDI Benchmark types
+export interface ApiCatalogStats {
+  n_curated_targets: number;
+  n_fda_drugs: number;
+  n_experimental_compounds: number;
+  n_drugbank_extra_compounds?: number;
+  n_experimental_targets: number;
+  n_total_drugs: number;
+  n_total_targets: number;
+  n_experimental_kd_pairs: number;
+  n_cached_protein_embeddings: number;
+  n_known_ddi_pairs: number;
+}
+
+export interface ApiHealthPayload {
+  status: string;
+  checkpoint_loaded: boolean;
+  model_key: string;
+  ddi_model_loaded?: boolean;
+  ddi_model_key?: string | null;
+  catalog_ready?: boolean;
+  catalog_stats?: ApiCatalogStats;
+  device: string;
+  n_background_proteins: number;
+  seed: number;
+  mcp_http_enabled?: boolean;
+  mcp_http_path?: string;
+}
+
+export interface McpKeyRecord {
+  id: string;
+  label: string;
+  prefix: string;
+  created_at_utc: string;
+  last_used_at_utc: string | null;
+}
+
+export interface McpToolSummary {
+  name: string;
+  description: string;
+}
+
+export interface McpKeysListResponse {
+  mcp_endpoint_url: string;
+  transport: string;
+  auth_headers: string[];
+  mcp_http_enabled: boolean;
+  keys: McpKeyRecord[];
+  tools: McpToolSummary[];
+}
+
+export interface McpCreateKeyResponse {
+  id: string;
+  label: string;
+  prefix: string;
+  api_key: string;
+  created_at_utc: string;
+  mcp_endpoint_url: string;
+  warning: string;
+}
+
+export interface CatalogDrugHit {
+  id: string;
+  name: string;
+  canonical_smiles: string;
+  source: "fda_approved" | "experimental_db" | "drugbank_ddi" | "custom";
+  moa: string;
+  known_indication: string;
+  disease_area: string;
+  pubchem_cid: string;
+  n_experimental_assays: number;
+}
+
+export interface CatalogTargetHit {
+  id: string;
+  name: string;
+  short_name: string;
+  source: "curated_ntd" | "experimental_db" | "custom";
+  disease: string;
+  pathogen: string;
+  uniprot_id: string;
+  protein_family: string;
+  in_domain: boolean;
+  sequence_length: number;
+  has_cached_embedding: boolean;
+  n_experimental_assays: number;
+}
+
+export interface CatalogSearchResponse {
+  query: string;
+  kind: "all" | "drugs" | "targets";
+  limit: number;
+  drugs: CatalogDrugHit[];
+  targets: CatalogTargetHit[];
+  catalog_stats: ApiCatalogStats;
+}
+
+export interface MixDrugQueueItem {
+  key: string;
+  input: string;
+  name: string;
+  subtitle: string;
+  smiles?: string;
+  drugId?: string;
+  source: "screening" | "fda_approved" | "experimental_db" | "drugbank_ddi" | "custom";
+}
+
+export interface MixTargetQueueItem {
+  key: string;
+  input: string;
+  name: string;
+  shortName: string;
+  subtitle: string;
+  inDomain: boolean;
+  targetId?: string;
+  source: "curated_ntd" | "experimental_db" | "custom";
+}
+
+export interface MixDrugResult {
+  id: string;
+  name: string;
+  ik14: string;
+  canonical_smiles: string;
+  scaffold_smiles: string;
+  source: string;
+  moa: string;
+  known_indication: string;
+  medchem: MedChemProfile;
+  explainability: {
+    n_active_morgan_bits: number;
+    top_motifs: AttributedMotif[];
+  };
+  svg_2d: string | null;
+  svg_2d_dark: string | null;
+  sdf_3d: string | null;
+}
+
+export interface MixTargetResult {
+  id: string;
+  name: string;
+  short_name: string;
+  source: string;
+  disease: string;
+  pathogen: string;
+  uniprot_id: string;
+  protein_family: string;
+  in_domain: boolean;
+  sequence_length: number;
+}
+
+export interface MixGroundTruthMatch {
+  matched: boolean;
+  pkd?: number;
+  kd_nm?: number;
+  drug_id?: string;
+  target_id?: string;
+  source?: string;
+}
+
+export interface MixDrugTargetCell {
+  drug_id: string;
+  drug_name: string;
+  target_id: string;
+  target_name: string;
+  evaluation_mode: "experimental_ground_truth" | "model_prediction" | "precomputed_offline";
+  experimental_ground_truth: MixGroundTruthMatch;
+  predicted_pkd: number;
+  estimated_kd_nm: number;
+  predicted_active: boolean;
+  background_mean_pkd: number;
+  background_std_pkd: number;
+  target_selectivity_delta: number;
+  selectivity_zscore: number;
+  specificity_tier: "high" | "moderate" | "low_promiscuous_bias";
+  specificity_label: string;
+  in_domain: boolean;
+  triage_gates: TriageGatesResult;
+}
+
+export interface MixDDIDrugBankRecord {
+  pair_key: string;
+  y_class: number;
+  risk_category: string;
+  risk_label: string;
+  description: string;
+  drug_a_id: string;
+  drug_b_id: string;
+}
+
+export interface MixDDIModelPrediction {
+  ddi_probability: number;
+  risk_tier: "high_predicted_risk" | "moderate_predicted_risk" | "low_predicted_risk";
+  risk_label: string;
+  predicted_category: string;
+  predicted_category_label: string;
+  category_confidence: number;
+  threshold_used: number;
+  model_key: string;
+}
+
+export interface MixDDIPairResult {
+  drug_a_id: string;
+  drug_a_name: string;
+  drug_b_id: string;
+  drug_b_name: string;
+  evaluation_mode: "experimental_drugbank_ddi" | "model_prediction" | "ddi_model_unavailable";
+  known_in_drugbank: boolean;
+  drugbank_record: MixDDIDrugBankRecord | null;
+  risk_tier: string;
+  risk_label: string;
+  model_prediction: MixDDIModelPrediction | null;
+  order_invariant: boolean;
+}
+
+export interface MixApiResponse {
+  drugs: MixDrugResult[];
+  targets: MixTargetResult[];
+  drug_target_matrix: MixDrugTargetCell[];
+  ddi_pairs: MixDDIPairResult[];
+  provenance: {
+    dti_model_key: string;
+    ddi_model_key: string | null;
+    ddi_model_loaded: boolean;
+    seed: number;
+    n_background_proteins: number;
+    clinical_disclaimer: string;
+  };
+}
+
+export interface DDIBinaryMetrics {
+  n_samples: number;
+  n_positives: number;
+  roc_auc: number | null;
+  pr_auc: number | null;
+  log_loss: number;
+  brier_score: number;
+  f1_at_05: number;
+  f1_at_val_threshold: number;
+  balanced_accuracy: number | null;
+  precision: number;
+  recall: number;
+  threshold_used: number;
+}
+
+export interface DDIModelEntry {
+  meta: {
+    name: string;
+    display_name: string;
+    family: string;
+    description: string;
+    simplex_weights?: Record<string, number>;
+    device?: string;
+    best_epoch?: number;
+  };
+  train_seconds: number;
+  val: DDIBinaryMetrics;
+  test: DDIBinaryMetrics;
+}
+
+export interface DDISplitReport {
+  split_summary: {
+    split: "warm_pair" | "cold_drug_s1" | "cold_drug_s2";
+    n_train: number;
+    n_val: number;
+    n_test: number;
+    n_train_pos: number;
+    n_val_pos: number;
+    n_test_pos: number;
+    n_train_drugs: number;
+    n_val_drugs: number;
+    n_test_drugs: number;
+    leakage_audit: {
+      pair_overlap_train_val: number;
+      pair_overlap_train_test: number;
+      pair_overlap_val_test: number;
+      heldout_ik14_overlap_train_test: number;
+      heldout_scaffold_overlap_train_test: number;
+      verified_zero_leakage: boolean;
+    };
+  };
+  models: Record<string, DDIModelEntry>;
+}
+
+export interface DDIEvalResultsPayload {
+  generated_at_utc: string;
+  seed: number;
+  dataset: {
+    name: string;
+    source_url: string;
+    curation: {
+      n_raw_rows: number;
+      n_unique_raw_smiles: number;
+      n_invalid_smiles: number;
+      n_rejected_non_organic: number;
+      n_clean_unique_pairs: number;
+      n_clean_unique_drugs: number;
+      n_unique_scaffolds: number;
+      category_counts: Record<string, number>;
+    };
+    risk_category_labels: Record<string, string>;
+    boundary_conditions: string[];
+  };
+  representation: {
+    tabular_pair_dim: number;
+    tabular_formula: string;
+    siamese_ligand_dim: number;
+    order_invariant: boolean;
+  };
+  selection_protocol: string;
+  validation_model_ranking: Record<
+    string,
+    {
+      mean_val_roc_auc: number;
+      mean_val_log_loss: number;
+    }
+  >;
+  winner_key: string;
+  production_checkpoint: {
+    path: string;
+    lookup_path: string;
+    winner_key: string;
+    weights: Record<string, number>;
+    optimal_threshold: number;
+    calibration_val_metrics: DDIBinaryMetrics;
+    weight_calibration_strategy?: string;
+  };
+  splits: Record<"warm_pair" | "cold_drug_s1" | "cold_drug_s2", DDISplitReport>;
+  y_randomization_null_check: {
+    split: string;
+    model: string;
+    test_metrics: DDIBinaryMetrics;
+    passed_null_collapse: boolean;
+  };
+  total_runtime_seconds: number;
 }

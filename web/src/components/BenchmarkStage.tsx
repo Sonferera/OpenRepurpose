@@ -14,13 +14,20 @@ import {
   YAxis,
 } from "recharts";
 import { recomputeWetLabCost } from "@/lib/data";
-import type { EvalResultsPayload, ScatterPoint, ScatterSamplesPayload } from "@/lib/types";
+import type {
+  DDIEvalResultsPayload,
+  EvalResultsPayload,
+  ScatterPoint,
+  ScatterSamplesPayload,
+} from "@/lib/types";
+import DDIBenchmarkPanel from "./DDIBenchmarkPanel";
 import type { StudioTheme } from "./LeftNavigatorRail";
 
 interface BenchmarkStageProps {
   theme: StudioTheme;
   evalResults: EvalResultsPayload | null;
   scatterSamples: ScatterSamplesPayload | null;
+  ddiEvalResults?: DDIEvalResultsPayload | null;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -257,11 +264,12 @@ export default function BenchmarkStage({
   theme,
   evalResults,
   scatterSamples,
+  ddiEvalResults = null,
   loading,
   error,
   onRetry,
 }: BenchmarkStageProps) {
-  const [benchKey, setBenchKey] = useState<"bindingdb_kd" | "davis">("bindingdb_kd");
+  const [benchKey, setBenchKey] = useState<"bindingdb_kd" | "davis" | "drugbank_ddi">("bindingdb_kd");
   const [splitKey, setSplitKey] = useState<"cold_target" | "cold_drug" | "warm">("cold_target");
   const [assayCostUsd, setAssayCostUsd] = useState<number>(150);
 
@@ -399,7 +407,7 @@ export default function BenchmarkStage({
   }, [liftWheelEnabled, zoomLiftBy, loading]);
 
   const liftData = useMemo<LiftRow[]>(() => {
-    if (!evalResults) return [];
+    if (!evalResults || benchKey === "drugbank_ddi") return [];
     const sp = evalResults.benchmarks[benchKey].splits[splitKey];
     const ensCurve = sp.models[evalResults.primary_model]?.enrichment_curve || [];
     const hybCurve = sp.models["openrepurpose_hybrid"]?.enrichment_curve || [];
@@ -439,7 +447,9 @@ export default function BenchmarkStage({
   }, [isLiftZoomed, visibleLiftData]);
 
   const scatterPoints =
-    scatterSamples?.benchmarks?.[benchKey]?.[splitKey]?.points ?? [];
+    benchKey === "drugbank_ddi"
+      ? []
+      : (scatterSamples?.benchmarks?.[benchKey]?.[splitKey]?.points ?? []);
 
   const visibleScatterPoints = useMemo(() => {
     const [x0, x1] = scatterX;
@@ -499,7 +509,19 @@ export default function BenchmarkStage({
     model_catboost: { label: "CatBoost", color: isDark ? "#CBD5E1" : "#475569" },
   };
 
-  const benchmark = evalResults.benchmarks[benchKey];
+  if (benchKey === "drugbank_ddi" && ddiEvalResults) {
+    return (
+      <DDIBenchmarkPanel
+        ddiEvalResults={ddiEvalResults}
+        onSelectDtiBenchmark={(bk) => setBenchKey(bk)}
+        bindingdbCount={evalResults.benchmarks.bindingdb_kd.dataset.n_clean_pairs}
+        davisCount={evalResults.benchmarks.davis.dataset.n_clean_pairs}
+      />
+    );
+  }
+
+  const dtiBenchKey: "bindingdb_kd" | "davis" = benchKey === "davis" ? "davis" : "bindingdb_kd";
+  const benchmark = evalResults.benchmarks[dtiBenchKey];
   const splitObj = benchmark.splits[splitKey];
   const winnerKey = evalResults.primary_model;
   const winnerEntry = splitObj.models[winnerKey];
@@ -571,6 +593,15 @@ export default function BenchmarkStage({
                     : `Davis Kinase (${evalResults.benchmarks.davis.dataset.n_clean_pairs.toLocaleString()})`}
                 </button>
               ))}
+              {ddiEvalResults && (
+                <button
+                  type="button"
+                  onClick={() => setBenchKey("drugbank_ddi")}
+                  className="min-h-[36px] px-3.5 py-1.5 rounded-md font-semibold text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+                >
+                  DrugBank DDI ({ddiEvalResults.dataset.curation.n_clean_unique_pairs.toLocaleString()})
+                </button>
+              )}
             </div>
 
             <div

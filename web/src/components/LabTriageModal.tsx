@@ -15,6 +15,7 @@ interface LabTriageModalProps {
   assayCost: string;
   onAssayCostChange: (value: string) => void;
   storageAvailable: boolean;
+  onSendShortlistToMixLab?: () => void;
 }
 
 export default function LabTriageModal({
@@ -29,6 +30,7 @@ export default function LabTriageModal({
   assayCost,
   onAssayCostChange,
   storageAvailable,
+  onSendShortlistToMixLab,
 }: LabTriageModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -106,13 +108,27 @@ export default function LabTriageModal({
               <h3 className="text-sm font-bold text-[var(--ink-primary)]">
                 Triage Shortlist ({shortlistCandidates.length})
               </h3>
-              <button
-                type="button"
-                onClick={clearShortlist}
-                className="text-xs text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] underline"
-              >
-                Clear set
-              </button>
+              <div className="flex items-center gap-3">
+                {onSendShortlistToMixLab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSendShortlistToMixLab();
+                      onClose();
+                    }}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)]"
+                  >
+                    Send to Mix Lab (up to 4)
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={clearShortlist}
+                  className="text-xs text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] underline"
+                >
+                  Clear set
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
               {shortlistCandidates.map((c) => (

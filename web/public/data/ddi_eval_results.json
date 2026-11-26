@@ -1,0 +1,1031 @@
+{
+  "generated_at_utc": "2026-11-26T08:37:30.150341+00:00",
+  "seed": 42,
+  "dataset": {
+    "name": "TDC DrugBank DDI (Harvard Dataverse 4139573)",
+    "source_url": "https://dataverse.harvard.edu/api/access/datafile/4139573",
+    "curation": {
+      "n_raw_rows": 191808,
+      "n_unique_raw_smiles": 1706,
+      "n_invalid_smiles": 1,
+      "n_rejected_non_organic": 103,
+      "n_dropped_chem_rows": 9982,
+      "n_dropped_self_pairs": 14,
+      "n_clean_unique_pairs": 175785,
+      "n_clean_unique_drugs": 1569,
+      "n_unique_scaffolds": 1036,
+      "category_counts": {
+        "toxicity_adverse": 89300,
+        "pk_concentration_increase": 57411,
+        "pk_concentration_decrease": 13127,
+        "pd_antagonism_reduced_efficacy": 8139,
+        "pd_synergy_potentiation": 7397,
+        "other_interaction": 411
+      }
+    },
+    "risk_category_labels": {
+      "toxicity_adverse": "Toxicity / Adverse Event Risk",
+      "pk_concentration_increase": "PK Exposure Increase (Metabolism/Clearance Inhibition)",
+      "pk_concentration_decrease": "PK Exposure Decrease (Accelerated Clearance / Reduced Absorption)",
+      "pd_antagonism_reduced_efficacy": "Pharmacodynamic Antagonism / Reduced Efficacy",
+      "pd_synergy_potentiation": "Pharmacodynamic Potentiation / Additive Effect",
+      "other_interaction": "Other Pharmacological Interaction"
+    },
+    "boundary_conditions": [
+      "DrugBank DDI contains only positive known interactions (86 mechanism types). Unrecorded pairs sampled as split-isolated negative proxies are NOT clinical proof of safety.",
+      "Model 2 estimates pairwise drug-drug interaction risk (A <-> B) separately from Model 1 drug-target binding affinity (A -> P, B -> P). No composite mixture pKd is claimed.",
+      "Predictions require clinical pharmacology review and wet-lab/PK verification before any therapeutic combination decision."
+    ]
+  },
+  "representation": {
+    "tabular_pair_dim": 1370,
+    "tabular_formula": "[e_A + e_B || |e_A - e_B|] over 512-bit Morgan + 166 MACCS + 7 Physchem",
+    "siamese_ligand_dim": 2221,
+    "order_invariant": true
+  },
+  "selection_protocol": "Strict validation-fold mean ROC-AUC across Warm-Pair, Cold-Drug S1, and Cold-Drug S2 (tie-break: lowest validation log-loss; zero test-set peeking).",
+  "validation_model_ranking": {
+    "ddi_logistic": {
+      "mean_val_roc_auc": 0.7036,
+      "mean_val_log_loss": 0.775
+    },
+    "ddi_lgbm": {
+      "mean_val_roc_auc": 0.8218,
+      "mean_val_log_loss": 0.4977
+    },
+    "ddi_xgboost": {
+      "mean_val_roc_auc": 0.8089,
+      "mean_val_log_loss": 0.5149
+    },
+    "ddi_catboost": {
+      "mean_val_roc_auc": 0.7975,
+      "mean_val_log_loss": 0.5332
+    },
+    "ddi_siamese_mlp": {
+      "mean_val_roc_auc": 0.8346,
+      "mean_val_log_loss": 0.5838
+    },
+    "ddi_ensemble": {
+      "mean_val_roc_auc": 0.852,
+      "mean_val_log_loss": 0.3932
+    }
+  },
+  "winner_key": "ddi_ensemble",
+  "production_checkpoint": {
+    "path": "artifacts/models/ddi_winner.joblib",
+    "lookup_path": "artifacts/models/ddi_lookup.json.gz",
+    "winner_key": "ddi_ensemble",
+    "weights": {
+      "ddi_logistic": 0.0,
+      "ddi_lgbm": 0.3551,
+      "ddi_xgboost": 0.0842,
+      "ddi_catboost": 0.0789,
+      "ddi_siamese_mlp": 0.4819
+    },
+    "optimal_threshold": 0.525,
+    "calibration_val_metrics": {
+      "n_samples": 52736,
+      "n_positives": 26368,
+      "roc_auc": 0.994,
+      "pr_auc": 0.9936,
+      "log_loss": 0.1744,
+      "brier_score": 0.0381,
+      "f1_at_05": 0.9821,
+      "f1_at_val_threshold": 0.9822,
+      "balanced_accuracy": 0.9822,
+      "precision": 0.9783,
+      "recall": 0.9863,
+      "threshold_used": 0.525
+    },
+    "n_production_train_pairs": 298834,
+    "n_calibration_val_pairs": 52736,
+    "category_classes": [
+      "toxicity_adverse",
+      "pk_concentration_increase",
+      "pk_concentration_decrease",
+      "pd_antagonism_reduced_efficacy",
+      "pd_synergy_potentiation",
+      "other_interaction"
+    ],
+    "weight_calibration_strategy": "mean_cross_regime_simplex (warm_pair + cold_drug_s1 + cold_drug_s2)"
+  },
+  "splits": {
+    "warm_pair": {
+      "split_summary": {
+        "split": "warm_pair",
+        "n_train": 246098,
+        "n_val": 52736,
+        "n_test": 52736,
+        "n_train_pos": 123049,
+        "n_val_pos": 26368,
+        "n_test_pos": 26368,
+        "n_train_drugs": 1569,
+        "n_val_drugs": 1569,
+        "n_test_drugs": 1569,
+        "leakage_audit": {
+          "pair_overlap_train_val": 0,
+          "pair_overlap_train_test": 0,
+          "pair_overlap_val_test": 0,
+          "heldout_ik14_overlap_train_test": 1569,
+          "heldout_scaffold_overlap_train_test": 959,
+          "verified_zero_leakage": true
+        }
+      },
+      "models": {
+        "ddi_dummy_prior": {
+          "meta": {
+            "name": "ddi_dummy_prior",
+            "display_name": "Prior Frequency Baseline",
+            "family": "baseline_prior",
+            "description": "Constant positive class prevalence floor (ROC-AUC = 0.50)."
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_logistic": {
+          "meta": {
+            "name": "ddi_logistic",
+            "display_name": "L2 Logistic Regression (Symmetric Pair)",
+            "family": "linear_l2",
+            "description": "Regularized linear classifier over order-invariant 1,370-dim drug pair fingerprints.",
+            "best_c": 0.25
+          },
+          "train_seconds": 172.91,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.8203,
+            "pr_auc": 0.8047,
+            "log_loss": 0.5181,
+            "brier_score": 0.1726,
+            "f1_at_05": 0.7503,
+            "f1_at_val_threshold": 0.7634,
+            "balanced_accuracy": 0.7286,
+            "precision": 0.6765,
+            "recall": 0.876,
+            "threshold_used": 0.375
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.8239,
+            "pr_auc": 0.8086,
+            "log_loss": 0.5138,
+            "brier_score": 0.1709,
+            "f1_at_05": 0.7513,
+            "f1_at_val_threshold": 0.7649,
+            "balanced_accuracy": 0.7301,
+            "precision": 0.6777,
+            "recall": 0.8777,
+            "threshold_used": 0.375
+          }
+        },
+        "ddi_lgbm": {
+          "meta": {
+            "name": "ddi_lgbm",
+            "display_name": "LightGBM DDI (Leaf-Wise GBDT)",
+            "family": "gbdt_leafwise",
+            "description": "Leaf-wise histogram gradient boosted classifier over symmetric 1,370-dim pair features.",
+            "best_iteration": 800
+          },
+          "train_seconds": 110.05,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9325,
+            "pr_auc": 0.9269,
+            "log_loss": 0.3495,
+            "brier_score": 0.1072,
+            "f1_at_05": 0.8607,
+            "f1_at_val_threshold": 0.8614,
+            "balanced_accuracy": 0.8553,
+            "precision": 0.8265,
+            "recall": 0.8994,
+            "threshold_used": 0.475
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9333,
+            "pr_auc": 0.9277,
+            "log_loss": 0.3473,
+            "brier_score": 0.1063,
+            "f1_at_05": 0.8611,
+            "f1_at_val_threshold": 0.8619,
+            "balanced_accuracy": 0.856,
+            "precision": 0.828,
+            "recall": 0.8987,
+            "threshold_used": 0.475
+          }
+        },
+        "ddi_xgboost": {
+          "meta": {
+            "name": "ddi_xgboost",
+            "display_name": "XGBoost DDI (CUDA Hist)",
+            "family": "gbdt_depthwise",
+            "description": "Depth-wise L2-regularized histogram GBDT classifier accelerated on RTX 3050 CUDA.",
+            "device": "cuda",
+            "best_iteration": 800
+          },
+          "train_seconds": 31.21,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9179,
+            "pr_auc": 0.9115,
+            "log_loss": 0.3829,
+            "brier_score": 0.1193,
+            "f1_at_05": 0.8443,
+            "f1_at_val_threshold": 0.8457,
+            "balanced_accuracy": 0.8353,
+            "precision": 0.7956,
+            "recall": 0.9026,
+            "threshold_used": 0.45
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9195,
+            "pr_auc": 0.9125,
+            "log_loss": 0.3801,
+            "brier_score": 0.1181,
+            "f1_at_05": 0.8458,
+            "f1_at_val_threshold": 0.848,
+            "balanced_accuracy": 0.8379,
+            "precision": 0.7985,
+            "recall": 0.9039,
+            "threshold_used": 0.45
+          }
+        },
+        "ddi_catboost": {
+          "meta": {
+            "name": "ddi_catboost",
+            "display_name": "CatBoost DDI (Oblivious Trees)",
+            "family": "gbdt_oblivious",
+            "description": "Symmetric oblivious-tree GBDT classifier with strong L2 regularization.",
+            "best_iteration": 900
+          },
+          "train_seconds": 126.69,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.8986,
+            "pr_auc": 0.8915,
+            "log_loss": 0.4229,
+            "brier_score": 0.1338,
+            "f1_at_05": 0.8234,
+            "f1_at_val_threshold": 0.8261,
+            "balanced_accuracy": 0.8171,
+            "precision": 0.7875,
+            "recall": 0.8687,
+            "threshold_used": 0.475
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9006,
+            "pr_auc": 0.8935,
+            "log_loss": 0.4198,
+            "brier_score": 0.1325,
+            "f1_at_05": 0.8244,
+            "f1_at_val_threshold": 0.8265,
+            "balanced_accuracy": 0.8176,
+            "precision": 0.7883,
+            "recall": 0.8686,
+            "threshold_used": 0.475
+          }
+        },
+        "ddi_siamese_mlp": {
+          "meta": {
+            "name": "ddi_siamese_mlp",
+            "display_name": "Siamese Two-Tower MLP (PyTorch GPU fp16)",
+            "family": "neural_siamese",
+            "description": "Shared-weight Siamese encoder over full 2,221-dim drug features with symmetric latent fusion.",
+            "device": "cuda",
+            "hidden_dim": 256,
+            "best_epoch": 21,
+            "best_val_loss": 0.0632
+          },
+          "train_seconds": 105.97,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9977,
+            "pr_auc": 0.9979,
+            "log_loss": 0.0632,
+            "brier_score": 0.0161,
+            "f1_at_05": 0.9799,
+            "f1_at_val_threshold": 0.9803,
+            "balanced_accuracy": 0.9803,
+            "precision": 0.9786,
+            "recall": 0.982,
+            "threshold_used": 0.6
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.998,
+            "pr_auc": 0.9981,
+            "log_loss": 0.0592,
+            "brier_score": 0.0153,
+            "f1_at_05": 0.9807,
+            "f1_at_val_threshold": 0.9808,
+            "balanced_accuracy": 0.9808,
+            "precision": 0.9802,
+            "recall": 0.9815,
+            "threshold_used": 0.6
+          }
+        },
+        "ddi_ensemble": {
+          "meta": {
+            "name": "ddi_ensemble",
+            "display_name": "OpenRepurpose DDI Cross-Family Ensemble (5-Model Simplex)",
+            "family": "ensemble_multifamily",
+            "description": "Validation-calibrated log-loss convex simplex ensemble of Logistic, LightGBM, XGBoost, CatBoost, and Siamese MLP.",
+            "simplex_weights": {
+              "ddi_logistic": 0.0,
+              "ddi_lgbm": 0.01,
+              "ddi_xgboost": 0.0,
+              "ddi_catboost": 0.0003,
+              "ddi_siamese_mlp": 0.9897
+            }
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9974,
+            "pr_auc": 0.9977,
+            "log_loss": 0.0615,
+            "brier_score": 0.016,
+            "f1_at_05": 0.98,
+            "f1_at_val_threshold": 0.9804,
+            "balanced_accuracy": 0.9803,
+            "precision": 0.9787,
+            "recall": 0.982,
+            "threshold_used": 0.6
+          },
+          "test": {
+            "n_samples": 52736,
+            "n_positives": 26368,
+            "roc_auc": 0.9976,
+            "pr_auc": 0.9978,
+            "log_loss": 0.058,
+            "brier_score": 0.0152,
+            "f1_at_05": 0.9807,
+            "f1_at_val_threshold": 0.9809,
+            "balanced_accuracy": 0.9808,
+            "precision": 0.9802,
+            "recall": 0.9815,
+            "threshold_used": 0.6
+          }
+        }
+      }
+    },
+    "cold_drug_s1": {
+      "split_summary": {
+        "split": "cold_drug_s1",
+        "n_train": 172162,
+        "n_val": 81966,
+        "n_test": 81844,
+        "n_train_pos": 86081,
+        "n_val_pos": 40983,
+        "n_test_pos": 40922,
+        "n_train_drugs": 1103,
+        "n_val_drugs": 229,
+        "n_test_drugs": 237,
+        "leakage_audit": {
+          "pair_overlap_train_val": 0,
+          "pair_overlap_train_test": 0,
+          "pair_overlap_val_test": 0,
+          "heldout_ik14_overlap_train_test": 0,
+          "heldout_scaffold_overlap_train_test": 0,
+          "verified_zero_leakage": true
+        }
+      },
+      "models": {
+        "ddi_dummy_prior": {
+          "meta": {
+            "name": "ddi_dummy_prior",
+            "display_name": "Prior Frequency Baseline",
+            "family": "baseline_prior",
+            "description": "Constant positive class prevalence floor (ROC-AUC = 0.50)."
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_logistic": {
+          "meta": {
+            "name": "ddi_logistic",
+            "display_name": "L2 Logistic Regression (Symmetric Pair)",
+            "family": "linear_l2",
+            "description": "Regularized linear classifier over order-invariant 1,370-dim drug pair fingerprints.",
+            "best_c": 0.05
+          },
+          "train_seconds": 89.8,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.6915,
+            "pr_auc": 0.6748,
+            "log_loss": 0.7472,
+            "brier_score": 0.2486,
+            "f1_at_05": 0.6024,
+            "f1_at_val_threshold": 0.6922,
+            "balanced_accuracy": 0.6136,
+            "precision": 0.5751,
+            "recall": 0.8692,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.7385,
+            "pr_auc": 0.7075,
+            "log_loss": 0.6802,
+            "brier_score": 0.224,
+            "f1_at_05": 0.6539,
+            "f1_at_val_threshold": 0.7181,
+            "balanced_accuracy": 0.6489,
+            "precision": 0.5998,
+            "recall": 0.8946,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_lgbm": {
+          "meta": {
+            "name": "ddi_lgbm",
+            "display_name": "LightGBM DDI (Leaf-Wise GBDT)",
+            "family": "gbdt_leafwise",
+            "description": "Leaf-wise histogram gradient boosted classifier over symmetric 1,370-dim pair features.",
+            "best_iteration": 762
+          },
+          "train_seconds": 77.37,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.8457,
+            "pr_auc": 0.8333,
+            "log_loss": 0.5058,
+            "brier_score": 0.1672,
+            "f1_at_05": 0.7274,
+            "f1_at_val_threshold": 0.7801,
+            "balanced_accuracy": 0.7601,
+            "precision": 0.7202,
+            "recall": 0.8508,
+            "threshold_used": 0.3
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.8538,
+            "pr_auc": 0.8405,
+            "log_loss": 0.4962,
+            "brier_score": 0.163,
+            "f1_at_05": 0.739,
+            "f1_at_val_threshold": 0.787,
+            "balanced_accuracy": 0.7684,
+            "precision": 0.7286,
+            "recall": 0.8554,
+            "threshold_used": 0.3
+          }
+        },
+        "ddi_xgboost": {
+          "meta": {
+            "name": "ddi_xgboost",
+            "display_name": "XGBoost DDI (CUDA Hist)",
+            "family": "gbdt_depthwise",
+            "description": "Depth-wise L2-regularized histogram GBDT classifier accelerated on RTX 3050 CUDA.",
+            "device": "cuda",
+            "best_iteration": 799
+          },
+          "train_seconds": 22.57,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.8295,
+            "pr_auc": 0.8159,
+            "log_loss": 0.5211,
+            "brier_score": 0.1737,
+            "f1_at_05": 0.7174,
+            "f1_at_val_threshold": 0.7682,
+            "balanced_accuracy": 0.7396,
+            "precision": 0.6923,
+            "recall": 0.8627,
+            "threshold_used": 0.3
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.8468,
+            "pr_auc": 0.8311,
+            "log_loss": 0.4989,
+            "brier_score": 0.1644,
+            "f1_at_05": 0.7418,
+            "f1_at_val_threshold": 0.7825,
+            "balanced_accuracy": 0.7559,
+            "precision": 0.7056,
+            "recall": 0.8782,
+            "threshold_used": 0.3
+          }
+        },
+        "ddi_catboost": {
+          "meta": {
+            "name": "ddi_catboost",
+            "display_name": "CatBoost DDI (Oblivious Trees)",
+            "family": "gbdt_oblivious",
+            "description": "Symmetric oblivious-tree GBDT classifier with strong L2 regularization.",
+            "best_iteration": 848
+          },
+          "train_seconds": 93.12,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.8169,
+            "pr_auc": 0.804,
+            "log_loss": 0.5345,
+            "brier_score": 0.1786,
+            "f1_at_05": 0.7152,
+            "f1_at_val_threshold": 0.7576,
+            "balanced_accuracy": 0.7273,
+            "precision": 0.6818,
+            "recall": 0.8523,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.8339,
+            "pr_auc": 0.8183,
+            "log_loss": 0.5132,
+            "brier_score": 0.1704,
+            "f1_at_05": 0.731,
+            "f1_at_val_threshold": 0.7722,
+            "balanced_accuracy": 0.744,
+            "precision": 0.6956,
+            "recall": 0.8677,
+            "threshold_used": 0.325
+          }
+        },
+        "ddi_siamese_mlp": {
+          "meta": {
+            "name": "ddi_siamese_mlp",
+            "display_name": "Siamese Two-Tower MLP (PyTorch GPU fp16)",
+            "family": "neural_siamese",
+            "description": "Shared-weight Siamese encoder over full 2,221-dim drug features with symmetric latent fusion.",
+            "device": "cuda",
+            "hidden_dim": 256,
+            "best_epoch": 1,
+            "best_val_loss": 0.61351
+          },
+          "train_seconds": 18.82,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.8332,
+            "pr_auc": 0.8415,
+            "log_loss": 0.6135,
+            "brier_score": 0.1829,
+            "f1_at_05": 0.7467,
+            "f1_at_val_threshold": 0.7624,
+            "balanced_accuracy": 0.7505,
+            "precision": 0.7276,
+            "recall": 0.8006,
+            "threshold_used": 0.25
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.8137,
+            "pr_auc": 0.8069,
+            "log_loss": 0.6682,
+            "brier_score": 0.2004,
+            "f1_at_05": 0.7168,
+            "f1_at_val_threshold": 0.7454,
+            "balanced_accuracy": 0.735,
+            "precision": 0.7172,
+            "recall": 0.7758,
+            "threshold_used": 0.25
+          }
+        },
+        "ddi_ensemble": {
+          "meta": {
+            "name": "ddi_ensemble",
+            "display_name": "OpenRepurpose DDI Cross-Family Ensemble (5-Model Simplex)",
+            "family": "ensemble_multifamily",
+            "description": "Validation-calibrated log-loss convex simplex ensemble of Logistic, LightGBM, XGBoost, CatBoost, and Siamese MLP.",
+            "simplex_weights": {
+              "ddi_logistic": 0.0,
+              "ddi_lgbm": 0.5746,
+              "ddi_xgboost": 0.056,
+              "ddi_catboost": 0.0,
+              "ddi_siamese_mlp": 0.3694
+            }
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 81966,
+            "n_positives": 40983,
+            "roc_auc": 0.8597,
+            "pr_auc": 0.8533,
+            "log_loss": 0.483,
+            "brier_score": 0.1574,
+            "f1_at_05": 0.7575,
+            "f1_at_val_threshold": 0.7861,
+            "balanced_accuracy": 0.7736,
+            "precision": 0.7447,
+            "recall": 0.8324,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 81844,
+            "n_positives": 40922,
+            "roc_auc": 0.853,
+            "pr_auc": 0.8413,
+            "log_loss": 0.4956,
+            "brier_score": 0.1629,
+            "f1_at_05": 0.7385,
+            "f1_at_val_threshold": 0.7818,
+            "balanced_accuracy": 0.7696,
+            "precision": 0.7426,
+            "recall": 0.8253,
+            "threshold_used": 0.325
+          }
+        }
+      }
+    },
+    "cold_drug_s2": {
+      "split_summary": {
+        "split": "cold_drug_s2",
+        "n_train": 126774,
+        "n_val": 13944,
+        "n_test": 14028,
+        "n_train_pos": 63387,
+        "n_val_pos": 6972,
+        "n_test_pos": 7014,
+        "n_train_drugs": 971,
+        "n_val_drugs": 291,
+        "n_test_drugs": 307,
+        "leakage_audit": {
+          "pair_overlap_train_val": 0,
+          "pair_overlap_train_test": 0,
+          "pair_overlap_val_test": 0,
+          "heldout_ik14_overlap_train_test": 0,
+          "heldout_scaffold_overlap_train_test": 0,
+          "verified_zero_leakage": true
+        }
+      },
+      "models": {
+        "ddi_dummy_prior": {
+          "meta": {
+            "name": "ddi_dummy_prior",
+            "display_name": "Prior Frequency Baseline",
+            "family": "baseline_prior",
+            "description": "Constant positive class prevalence floor (ROC-AUC = 0.50)."
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.5,
+            "pr_auc": 0.5,
+            "log_loss": 0.6931,
+            "brier_score": 0.25,
+            "f1_at_05": 0.6667,
+            "f1_at_val_threshold": 0.6667,
+            "balanced_accuracy": 0.5,
+            "precision": 0.5,
+            "recall": 1.0,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_logistic": {
+          "meta": {
+            "name": "ddi_logistic",
+            "display_name": "L2 Logistic Regression (Symmetric Pair)",
+            "family": "linear_l2",
+            "description": "Regularized linear classifier over order-invariant 1,370-dim drug pair fingerprints.",
+            "best_c": 0.05
+          },
+          "train_seconds": 55.36,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.599,
+            "pr_auc": 0.5765,
+            "log_loss": 1.0597,
+            "brier_score": 0.3209,
+            "f1_at_05": 0.4984,
+            "f1_at_val_threshold": 0.6214,
+            "balanced_accuracy": 0.5674,
+            "precision": 0.5524,
+            "recall": 0.7101,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.591,
+            "pr_auc": 0.5711,
+            "log_loss": 1.1035,
+            "brier_score": 0.3256,
+            "f1_at_05": 0.5126,
+            "f1_at_val_threshold": 0.6226,
+            "balanced_accuracy": 0.5649,
+            "precision": 0.5497,
+            "recall": 0.7177,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_lgbm": {
+          "meta": {
+            "name": "ddi_lgbm",
+            "display_name": "LightGBM DDI (Leaf-Wise GBDT)",
+            "family": "gbdt_leafwise",
+            "description": "Leaf-wise histogram gradient boosted classifier over symmetric 1,370-dim pair features.",
+            "best_iteration": 62
+          },
+          "train_seconds": 9.42,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.6873,
+            "pr_auc": 0.6563,
+            "log_loss": 0.6379,
+            "brier_score": 0.2244,
+            "f1_at_05": 0.5827,
+            "f1_at_val_threshold": 0.6995,
+            "balanced_accuracy": 0.6073,
+            "precision": 0.5665,
+            "recall": 0.9139,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.7142,
+            "pr_auc": 0.6853,
+            "log_loss": 0.622,
+            "brier_score": 0.2171,
+            "f1_at_05": 0.6188,
+            "f1_at_val_threshold": 0.7049,
+            "balanced_accuracy": 0.6328,
+            "precision": 0.5892,
+            "recall": 0.877,
+            "threshold_used": 0.325
+          }
+        },
+        "ddi_xgboost": {
+          "meta": {
+            "name": "ddi_xgboost",
+            "display_name": "XGBoost DDI (CUDA Hist)",
+            "family": "gbdt_depthwise",
+            "description": "Depth-wise L2-regularized histogram GBDT classifier accelerated on RTX 3050 CUDA.",
+            "device": "cuda",
+            "best_iteration": 82
+          },
+          "train_seconds": 4.77,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.6792,
+            "pr_auc": 0.6423,
+            "log_loss": 0.6408,
+            "brier_score": 0.2257,
+            "f1_at_05": 0.5938,
+            "f1_at_val_threshold": 0.6997,
+            "balanced_accuracy": 0.6051,
+            "precision": 0.5645,
+            "recall": 0.92,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.7107,
+            "pr_auc": 0.6806,
+            "log_loss": 0.6213,
+            "brier_score": 0.2169,
+            "f1_at_05": 0.629,
+            "f1_at_val_threshold": 0.7074,
+            "balanced_accuracy": 0.6322,
+            "precision": 0.5874,
+            "recall": 0.8889,
+            "threshold_used": 0.325
+          }
+        },
+        "ddi_catboost": {
+          "meta": {
+            "name": "ddi_catboost",
+            "display_name": "CatBoost DDI (Oblivious Trees)",
+            "family": "gbdt_oblivious",
+            "description": "Symmetric oblivious-tree GBDT classifier with strong L2 regularization.",
+            "best_iteration": 149
+          },
+          "train_seconds": 16.57,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.677,
+            "pr_auc": 0.6402,
+            "log_loss": 0.6422,
+            "brier_score": 0.2263,
+            "f1_at_05": 0.5972,
+            "f1_at_val_threshold": 0.6967,
+            "balanced_accuracy": 0.6056,
+            "precision": 0.566,
+            "recall": 0.9059,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.6962,
+            "pr_auc": 0.6657,
+            "log_loss": 0.6299,
+            "brier_score": 0.2211,
+            "f1_at_05": 0.6184,
+            "f1_at_val_threshold": 0.7004,
+            "balanced_accuracy": 0.6249,
+            "precision": 0.583,
+            "recall": 0.8771,
+            "threshold_used": 0.325
+          }
+        },
+        "ddi_siamese_mlp": {
+          "meta": {
+            "name": "ddi_siamese_mlp",
+            "display_name": "Siamese Two-Tower MLP (PyTorch GPU fp16)",
+            "family": "neural_siamese",
+            "description": "Shared-weight Siamese encoder over full 2,221-dim drug features with symmetric latent fusion.",
+            "device": "cuda",
+            "hidden_dim": 256,
+            "best_epoch": 1,
+            "best_val_loss": 1.07465
+          },
+          "train_seconds": 13.22,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.6728,
+            "pr_auc": 0.6682,
+            "log_loss": 1.0746,
+            "brier_score": 0.317,
+            "f1_at_05": 0.4407,
+            "f1_at_val_threshold": 0.5945,
+            "balanced_accuracy": 0.6251,
+            "precision": 0.6475,
+            "recall": 0.5495,
+            "threshold_used": 0.15
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.6852,
+            "pr_auc": 0.6688,
+            "log_loss": 1.0835,
+            "brier_score": 0.3187,
+            "f1_at_05": 0.4515,
+            "f1_at_val_threshold": 0.5917,
+            "balanced_accuracy": 0.6265,
+            "precision": 0.6526,
+            "recall": 0.5412,
+            "threshold_used": 0.15
+          }
+        },
+        "ddi_ensemble": {
+          "meta": {
+            "name": "ddi_ensemble",
+            "display_name": "OpenRepurpose DDI Cross-Family Ensemble (5-Model Simplex)",
+            "family": "ensemble_multifamily",
+            "description": "Validation-calibrated log-loss convex simplex ensemble of Logistic, LightGBM, XGBoost, CatBoost, and Siamese MLP.",
+            "simplex_weights": {
+              "ddi_logistic": 0.0,
+              "ddi_lgbm": 0.4806,
+              "ddi_xgboost": 0.1965,
+              "ddi_catboost": 0.2364,
+              "ddi_siamese_mlp": 0.0865
+            }
+          },
+          "train_seconds": 0.0,
+          "val": {
+            "n_samples": 13944,
+            "n_positives": 6972,
+            "roc_auc": 0.6989,
+            "pr_auc": 0.6671,
+            "log_loss": 0.635,
+            "brier_score": 0.2231,
+            "f1_at_05": 0.5654,
+            "f1_at_val_threshold": 0.7037,
+            "balanced_accuracy": 0.6218,
+            "precision": 0.5785,
+            "recall": 0.8982,
+            "threshold_used": 0.325
+          },
+          "test": {
+            "n_samples": 14028,
+            "n_positives": 7014,
+            "roc_auc": 0.72,
+            "pr_auc": 0.6926,
+            "log_loss": 0.621,
+            "brier_score": 0.2169,
+            "f1_at_05": 0.6043,
+            "f1_at_val_threshold": 0.708,
+            "balanced_accuracy": 0.6436,
+            "precision": 0.5997,
+            "recall": 0.8641,
+            "threshold_used": 0.325
+          }
+        }
+      }
+    }
+  },
+  "y_randomization_null_check": {
+    "split": "cold_drug_s1",
+    "model": "ddi_lgbm_200_shuffled_y",
+    "test_metrics": {
+      "n_samples": 81844,
+      "n_positives": 40922,
+      "roc_auc": 0.5028,
+      "pr_auc": 0.5004,
+      "log_loss": 0.6948,
+      "brier_score": 0.2508,
+      "f1_at_05": 0.5021,
+      "f1_at_val_threshold": 0.5021,
+      "balanced_accuracy": 0.5041,
+      "precision": 0.5042,
+      "recall": 0.5,
+      "threshold_used": 0.5
+    },
+    "passed_null_collapse": true
+  },
+  "total_runtime_seconds": 1837.53
+}
