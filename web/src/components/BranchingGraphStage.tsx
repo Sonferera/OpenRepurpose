@@ -170,7 +170,15 @@ export default function BranchingGraphStage({
 
   const truncate = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
 
+  const formatCrossNodeTitle = (edge: CrossTargetEdge) => {
+    const raw = edge.is_positive_control
+      ? `${edge.target_short_name} · CML Positive Control`
+      : `${edge.target_short_name} (${edge.disease})`;
+    return truncate(raw, 39);
+  };
+
   const crossDisplay = crossEdges.slice(0, 6);
+  const crossSpacing = Math.min(54, Math.floor(300 / Math.max(crossDisplay.length, 1)));
 
   return (
     <div className="space-y-4">
@@ -241,6 +249,14 @@ export default function BranchingGraphStage({
               role="img"
               aria-label={`Outcome branching graph for ${candidate.drug_name} paired with ${target.short_name}`}
             >
+              <defs>
+                <clipPath id="outcome-input-clip">
+                  <rect x={18} y={0} width={172} height={388} />
+                </clipPath>
+                <clipPath id="outcome-output-clip">
+                  <rect x={540} y={0} width={212} height={388} />
+                </clipPath>
+              </defs>
               <path
                 d="M 196 118 C 240 118, 245 194, 284 194"
                 fill="none"
@@ -396,19 +412,21 @@ export default function BranchingGraphStage({
                       stroke={p.stroke}
                       strokeWidth={isSel ? 2.5 : 1.5}
                     />
-                    <text x={545} y={y + 24} fill="var(--ink-primary)" fontSize={12.8} fontWeight={700}>
-                      {b.title}
-                    </text>
-                    <text
-                      x={545}
-                      y={y + 45}
-                      fill={p.stroke}
-                      fontSize={11.2}
-                      fontFamily="monospace"
-                      fontWeight={700}
-                    >
-                      {b.badgeLabel}
-                    </text>
+                    <g clipPath="url(#outcome-output-clip)">
+                      <text x={545} y={y + 24} fill="var(--ink-primary)" fontSize={12.8} fontWeight={700}>
+                        {b.title}
+                      </text>
+                      <text
+                        x={545}
+                        y={y + 45}
+                        fill={p.stroke}
+                        fontSize={11.2}
+                        fontFamily="monospace"
+                        fontWeight={700}
+                      >
+                        {truncate(b.badgeLabel, 28)}
+                      </text>
+                    </g>
                   </g>
                 );
               })}
@@ -420,83 +438,129 @@ export default function BranchingGraphStage({
               role="img"
               aria-label={`Cross-target repurposing network for ${candidate.drug_name}`}
             >
-              <path
-                d="M 235 194 C 330 194, 355 352, 446 352"
-                fill="none"
-                stroke="var(--border-control)"
-                strokeWidth={1.6}
-                strokeDasharray="4 4"
-              />
-              <rect
-                x={446}
-                y={328}
-                width={310}
-                height={48}
-                rx={8}
-                fill="var(--bg-subtle)"
-                stroke="var(--border-control)"
-                strokeWidth={1.3}
-              />
-              <text x={462} y={348} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
-                32-Protein Cross-Family Background Panel
-              </text>
-              <text
-                x={462}
-                y={366}
-                fill="var(--ink-secondary)"
-                fontSize={11.2}
-                fontFamily="monospace"
-              >
-                Mean pKd {candidate.background_mean_pkd.toFixed(3)} (SD {candidate.background_std_pkd.toFixed(3)})
-              </text>
+              <defs>
+                <clipPath id="cross-node-text-clip">
+                  <rect x={446} y={0} width={302} height={388} />
+                </clipPath>
+                <clipPath id="cross-anchor-text-clip">
+                  <rect x={22} y={144} width={188} height={98} />
+                </clipPath>
+              </defs>
 
-              {crossDisplay.map((edge, idx) => {
-                const spacing = Math.min(54, Math.floor(300 / Math.max(crossDisplay.length, 1)));
-                const y = 18 + idx * spacing;
-                const tone =
-                  edge.specificity_tier === "high"
-                    ? palette.selective
-                    : edge.specificity_tier === "moderate"
-                      ? palette.review
-                      : palette.alert;
-                const isCurrent = edge.target_id === target.id;
-
-                return (
-                  <g key={edge.target_id}>
+              {/* LAYER 1: All Bezier curves rendered underneath pills & cards */}
+              <g>
+                <path
+                  d="M 218 194 C 312 194, 344 352, 434 352"
+                  fill="none"
+                  stroke="var(--border-control)"
+                  strokeWidth={1.6}
+                  strokeDasharray="4 4"
+                />
+                {crossDisplay.map((edge, idx) => {
+                  const y = 18 + idx * crossSpacing;
+                  const tone =
+                    edge.specificity_tier === "high"
+                      ? palette.selective
+                      : edge.specificity_tier === "moderate"
+                        ? palette.review
+                        : palette.alert;
+                  const isCurrent = edge.target_id === target.id;
+                  return (
                     <path
-                      d={`M 235 194 C 330 194, 355 ${y + 22}, 446 ${y + 22}`}
+                      key={`curve-${edge.target_id}`}
+                      d={`M 218 194 C 312 194, 344 ${y + 23}, 434 ${y + 23}`}
                       fill="none"
                       stroke={tone.stroke}
                       strokeWidth={isCurrent ? 3.2 : 2.1}
                       strokeDasharray={tone.dash}
                     />
-                    <rect
-                      x={315}
-                      y={y + 10}
-                      width={92}
-                      height={23}
-                      rx={10}
-                      fill={tone.fill}
-                      stroke={tone.stroke}
-                      strokeWidth={1.1}
-                    />
-                    <text
-                      x={361}
-                      y={y + 25}
-                      textAnchor="middle"
-                      fill={tone.stroke}
-                      fontSize={11}
-                      fontFamily="monospace"
-                      fontWeight={700}
-                    >
-                      {edge.target_selectivity_delta >= 0 ? "+" : ""}
-                      {edge.target_selectivity_delta.toFixed(2)} d-pKd
-                    </text>
+                  );
+                })}
+              </g>
 
+              {/* LAYER 2: All d-pKd pills rendered cleanly above every curve */}
+              <g>
+                {crossDisplay.map((edge, idx) => {
+                  const y = 18 + idx * crossSpacing;
+                  const tone =
+                    edge.specificity_tier === "high"
+                      ? palette.selective
+                      : edge.specificity_tier === "moderate"
+                        ? palette.review
+                        : palette.alert;
+                  return (
+                    <g key={`pill-${edge.target_id}`}>
+                      <rect
+                        x={298}
+                        y={y + 11}
+                        width={96}
+                        height={23}
+                        rx={10}
+                        fill={tone.fill}
+                        stroke={tone.stroke}
+                        strokeWidth={1.1}
+                      />
+                      <text
+                        x={346}
+                        y={y + 26}
+                        textAnchor="middle"
+                        fill={tone.stroke}
+                        fontSize={10.8}
+                        fontFamily="monospace"
+                        fontWeight={700}
+                      >
+                        {edge.target_selectivity_delta >= 0 ? "+" : ""}
+                        {edge.target_selectivity_delta.toFixed(2)} d-pKd
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+
+              {/* LAYER 3: Background panel card + Clickable target cards + Left drug anchor */}
+              <g>
+                <rect
+                  x={434}
+                  y={328}
+                  width={324}
+                  height={48}
+                  rx={8}
+                  fill="var(--bg-subtle)"
+                  stroke="var(--border-control)"
+                  strokeWidth={1.3}
+                />
+                <g clipPath="url(#cross-node-text-clip)">
+                  <text x={448} y={348} fill="var(--ink-primary)" fontSize={12} fontWeight={700}>
+                    32-Protein Cross-Family Background Panel
+                  </text>
+                  <text
+                    x={448}
+                    y={366}
+                    fill="var(--ink-secondary)"
+                    fontSize={11}
+                    fontFamily="monospace"
+                  >
+                    Mean pKd {candidate.background_mean_pkd.toFixed(3)} (SD {candidate.background_std_pkd.toFixed(3)})
+                  </text>
+                </g>
+
+                {crossDisplay.map((edge, idx) => {
+                  const y = 18 + idx * crossSpacing;
+                  const tone =
+                    edge.specificity_tier === "high"
+                      ? palette.selective
+                      : edge.specificity_tier === "moderate"
+                        ? palette.review
+                        : palette.alert;
+                  const isCurrent = edge.target_id === target.id;
+                  const fullLabel = `${edge.target_short_name} (${edge.disease})`;
+
+                  return (
                     <g
+                      key={edge.target_id}
                       role="button"
                       tabIndex={0}
-                      aria-label={`Switch to ${edge.target_short_name}`}
+                      aria-label={`Switch to ${fullLabel}`}
                       onClick={() => onSelectCrossTarget(edge.target_id, candidate.drug_id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -505,69 +569,74 @@ export default function BranchingGraphStage({
                         }
                       }}
                     >
+                      <title>{fullLabel}</title>
                       <rect
-                        x={446}
+                        x={434}
                         y={y}
-                        width={310}
+                        width={324}
                         height={46}
                         rx={8}
                         fill={isCurrent ? tone.fill : "var(--bg-subtle)"}
                         stroke={tone.stroke}
                         strokeWidth={isCurrent ? 2.4 : 1.4}
                       />
-                      <text x={462} y={y + 19} fill="var(--ink-primary)" fontSize={12.5} fontWeight={700}>
-                        {edge.target_short_name} ({edge.disease})
-                      </text>
-                      <text
-                        x={462}
-                        y={y + 36}
-                        fill={tone.stroke}
-                        fontSize={11}
-                        fontFamily="monospace"
-                        fontWeight={600}
-                      >
-                        Sel #{edge.rank_by_selectivity} | pKd {edge.predicted_pkd.toFixed(2)} |{" "}
-                        {edge.pubmed_count ?? 0} PubMed
-                      </text>
+                      <g clipPath="url(#cross-node-text-clip)">
+                        <text x={448} y={y + 19} fill="var(--ink-primary)" fontSize={12} fontWeight={700}>
+                          {formatCrossNodeTitle(edge)}
+                        </text>
+                        <text
+                          x={448}
+                          y={y + 36}
+                          fill={tone.stroke}
+                          fontSize={10.8}
+                          fontFamily="monospace"
+                          fontWeight={600}
+                        >
+                          Sel #{edge.rank_by_selectivity} | pKd {edge.predicted_pkd.toFixed(2)} |{" "}
+                          {edge.pubmed_count ?? 0} PubMed
+                        </text>
+                      </g>
                     </g>
-                  </g>
-                );
-              })}
+                  );
+                })}
 
-              {/* Left Selected Drug Anchor */}
-              <g>
-                <rect x={18} y={144} width={217} height={98} rx={11} fill="var(--accent)" />
-                <text
-                  x={126}
-                  y={171}
-                  textAnchor="middle"
-                  fill="#FFFFFF"
-                  fontSize={10.5}
-                  fontFamily="monospace"
-                  fontWeight={700}
-                >
-                  SELECTED APPROVED DRUG
-                </text>
-                <text
-                  x={126}
-                  y={196}
-                  textAnchor="middle"
-                  fill="#FFFFFF"
-                  fontSize={15}
-                  fontWeight={700}
-                >
-                  {candidate.drug_name.slice(0, 19)}
-                </text>
-                <text
-                  x={126}
-                  y={219}
-                  textAnchor="middle"
-                  fill="#FFFFFF"
-                  fontSize={11.5}
-                  fontFamily="monospace"
-                >
-                  {crossEdges.length} saved target pool(s)
-                </text>
+                {/* Left Selected Drug Anchor */}
+                <g>
+                  <rect x={14} y={144} width={204} height={98} rx={11} fill="var(--accent)" />
+                  <g clipPath="url(#cross-anchor-text-clip)">
+                    <text
+                      x={116}
+                      y={171}
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize={10}
+                      fontFamily="monospace"
+                      fontWeight={700}
+                    >
+                      SELECTED APPROVED DRUG
+                    </text>
+                    <text
+                      x={116}
+                      y={196}
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize={14.5}
+                      fontWeight={700}
+                    >
+                      {truncate(candidate.drug_name, 19)}
+                    </text>
+                    <text
+                      x={116}
+                      y={219}
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize={11}
+                      fontFamily="monospace"
+                    >
+                      {crossEdges.length} saved target pool(s)
+                    </text>
+                  </g>
+                </g>
               </g>
             </svg>
           )}

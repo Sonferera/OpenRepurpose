@@ -68,6 +68,7 @@ export default function LeftNavigatorRail({
   if (collapsed) {
     return (
       <aside
+        data-tour="left-rail"
         aria-label="Target and candidate navigator"
         className="no-print w-14 shrink-0 md:sticky md:top-0 md:h-dvh bg-[var(--bg-rail)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)] flex flex-col items-center py-3.5 justify-between select-none"
       >
@@ -165,6 +166,7 @@ export default function LeftNavigatorRail({
 
   return (
     <aside
+      data-tour="left-rail"
       aria-label="Target and candidate navigator"
       className="no-print w-full md:sticky md:top-0 md:h-dvh md:overflow-hidden bg-[var(--bg-rail)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)] flex flex-col"
     >
