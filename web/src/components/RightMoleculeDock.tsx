@@ -83,6 +83,7 @@ export default function RightMoleculeDock({
 
   return (
     <aside
+      data-tour="right-inspector"
       aria-label="Selected molecule inspector"
       className={`${asideClasses} p-4 space-y-3`}
     >

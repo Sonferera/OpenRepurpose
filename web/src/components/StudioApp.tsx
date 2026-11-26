@@ -44,8 +44,10 @@ import BenchmarkStage from "./BenchmarkStage";
 import BranchingGraphStage, { type GraphSubMode } from "./BranchingGraphStage";
 import CompareMatrixStage from "./CompareMatrixStage";
 import CustomPredictModal from "./CustomPredictModal";
+import GuideModal from "./GuideModal";
 import LabTriageModal from "./LabTriageModal";
 import LeftNavigatorRail from "./LeftNavigatorRail";
+import LiveTourOverlay, { LIVE_TOUR_STEPS } from "./LiveTourOverlay";
 import McpConnectModal from "./McpConnectModal";
 import MixLabStage from "./MixLabStage";
 import MoleculeViewer3D from "./MoleculeViewer3D";
@@ -107,6 +109,9 @@ export default function StudioApp() {
   const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
   const [customModalOpen, setCustomModalOpen] = useState<boolean>(false);
   const [mcpModalOpen, setMcpModalOpen] = useState<boolean>(false);
+  const [guideModalOpen, setGuideModalOpen] = useState<boolean>(false);
+  const [tourOpen, setTourOpen] = useState<boolean>(false);
+  const [tourStep, setTourStep] = useState<number>(0);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
@@ -708,6 +713,54 @@ export default function StudioApp() {
     [mixDrugs]
   );
 
+  // Interactive 10-Step Spotlight Live Tour step transition
+  const applyTourStep = useCallback(
+    (nextIndex: number) => {
+      const clamped = Math.max(0, Math.min(LIVE_TOUR_STEPS.length - 1, nextIndex));
+      const step = LIVE_TOUR_STEPS[clamped];
+      setTourStep(clamped);
+      if (step.ensureSidebarExpanded) {
+        setSidebarCollapsed(false);
+      }
+      if (typeof step.ensureInspectorOpen === "boolean") {
+        setInspectorOpen(step.ensureInspectorOpen);
+      }
+      if (step.stageMode) {
+        if (step.stageMode === "mix" && mixTargets.length === 0 && activeTarget) {
+          setMixTargets([
+            {
+              key: activeTarget.id,
+              input: activeTarget.id,
+              name: activeTarget.name,
+              shortName: activeTarget.short_name,
+              subtitle: `${activeTarget.disease} · ${activeTarget.uniprot_id}`,
+              inDomain: activeTarget.in_domain,
+              targetId: activeTarget.id,
+              source: "curated_ntd",
+            },
+          ]);
+        }
+        setStageMode(step.stageMode);
+      }
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+    [mixTargets.length, activeTarget]
+  );
+
+  const handleStartLiveTour = useCallback(
+    (startIndex = 0) => {
+      setGuideModalOpen(false);
+      setMcpModalOpen(false);
+      setCustomModalOpen(false);
+      setPrintModalOpen(false);
+      setTourOpen(true);
+      applyTourStep(startIndex);
+    },
+    [applyTourStep]
+  );
+
   // F4: Provenance line data
   const provenanceLine = useMemo(() => {
     if (!targetsIndex) return null;
@@ -768,7 +821,8 @@ export default function StudioApp() {
 
   return (
     <div
-      className={`min-h-dvh grid grid-cols-1 ${
+      id="app-root"
+      className={`min-h-dvh print:block print:min-h-0 print:bg-white grid grid-cols-1 ${
         sidebarCollapsed
           ? "md:grid-cols-[56px_minmax(0,1fr)] lg:grid-cols-[56px_minmax(0,1fr)]"
           : "md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)]"
@@ -850,7 +904,7 @@ export default function StudioApp() {
           </nav>
 
           {/* Right: Actions & Panel Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div data-tour="top-actions" className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Primary Action: Print Triage */}
             <button
               type="button"
@@ -928,6 +982,7 @@ export default function StudioApp() {
 
             {/* Ghost Action: Connect MCP (API Key & Config) */}
             <button
+              data-tour="mcp-connect"
               type="button"
               onClick={() => setMcpModalOpen(true)}
               title="Generate MCP API Key and copy AI client configuration"
@@ -935,6 +990,22 @@ export default function StudioApp() {
             >
               <span className="mono-num text-[11px] text-[var(--accent-ink)]">MCP</span>
               <span>Connect</span>
+            </button>
+
+            {/* Ghost Action: Platform Guide & Interactive Live Tour */}
+            <button
+              type="button"
+              onClick={() => setGuideModalOpen(true)}
+              title="Open complete platform guide and 10-step interactive live tour"
+              className="text-xs min-h-[32px] inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+            >
+              <span
+                className="w-4 h-4 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] inline-flex items-center justify-center text-[10px] font-bold mono-num"
+                aria-hidden="true"
+              >
+                ?
+              </span>
+              <span>Guide &amp; Tour</span>
             </button>
 
             {/* Ghost Action: GitHub Repo */}
@@ -983,6 +1054,7 @@ export default function StudioApp() {
         </div>
 
         {/* Active Center Stage Content */}
+        <div data-tour="stage-area" className="flex-1 flex flex-col min-w-0">
         {stageMode === "graph" && selectedCandidate && (
           <BranchingGraphStage
             target={activeTarget}
@@ -1102,6 +1174,7 @@ export default function StudioApp() {
             onRetry={loadEvaluationArtifacts}
           />
         )}
+        </div>
 
         {/* Provenance of the scores on screen */}
         {provenanceLine && (
@@ -1176,6 +1249,8 @@ export default function StudioApp() {
         onAssayCostChange={setAssayCost}
         storageAvailable={storageAvailable}
         onSendShortlistToMixLab={handleSendShortlistToMix}
+        generatedAt={provenanceLine?.generatedAt}
+        modelKey={provenanceLine?.modelKey}
       />
 
       <CustomPredictModal
@@ -1193,6 +1268,25 @@ export default function StudioApp() {
         apiBaseUrl={API_BASE_URL}
         apiOnline={localApiOnline}
         onRecheckApi={checkLocalApi}
+      />
+
+      <GuideModal
+        open={guideModalOpen}
+        onClose={() => setGuideModalOpen(false)}
+        onStartLiveTour={handleStartLiveTour}
+        onOpenMcpModal={() => setMcpModalOpen(true)}
+        apiOnline={localApiOnline}
+      />
+
+      <LiveTourOverlay
+        open={tourOpen}
+        stepIndex={tourStep}
+        onChangeStep={applyTourStep}
+        onClose={() => setTourOpen(false)}
+        onOpenFullGuide={() => {
+          setTourOpen(false);
+          setGuideModalOpen(true);
+        }}
       />
     </div>
   );
