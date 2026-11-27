@@ -315,7 +315,7 @@ def test_http_mcp_key_lifecycle_and_streamable_http_auth(tmp_path: Path) -> None
     list_rpc = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 
     with patch("api.server.MCP_KEY_STORE", isolated_store):
-        with TestClient(app) as client:
+        with TestClient(app, base_url="http://127.0.0.1:8000") as client:
             # 1. Unauthenticated /mcp rejected with 401
             r_unauth = client.post(
                 "/mcp",

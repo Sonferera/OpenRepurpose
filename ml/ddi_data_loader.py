@@ -24,6 +24,7 @@ from ml.chem_filters import (
     parse_and_canonicalize,
 )
 from ml.config import DATA_DIR, MODELS_DIR, ensure_directories
+from ml.data_loader import PINNED_RAW_DATASET_SHA256, download_verified_file
 from ml.splits import smiles_to_inchikey14
 
 logger = logging.getLogger(__name__)
@@ -174,26 +175,26 @@ def format_canonical_map_description(map_text: str, flipped: bool) -> str:
 
 
 def download_drugbank_ddi_raw(dest_path: Path | None = None, force: bool = False) -> Path:
-    """Download the official TDC DrugBank DDI .tab file from Harvard Dataverse."""
+    """Download the official TDC DrugBank DDI .tab file from Harvard Dataverse with SHA-256 verification."""
     ensure_directories()
     target = dest_path or DDI_RAW_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    if target.exists() and target.stat().st_size > 1_000_000 and not force:
-        logger.info("Using cached DrugBank DDI raw file: %s", target)
-        return target
-
-    logger.info("Downloading TDC DrugBank DDI from %s ...", DRUGBANK_DDI_DATAVERSE_URL)
-    tmp_path = target.with_suffix(".tab.tmp")
-    with requests.get(DRUGBANK_DDI_DATAVERSE_URL, stream=True, timeout=120) as resp:
-        resp.raise_for_status()
-        with open(tmp_path, "wb") as fh:
-            for chunk in resp.iter_content(chunk_size=1 << 20):
-                if chunk:
-                    fh.write(chunk)
-    tmp_path.replace(target)
-    logger.info("Saved raw DrugBank DDI file (%d bytes) to %s", target.stat().st_size, target)
-    return target
+    logger.info("Ensuring SHA-256 verified TDC DrugBank DDI archive at %s ...", target)
+    verified_path, actual_sha256 = download_verified_file(
+        DRUGBANK_DDI_DATAVERSE_URL,
+        target,
+        expected_sha256=PINNED_RAW_DATASET_SHA256["drugbank_ddi.tab"],
+        timeout=120,
+        force=force,
+    )
+    logger.info(
+        "Verified DrugBank DDI raw file (%d bytes, sha256=%s...) at %s",
+        verified_path.stat().st_size,
+        actual_sha256[:12],
+        verified_path,
+    )
+    return verified_path
 
 
 def clean_ddi_dataframe(
