@@ -1,0 +1,472 @@
+{
+  "run_id": "openrepurpose-run-1",
+  "repo": "OpenRepurpose",
+  "target": "C:\\Users\\User\\Downloads\\Workspace\\OpenRepurpose",
+  "source_ref": "4ae3d1bc048155456cee54d301d67b0c75799a13",
+  "source_ref_detail": {
+    "branch": "main",
+    "commit": "4ae3d1bc048155456cee54d301d67b0c75799a13",
+    "worktree_dirty": false,
+    "note": "The repository moved from feat/add-triage-workflow@6e2e677 to main@4ae3d1b before reconnaissance completed; all reviewed line numbers refer to 4ae3d1b. Re-verified before Phase 4/6."
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "api/",
+    "ml/",
+    "scripts/",
+    "web/src/",
+    ".github/",
+    "requirements.txt",
+    "pyproject.toml",
+    ".env.example",
+    ".gitignore"
+  ],
+  "budget": 44,
+  "budget_basis": "Parent-proposed maximum agent invocations across reconnaissance, hunting, critics, candidate validation, and final record verification.",
+  "execution_policy": "sandboxed-source-and-local-only",
+  "execution_capability": {
+    "source_review": "available",
+    "target_code_execution": "blocked",
+    "blocker": "No OS-enforced sandbox (no empty-environment + no-external-network + read-only target + scratch-only write enforcement) is available on this Windows host, and the Python dependencies (fastapi, torch, rdkit, mcp) are not installed; installing them would require network access, which the audit forbids.",
+    "consequence": "No target-controlled code was executed. Checks are source-level. Any candidate whose decisive fact needed runtime observation is recorded as needs_validation with the exact blocker."
+  },
+  "selected_companion_files": [
+    "WEB-PROTOCOL-AND-AUTH.md",
+    "CLIENT-SIDE.md",
+    "AI-AND-LLM.md",
+    "SUPPLY-CHAIN-AND-RELEASE.md",
+    "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md"
+  ],
+  "excluded_companion_files": [
+    {
+      "file": "MEMORY-SAFETY-AND-BINARY.md",
+      "reason": "No native, kernel, binary-loader, or unsafe-language code in the target."
+    },
+    {
+      "file": "CLOUD-AND-DEPLOYMENT.md",
+      "reason": "No cloud infrastructure, IAM, or deployment-as-code configuration in the repository."
+    },
+    {
+      "file": "PROTOCOLS-RPC-AND-MESSAGING.md",
+      "reason": "No gRPC, GraphQL, queue, broker, or webhook transport; MCP JSON-RPC is covered by AI-AND-LLM blocks."
+    },
+    {
+      "file": "DATA-ISOLATION-AND-LIFECYCLE.md",
+      "reason": "No multi-tenant store, export/backup, or retention lifecycle; state is single-operator local files and browser storage."
+    },
+    {
+      "file": "DESKTOP-MOBILE-AND-LOCAL-IPC.md",
+      "reason": "MCP stdio transport inherits the invoking user's OS authority; no privileged helper or local daemon."
+    }
+  ],
+  "prior_run_paths": [],
+  "prior_run_note": "No prior coverage-ledger.json or findings.json exists for this repository.",
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent",
+    "agents/<agent-id>/scratch": "agent",
+    "agents/<agent-id>/artifacts": "parent"
+  },
+  "prompt_format_deviation": "Hunter and verifier prompts reference architecture.md, the coverage ledger, the selected companion blocks, and the hunting method by exact file path and section heading in the skill directory instead of inlining them verbatim, because the parent read-only agents have filesystem access to the same skill directory. The blocks themselves are unchanged.",
+  "validator_adaptation": {
+    "reason": "The skill validators refuse to run on this host: Node on Windows exposes no O_NOFOLLOW/O_NONBLOCK, so readFileWithinLimit() throws 'OS no-follow and nonblocking input protection is unavailable' before any schema check.",
+    "action": "Local copies of validate-coverage-ledger.cjs and validate-findings.cjs were created under recon/ with ONLY readFileWithinLimit() replaced by a Windows-safe equivalent (lstat symlink rejection, read-only open, fstat regular-file check, byte limit). All schema, semantic, coverage and fingerprint validation logic is copied unchanged.",
+    "files": [
+      "recon/validate-coverage-ledger.windows.cjs",
+      "recon/validate-findings.windows.cjs",
+      "recon/patch-validators.cjs"
+    ]
+  },
+  "budget_used_so_far": 43,
+  "phase3_plan": {
+    "candidates": 9,
+    "verifier_per_candidate": true,
+    "verifiers": [
+      "verifier-01",
+      "verifier-02",
+      "verifier-03",
+      "verifier-04",
+      "verifier-05",
+      "verifier-06",
+      "verifier-07",
+      "verifier-08",
+      "verifier-09"
+    ],
+    "brief_location": "agents/<verifier-id>/scratch/candidate-brief.json (parent-written, one candidate per verifier)",
+    "schema_branch_transport_deviation": "The confirmed / needs_validation / rejected branches of report-schema.json are extracted verbatim (no edits) by recon/prepare-phase3.cjs into recon/verifier-schema-branches.json and each verifier is pointed at that exact file, instead of the branches being pasted into every prompt. The content is identical to report-schema.json.",
+    "companion_block_transport_deviation": "Each verifier is pointed at the exact companion file and section headings that govern its candidate, rather than having those blocks pasted inline. The blocks are unchanged in the skill directory.",
+    "independence": "Each verifier receives only its own candidate brief; verifiers are instructed not to read other agents' directories or any other verifier's output."
+  },
+  "run_status": "complete",
+  "budget_revision": {
+    "previous": 40,
+    "new": 44,
+    "reason": "Three Phase 3 verifiers returned prose or a malformed file instead of the required machine-readable record and had to be re-run with fresh verifiers (3 calls), and the wave-3 candidate added one more Phase 3 call. 26 calls were spent before those re-runs; with 10 Phase 5 record verifiers, the wave-3 post-wave critic and the distinct final-clean critic the committed total is 41, leaving 3 slots for a possible further wave. The user set no budget; the parent proposes and records it."
+  },
+  "phase3_parallelization_deviation": "Phase 3 verifiers for the nine frozen wave-1/wave-2 candidates were launched while the wave-3 hunter pair was still running, because wave 3 is scoped to two new surfaces (stdio MCP transport, /api/mix and /api/health) that no wave-1/2 candidate depends on. Each candidate still receives one fresh verifier that did not hunt it, and any wave-3 candidate is validated separately afterwards. No verifier was given a wave-3 result or another verifier's conclusion.",
+  "hunter_wave": {
+    "wave": 1,
+    "hunters": [
+      "hunter-api-bridge",
+      "hunter-mcp-tools",
+      "hunter-web-client",
+      "hunter-supply-chain"
+    ],
+    "note": "Hunter candidate payloads arrived in mixed shapes; the parent normalized the candidate set by root cause and seeded one candidate per root cause for Phase 3 validation. Every candidate below has a fresh verifier."
+  },
+  "candidate_set": [
+    {
+      "fingerprint": "api-mcp-keys-unauth-access",
+      "title": "Unauthenticated MCP key management on the local bridge",
+      "units": [
+        "api%2Fserver.py%23POST%20%2Fapi%2Fmcp%2Fkeys::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+        "api%2Fserver.py%23POST%20%2Fapi%2Fmcp%2Fkeys::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Feature%20abuse%20and%20data%20leakage"
+      ]
+    },
+    {
+      "fingerprint": "dataset-download-no-integrity-check",
+      "title": "Unverified third-party dataset downloads shape published results",
+      "units": [
+        "ml%2Fdata_loader.py%23_fetch_raw_davis_dataframe::ml%2Fddi_data_loader.py%23download_drugbank_ddi_raw::ml-pipeline::Wildcard"
+      ]
+    },
+    {
+      "fingerprint": "localhost-bridge-dns-rebinding",
+      "title": "Browser-reachable loopback bridge with Host validation disabled",
+      "units": [
+        "api%2Fmcp_server.py%23MCP%20tool%20surface::api%2Fmcp_server.py%23create_mcp_server::mcp-tools::Chained%20vulnerabilities%20and%20trust%20boundaries"
+      ]
+    },
+    {
+      "fingerprint": "mcp-key-browser-exposure",
+      "title": "Raw MCP key rendered in the DOM and copied to the clipboard",
+      "units": [
+        "web%2Fsrc%2Fcomponents%2FMcpConnectModal.tsx%23handleGenerateKey::web%2Fsrc%2Flib%2Fdata.ts%23createMcpApiKey::web-client::Cryptography%20and%20secrets"
+      ]
+    },
+    {
+      "fingerprint": "mcp-key-store-lost-update",
+      "title": "Unlocked key store can lose a revocation",
+      "units": [
+        "api%2Fmcp_keys.py%23MCPKeyStore.verify_key::api%2Fmcp_keys.py%23MCPKeyStore::mcp-auth::Cryptography%20and%20secrets"
+      ]
+    },
+    {
+      "fingerprint": "mcp-mount-unauth",
+      "title": "Root-mounted MCP sub-application may register routes outside the authenticated /mcp path",
+      "units": [
+        "api%2Fserver.py%23app.mount%28%27%2F%27%2C%20_MCP_HTTP_APP%29::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control"
+      ]
+    },
+    {
+      "fingerprint": "mix-rate-limit-local",
+      "title": "Loopback rate-limit bucket is shared by every local caller",
+      "units": [
+        "api%2Fserver.py%23POST%20%2Fapi%2Fmix::api%2Fserver.py%23MixRequest%20validators::api-bridge::Injection"
+      ]
+    },
+    {
+      "fingerprint": "predict-error-path-disclosure",
+      "title": "Absolute model path disclosed in 503 error detail",
+      "units": [
+        "api%2Fserver.py%23POST%20%2Fapi%2Fpredict::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Resource%20and%20file%20handling"
+      ]
+    },
+    {
+      "fingerprint": "web-hash-state-persistence",
+      "title": "Unvalidated shared-link fields persisted to localStorage",
+      "units": [
+        "web%2Fsrc%2Flib%2FworkspaceState.ts%23parseWorkspaceHash::web%2Fsrc%2Flib%2FworkspaceState.ts%23localStorage%20keys::web-client::Business%20logic"
+      ]
+    },
+    {
+      "fingerprint": "web-svg-innerhtml-xss",
+      "title": "API-provided SVG inserted as HTML in the studio origin",
+      "units": [
+        "web%2Fsrc%2Fcomponents%2FCustomPredictModal.tsx%23dangerouslySetInnerHTML::web%2Fsrc%2Flib%2Fdata.ts%23fetchJson::web-client::Injection"
+      ]
+    }
+  ],
+  "hunter_wave2": {
+    "wave": 2,
+    "hunters": [
+      "hunter-mcp-mount"
+    ],
+    "units": [
+      "api%2Fserver.py%23app.mount%28%27%2F%27%2C%20_MCP_HTTP_APP%29::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control"
+    ],
+    "source": "Post-wave critic (wave 1) accepted missing unit: the MCP Streamable HTTP sub-application is mounted at '/' while the middleware authenticates only paths == '/mcp' or starting with '/mcp/'; the registered route set of the mounted app is not readable from source because the mcp package is not installed in this environment.",
+    "note": "Any candidate from this unit receives its own fresh verifier; it is not merged into the wave-1 candidate set."
+  },
+  "block_reference_canonicalization": {
+    "applied": true,
+    "reason": "Wave-1 units referenced companion blocks by descriptive names; the names were mapped to the actual section headings in the skill companion files so later runs and the coverage statement can resolve them.",
+    "mappings": {
+      "WEB-PROTOCOL-AND-AUTH.md#API authentication and authorization": "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#CORS and browser trust": "WEB-PROTOCOL-AND-AUTH.md#Browser-session attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#API keys, tokens, and secrets": "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "CLIENT-SIDE.md#DOM and HTML injection sinks": "CLIENT-SIDE.md#DOM and object-state attack classes",
+      "CLIENT-SIDE.md#Browser storage and state": "CLIENT-SIDE.md#Service-worker and browser-storage attack classes",
+      "CLIENT-SIDE.md#CORS and cross-origin trust": "CLIENT-SIDE.md#Cross-origin messaging and network attack classes",
+      "AI-AND-LLM.md#MCP identity and authorization": "AI-AND-LLM.md#MCP and sub-agent trust classes",
+      "AI-AND-LLM.md#Tool and action binding": "AI-AND-LLM.md#Tool and action attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#CI and workflow execution": "SUPPLY-CHAIN-AND-RELEASE.md#CI and automation attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency pinning and resolution": "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Artifact and dependency integrity": "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Untrusted work and shared resources": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource accumulation attack classes"
+    },
+    "dropped": {
+      "WEB-PROTOCOL-AND-AUTH.md#Input validation and normalization": "WEB-PROTOCOL-AND-AUTH.md has no input-validation section; request-body validation is covered by the ordinary Injection attack-class block and by the target source itself.",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Secrets handling": "SUPPLY-CHAIN-AND-RELEASE.md has no secrets-handling section; credential exposure is covered by the ordinary Cryptography and secrets block (key store, client handling) and by the ordinary Obvious things block (repository secret search)."
+    }
+  },
+  "coverage_critic_decisions": [
+    {
+      "critic": "critic-postwave",
+      "wave": 1,
+      "accepted": [
+        {
+          "coverage_id": "api%2Fserver.py%23app.mount%28%27%2F%27%2C%20_MCP_HTTP_APP%29::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+          "reason": "The MCP sub-application is mounted at '/' while the middleware authenticates only '/mcp' and '/mcp/*'; the mounted application's route table is not readable from repository source, so the gap needed its own unit."
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "critic": "critic-wave2",
+      "wave": 2,
+      "accepted": [
+        {
+          "coverage_id": "api%2Fmcp_server.py%23main%28%29%20stdio%20transport::api%2Fmcp_server.py%23create_mcp_server%20tool%20authority::mcp-transport::Access%20control",
+          "agent_id": "hunter-mcp-stdio",
+          "reason": "No unit covered the stdio transport's authority model: api/mcp_server.py main() runs server.run(transport='stdio'), where the MCP client is a child process on the same host rather than an HTTP caller, so the key middleware does not apply."
+        },
+        {
+          "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fmix::api%2Fserver.py%23MixRequest%20validators::api-bridge::Injection",
+          "agent_id": "hunter-bridge-routes",
+          "reason": "The /api/mix route has its own request model (up to 4 drug identifiers and 2 target identifiers per request, each up to 4000 characters) and its own sink (evaluate_regimen_mix, which resolves catalogue entries and runs model inference plus pairwise DDI lookups); the existing /api/predict units do not cover those validators or that sink."
+        },
+        {
+          "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fhealth::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Obvious%20things",
+          "agent_id": "hunter-bridge-routes",
+          "reason": "The ordinary Obvious-things class requires checking unprotected status and health endpoints; /api/health is reachable without a credential and returns model readiness, catalogue statistics and MCP status that no unit has inspected."
+        }
+      ],
+      "rejected": [
+        {
+          "critic": "critic-wave2",
+          "proposal": "MixLabStage.tsx mix evaluation component (surface: web/src/components/MixLabStage.tsx#handleRunMix)",
+          "reason": "Both claimed surfaces are already covered by existing units: the URL-hash-derived drug and target parameters are covered by the web-hash-state-persistence unit (web/src/lib/workspaceState.ts#parseWorkspaceHash), and the component's online SVG insertion point (web/src/components/MixLabStage.tsx:1081) is reviewed by the parent check inside the web-svg-innerhtml-xss unit. The offline path reads the same precomputed web/public/data JSON covered by the dataset-download-no-integrity-check unit. A separate unit would re-review the same code without adding an uncovered entry point.",
+          "disposition": "rejected as duplicate coverage"
+        }
+      ]
+    },
+    {
+      "critic": "critic-wave3",
+      "wave": 3,
+      "accepted": [
+        {
+          "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fdocs%20and%20%2Fapi%2Fopenapi.json::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+          "reason": "FastAPI auto-generates the interactive docs and the OpenAPI schema (api/server.py:168-169). They are registered on the same app as the credential-protected /mcp surface, so no unit has reviewed what an unauthenticated caller can read from them or what their schema reveals about the bridge's internal routes."
+        },
+        {
+          "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fcatalog%2Fsearch::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+          "reason": "The catalog search route is registered on the app, needs no credential, and is not in RATE_LIMITED_PREFIXES, so no unit has reviewed what a caller can enumerate from it or whether the query is bounded."
+        }
+      ],
+      "rejected": [
+        {
+          "critic": "critic-wave3",
+          "proposal": "MCP_KEY_STORE.create_key() lost-update race (surface: api/mcp_keys.py#MCPKeyStore.create_key)",
+          "reason": "Same source-derived root cause as the existing candidate mcp-key-store-lost-update: the unlocked read-modify-write of artifacts/cache/mcp_api_keys.json inside MCPKeyStore. The validated record for that fingerprint already names create_key (api/mcp_keys.py:75-77), revoke_key (102-114) and verify_key (127-140) as the affected methods. A separate fingerprint for create_key would split one root cause.",
+          "disposition": "rejected as duplicate coverage of an existing candidate root cause"
+        },
+        {
+          "critic": "critic-wave3",
+          "proposal": "OPENREPURPOSE_MCP_API_KEY environment override as an alternative credential (surface: api/mcp_keys.py#MCPKeyStore.verify_key env override)",
+          "reason": "The env override lives inside the already covered mcp-auth unit (api/mcp_keys.py#MCPKeyStore): the unit's checks include the override comparison at api/mcp_keys.py:122-124 and the constant-time comparison used for it, and the validated record for mcp-key-store-lost-update quotes the same lines. No uncovered entry surface exists here; a separate unit would re-review the same lines.",
+          "disposition": "rejected as duplicate coverage of an existing unit"
+        }
+      ]
+    }
+  ],
+  "hunter_wave3": {
+    "wave": 3,
+    "hunters": [
+      "hunter-mcp-stdio",
+      "hunter-bridge-routes"
+    ],
+    "units": [
+      "api%2Fmcp_server.py%23main%28%29%20stdio%20transport::api%2Fmcp_server.py%23create_mcp_server%20tool%20authority::mcp-transport::Access%20control",
+      "api%2Fserver.py%23POST%20%2Fapi%2Fmix::api%2Fserver.py%23MixRequest%20validators::api-bridge::Injection",
+      "api%2Fserver.py%23GET%20%2Fapi%2Fhealth::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Obvious%20things"
+    ],
+    "source": "Post-wave critic (wave 2) accepted three units: stdio transport authority model, POST /api/mix validators and sinks, GET /api/health disclosure."
+  },
+  "candidate_merges": [
+    {
+      "dropped_fingerprint": "mix-error-path-disclosure",
+      "merged_into": "predict-error-path-disclosure",
+      "reason": "Both name the same source-derived root cause: api/server.py catches FileNotFoundError and passes str(exc) into HTTPException(detail=...), which embeds the absolute model checkpoint path. The mix route is an additional entry path of that root cause, not a separate one.",
+      "by": "parent"
+    }
+  ],
+  "phase3_discarded_results": [
+    {
+      "agent_id": "verifier-03",
+      "fingerprint": "mcp-key-store-lost-update",
+      "reason": "Returned prose without the required JSON record and wrote no result file.",
+      "rerun_as": "verifier-10"
+    },
+    {
+      "agent_id": "verifier-04",
+      "fingerprint": "predict-error-path-disclosure",
+      "reason": "Returned prose without the required JSON record and wrote no result file.",
+      "rerun_as": "verifier-15"
+    },
+    {
+      "agent_id": "verifier-05",
+      "fingerprint": "web-svg-innerhtml-xss",
+      "reason": "The scratch result file was not parseable JSON (prose was appended inside the record) and the chat result was prose only.",
+      "rerun_as": "verifier-13"
+    },
+    {
+      "agent_id": "verifier-12",
+      "fingerprint": "mix-rate-limit-local",
+      "reason": "Returned prose only and wrote no result file.",
+      "rerun_as": "verifier-14"
+    }
+  ],
+  "hunter_wave4": {
+    "wave": 4,
+    "hunters": [
+      "hunter-bridge-docs-catalog"
+    ],
+    "units": [
+      "api%2Fserver.py%23GET%20%2Fapi%2Fdocs%20and%20%2Fapi%2Fopenapi.json::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+      "api%2Fserver.py%23GET%20%2Fapi%2Fcatalog%2Fsearch::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control"
+    ],
+    "source": "Post-wave critic (wave 3) accepted two new unauthenticated entry surfaces (/api/docs and /api/openapi.json, /api/catalog/search) and rejected two proposals as duplicate coverage.",
+    "result": {
+      "disposition": "both wave-4 units closed as covered",
+      "candidate_fingerprints": [],
+      "note": "No new candidates from wave 4; the OpenAPI schema and catalog-search surfaces disclose no data beyond what other unauthenticated loopback routes already serve."
+    }
+  },
+  "budget_accounting": {
+    "budget": 44,
+    "used": 43,
+    "unused": 1,
+    "breakdown": {
+      "reconnaissance": 3,
+      "wave_1_hunters": 4,
+      "wave_1_post_wave_critic": 1,
+      "wave_2_hunters": 1,
+      "wave_2_post_wave_critic": 1,
+      "wave_3_hunters": 2,
+      "wave_3_post_wave_critic": 1,
+      "wave_4_hunters": 1,
+      "wave_4_post_wave_critic": 1,
+      "phase_3_candidate_validators": 14,
+      "phase_5_record_validators": 13,
+      "final_clean_critic": 1
+    },
+    "note": "Phase 3 and Phase 5 counts include the re-runs that were needed because a verifier returned prose, a malformed file, or a schema-invalid replacement record. No agent was counted twice; discarded attempts are listed in phase3_discarded_results and phase5_discarded_results."
+  },
+  "phase5_discarded_results": [
+    {
+      "agent_id": "record-check-4",
+      "fingerprint": "mcp-key-browser-exposure",
+      "reason": "Returned prose before the JSON object and wrote no result file.",
+      "rerun_as": "record-check-9"
+    },
+    {
+      "agent_id": "record-check-7",
+      "fingerprint": "mix-rate-limit-local",
+      "reason": "The scratch result file was truncated and not parseable JSON.",
+      "rerun_as": "record-check-10"
+    },
+    {
+      "agent_id": "record-check-8",
+      "fingerprint": "web-hash-state-persistence",
+      "reason": "The replacement record did not match the rejected schema branch: the required reason field was only in the outer decision object, not inside the record.",
+      "rerun_as": "record-check-11"
+    },
+    {
+      "agent_id": "record-check-9",
+      "fingerprint": "mcp-key-browser-exposure",
+      "reason": "Returned prose before the JSON object and wrote no result file.",
+      "rerun_as": "record-check-12"
+    }
+  ],
+  "phase5_plan": {
+    "rule": "One fresh record verifier per retained confirmed / needs_validation record, run after Phase 4 produced findings.json.",
+    "records_verified": 9,
+    "attempts": 13,
+    "discarded_attempts": 4,
+    "note": "The rejected record web-svg-innerhtml-xss is a Phase 3 outcome and was not sent to Phase 5; it has no retained confirmed or needs_validation verdict to re-check. Every record that stayed in findings.json as confirmed or needs_validation passed an independent Phase 5 verifier."
+  },
+  "critic_results": [
+    {
+      "critic": "critic-postwave",
+      "wave": 1,
+      "missing_units": 1,
+      "reassign_ids": 0,
+      "stop": false
+    },
+    {
+      "critic": "critic-wave2",
+      "wave": 2,
+      "missing_units": 3,
+      "reassign_ids": 0,
+      "stop": false
+    },
+    {
+      "critic": "critic-wave3",
+      "wave": 3,
+      "missing_units": 4,
+      "reassign_ids": 0,
+      "stop": false
+    },
+    {
+      "critic": "critic-wave4",
+      "wave": 4,
+      "missing_units": 0,
+      "reassign_ids": 0,
+      "stop": true
+    },
+    {
+      "critic": "critic-final-clean",
+      "wave": 4,
+      "missing_units": 0,
+      "reassign_ids": 0,
+      "stop": true,
+      "note": "The distinct final-clean critic independently re-read the source and confirmed that every route, mount, middleware, file writer, outbound request, HTML sink, credential surface and storage write is mapped to a unit; coverage is complete."
+    }
+  ],
+  "coverage_summary": {
+    "units_total": 20,
+    "covered": 9,
+    "candidate": 11,
+    "blocked": 0,
+    "deferred": 0,
+    "planned": 0,
+    "out_of_scope": 0,
+    "fingerprints_total": 10,
+    "confirmed": 0,
+    "needs_validation": 6,
+    "rejected": 4
+  },
+  "final_outcome": {
+    "confirmed": 0,
+    "needs_validation": 6,
+    "rejected": 4,
+    "reason_no_confirmed": "No candidate could be confirmed: this host has no OS-enforced sandbox and the Python dependency stack (fastapi, torch, rdkit, mcp) is absent, so no target-controlled code was executed and no bounded observed result could be produced. Every candidate whose decisive fact needed runtime observation was retained as needs_validation with the exact blocker."
+  },
+  "run_status_reason": "Every ledger candidate has an independent final disposition (Phase 3 validator plus Phase 5 record verifier), the wave-4 post-wave critic and the distinct final-clean critic both returned no missing units and no reassignments, and both validators pass on the final findings.json and coverage-ledger.json."
+}

@@ -1,0 +1,1297 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%2Fci.yml%23OpenRepurpose%20CI::.github%2Fworkflows%2Fci.yml%23job%20permissions::ci-supply-chain::Obvious%20things",
+    "canonical_refs": {
+      "surface": ".github/workflows/ci.yml#OpenRepurpose CI",
+      "boundary": ".github/workflows/ci.yml#job permissions",
+      "subsystem": "ci-supply-chain",
+      "attack_class": "Obvious things"
+    },
+    "surface": ".github/workflows/ci.yml#OpenRepurpose CI",
+    "boundary": ".github/workflows/ci.yml#job permissions",
+    "subsystem": "ci-supply-chain",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      ".github/workflows/ci.yml",
+      "requirements.txt",
+      "pyproject.toml",
+      "web/package.json",
+      "web/package-lock.json",
+      ".env.example",
+      ".gitignore"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#CI and automation attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-supply-chain",
+    "reviewed_paths": [
+      ".github/workflows/ci.yml",
+      "requirements.txt",
+      ".gitignore"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply-chain",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml",
+          "requirements.txt",
+          ".gitignore"
+        ],
+        "invariant": "CI cannot be steered by untrusted input or leak credentials",
+        "method": "source",
+        "result": "The workflow triggers on push and pull_request to main, declares no permissions block, passes no secrets, and runs pytest and npm run build; no pull_request_target, no unpinned checkout of untrusted code, no secret echo",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "Actions are pinned to major version tags (actions/checkout@v4) rather than commit SHAs, and pip dependencies use version ranges; both are supply-chain hardening notes, not boundary violations in this repository."
+    ]
+  },
+  {
+    "coverage_id": "api%2Fmcp_keys.py%23MCPKeyStore.verify_key::api%2Fmcp_keys.py%23MCPKeyStore::mcp-auth::Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "api/mcp_keys.py#MCPKeyStore.verify_key",
+      "boundary": "api/mcp_keys.py#MCPKeyStore",
+      "subsystem": "mcp-auth",
+      "attack_class": "Cryptography and secrets"
+    },
+    "surface": "api/mcp_keys.py#MCPKeyStore.verify_key",
+    "boundary": "api/mcp_keys.py#MCPKeyStore",
+    "subsystem": "mcp-auth",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "api/mcp_keys.py",
+      "api/server.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-mcp-tools",
+    "reviewed_paths": [
+      "api/mcp_keys.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mcp-tools",
+        "reviewed_paths": [
+          "api/mcp_keys.py"
+        ],
+        "invariant": "credential comparison is constant time",
+        "method": "source",
+        "result": "hmac.compare_digest is used for the env override (line 123) and for each stored hash comparison (line 133); tokens are 192-bit secrets.token_hex(24) values stored only as SHA-256 hashes",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-mcp-tools",
+        "reviewed_paths": [
+          "api/mcp_keys.py"
+        ],
+        "invariant": "the class docstring claim of thread safety holds",
+        "method": "source",
+        "result": "The class is documented as thread-safe but create_key, revoke_key and verify_key all perform an unlocked read-modify-write of artifacts/cache/mcp_api_keys.json; verify_key rewrites the whole record list on every successful verification",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "mcp-key-store-lost-update"
+    ],
+    "unresolved": [
+      "Whether the lost-update interleaving that resurrects a revoked key is reachable in the deployed server depends on the ASGI server's concurrency model for these synchronous endpoints."
+    ],
+    "hardening": [
+      "The key store file is written with default permissions; it holds only SHA-256 hashes, so this is a hardening note rather than a credential disclosure."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "mcp-key-store-lost-update",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-10",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fmcp_server.py%23MCP%20tool%20surface::api%2Fmcp_server.py%23create_mcp_server::mcp-tools::Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "api/mcp_server.py#MCP tool surface",
+      "boundary": "api/mcp_server.py#create_mcp_server",
+      "subsystem": "mcp-tools",
+      "attack_class": "Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "api/mcp_server.py#MCP tool surface",
+    "boundary": "api/mcp_server.py#create_mcp_server",
+    "subsystem": "mcp-tools",
+    "attack_class": "Chained vulnerabilities and trust boundaries",
+    "starting_paths": [
+      "api/mcp_server.py",
+      "api/services.py",
+      "api/catalog.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [
+      "AI-AND-LLM.md#Core discipline",
+      "AI-AND-LLM.md#MCP and sub-agent trust classes",
+      "AI-AND-LLM.md#Tool and action attack classes",
+      "AI-AND-LLM.md#Universal moves",
+      "AI-AND-LLM.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "MCP stdio transport inherits the invoking user's OS authority; there is no privileged helper, socket daemon, or exported component to review."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-mcp-tools",
+    "reviewed_paths": [
+      "api/mcp_server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mcp-tools",
+        "reviewed_paths": [
+          "api/mcp_server.py"
+        ],
+        "invariant": "the MCP transport validates the Host header so a rebound origin cannot reach the tool surface",
+        "method": "source",
+        "result": "create_mcp_server passes TransportSecuritySettings(enable_dns_rebinding_protection=False) for the stateless HTTP transport, with a comment stating that localhost-only Host-header lock is disabled to allow tunneled clients",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-mcp-tools",
+        "reviewed_paths": [
+          "api/mcp_server.py"
+        ],
+        "invariant": "a valid key is scoped to the tools the holder is entitled to use",
+        "method": "source",
+        "result": "All six tools are registered on one FastMCP instance and the middleware authenticates only key validity; no per-tool or per-key scope exists",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "localhost-bridge-dns-rebinding"
+    ],
+    "unresolved": [
+      "The installed mcp package source was not available in this environment, so exactly which Host/Origin checks TransportSecuritySettings performs could not be read."
+    ],
+    "hardening": [
+      "A single key grants all six tools; that is the documented design of a single-operator local bridge, so it is recorded as a least-privilege note rather than a boundary violation."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "localhost-bridge-dns-rebinding",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-02",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fmcp_server.py%23main%28%29%20stdio%20transport::api%2Fmcp_server.py%23create_mcp_server%20tool%20authority::mcp-transport::Access%20control",
+    "canonical_refs": {
+      "surface": "api/mcp_server.py#main() stdio transport",
+      "boundary": "api/mcp_server.py#create_mcp_server tool authority",
+      "subsystem": "mcp-transport",
+      "attack_class": "Access control"
+    },
+    "surface": "api/mcp_server.py#main() stdio transport",
+    "boundary": "api/mcp_server.py#create_mcp_server tool authority",
+    "subsystem": "mcp-transport",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "api/mcp_server.py",
+      "api/mcp_keys.py",
+      "README.md"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "AI-AND-LLM.md#Core discipline",
+      "AI-AND-LLM.md#MCP and sub-agent trust classes",
+      "AI-AND-LLM.md#Universal moves",
+      "AI-AND-LLM.md#Validation rules",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "covered",
+    "agent_id": "hunter-mcp-stdio",
+    "reviewed_paths": [
+      "api/mcp_server.py",
+      "README.md",
+      "web/src/components/McpConnectModal.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mcp-stdio",
+        "reviewed_paths": [
+          "api/mcp_server.py",
+          "README.md",
+          "web/src/components/McpConnectModal.tsx"
+        ],
+        "invariant": "the stdio transport is the intended same-principal local interface and no lower-trust principal can reach it",
+        "method": "source",
+        "result": "main() runs server.run(transport='stdio'); the MCP client launches it as a child process ('python -m api.mcp_server') inheriting the operator's OS authority, there is no network listener, and no wrapper, shared-host or network-exposure configuration for the stdio path exists in the repository. The same six tools run, but any cost or side effect is self-impact under the operator's own authority.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "The stdio path runs the same six tools as the HTTP path with no credential check, which is correct only while the MCP client is a child process of the operator's own session; a documented remote or shared deployment of the stdio command would change that.",
+      "hunter-mcp-stdio wrote its result file to agents/hunter-mcp-stdio/result.json instead of the allowlisted agents/hunter-mcp-stdio/scratch/result.json; the file is a source-level hunter result, not target-controlled output, so the parent read it in place and recorded the path deviation here."
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fcatalog%2Fsearch::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+    "canonical_refs": {
+      "surface": "api/server.py#GET /api/catalog/search",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Access control"
+    },
+    "surface": "api/server.py#GET /api/catalog/search",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "api/server.py",
+      "api/catalog.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud infrastructure, IAM, Kubernetes, or service-mesh configuration exists in the repository."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "All state is single-operator local; no tenant-separated data exists."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 4,
+    "status": "covered",
+    "agent_id": "hunter-bridge-docs-catalog",
+    "reviewed_paths": [
+      "api/server.py",
+      "api/catalog.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-bridge-docs-catalog",
+        "reviewed_paths": [
+          "api/server.py",
+          "api/catalog.py"
+        ],
+        "invariant": "CORS allow-list and bounded search parameters on /api/catalog/search; no authentication, no rate limiting",
+        "method": "source",
+        "result": "Route /api/catalog/search registers at api/server.py:248-254 with query params q (max_length=200), kind (Literal['all','drugs','targets']), limit (ge=1, le=50, default=20). CATALOG.search() in api/catalog.py:570-682 performs bounded search over local catalog data (max 50 results, query capped at 200 chars). No authentication check in middleware; route not in RATE_LIMITED_PREFIXES (line 51). CORS allow-list from API_ALLOWED_ORIGINS (lines 54-60). Data returned includes drug names, SMILES, sources, MOA, indications, disease areas, PubChem CIDs, assay counts, and target names, short names, sources, disease, pathogen, protein family, in_domain flag, sequence length, assay counts. The search is bounded and the data is local scientific content the tool is designed to expose; no meaningful enumeration oracle exists since results are bounded (max 50 per query) and the caller already has loopback access to the bridge.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "Unit 1: OpenAPI schema disclosure of /mcp surface and /api/mcp/keys shapes is not a meaningful finding due to loopback-only deployment and existing unauthenticated route access. Unit 2: Catalog search is bounded search over local scientific data with no authentication or rate limiting needed given single-operator deployment."
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fdocs%20and%20%2Fapi%2Fopenapi.json::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+    "canonical_refs": {
+      "surface": "api/server.py#GET /api/docs and /api/openapi.json",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Access control"
+    },
+    "surface": "api/server.py#GET /api/docs and /api/openapi.json",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "api/server.py",
+      "api/catalog.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud infrastructure, IAM, Kubernetes, or service-mesh configuration exists in the repository."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "All state is single-operator local; no tenant-separated data exists."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 4,
+    "status": "covered",
+    "agent_id": "hunter-bridge-docs-catalog",
+    "reviewed_paths": [
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-bridge-docs-catalog",
+        "reviewed_paths": [
+          "api/server.py"
+        ],
+        "invariant": "CORS allow-list and absence of rate limit or credential check on /api/docs and /api/openapi.json",
+        "method": "source",
+        "result": "FastAPI registers docs_url='/api/docs' and openapi_url='/api/openapi.json' (lines 168-169). The security_and_rate_limit_middleware authenticates only paths == '/mcp' or starting with '/mcp/' (line 187), so /api/docs and /api/openapi.json are unauthenticated. These routes are not in RATE_LIMITED_PREFIXES (line 51). CORS allow-list configured from API_ALLOWED_ORIGINS with default localhost:3000/3001 (lines 54-60). The OpenAPI schema reveals the /mcp surface and /api/mcp/keys request shapes, but this exposure is not meaningful since the bridge is local-loopback only (127.0.0.1 per architecture.md) and the data is already accessible through other unauthenticated routes (/api/health, /api/catalog/search).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "Unit 1: OpenAPI schema disclosure of /mcp surface and /api/mcp/keys shapes is not a meaningful finding due to loopback-only deployment and existing unauthenticated route access. Unit 2: Catalog search is bounded search over local scientific data with no authentication or rate limiting needed given single-operator deployment."
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23GET%20%2Fapi%2Fhealth::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Obvious%20things",
+    "canonical_refs": {
+      "surface": "api/server.py#GET /api/health",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Obvious things"
+    },
+    "surface": "api/server.py#GET /api/health",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "api/server.py",
+      "api/services.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "The endpoint exposes single-operator readiness state only; no tenant-separated data exists in this product."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "covered",
+    "agent_id": "hunter-bridge-routes",
+    "reviewed_paths": [
+      "api/server.py",
+      "api/services.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-bridge-routes",
+        "reviewed_paths": [
+          "api/server.py",
+          "api/services.py"
+        ],
+        "invariant": "the unauthenticated health endpoint does not disclose material state to a lower-trust caller",
+        "method": "source",
+        "result": "GET /api/health takes no caller input and returns readiness, checkpoint status, catalogue statistics, device, seed and MCP availability. For this single-operator local tool the values are already readable by any process that can reach the bridge, and no secret or tenant-separated record is exposed.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "The FastAPI-generated /api/docs and /api/openapi.json routes are unauthenticated and publish the full route schema; wave 4 reviewed them and found no added exposure, because the schema names routes and model shapes that other unauthenticated loopback routes already serve."
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fmcp%2Fkeys::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+    "canonical_refs": {
+      "surface": "api/server.py#POST /api/mcp/keys",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Access control"
+    },
+    "surface": "api/server.py#POST /api/mcp/keys",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "api/server.py",
+      "api/mcp_keys.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Browser-session attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud infrastructure, IAM, Kubernetes, or service-mesh configuration exists in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-api-bridge",
+    "reviewed_paths": [
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-api-bridge",
+        "reviewed_paths": [
+          "api/server.py"
+        ],
+        "invariant": "security_and_rate_limit_middleware authenticates only paths == '/mcp' or starting with '/mcp/', so the /api/mcp/keys routes are outside the authentication branch",
+        "method": "source",
+        "result": "Anonymous callers reach GET /api/mcp/keys (list), POST /api/mcp/keys (create) and DELETE /api/mcp/keys/{key_id} (revoke) with no credential and no rate limit",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "api-mcp-keys-unauth-access"
+    ],
+    "unresolved": [],
+    "hardening": [],
+    "final_disposition": [
+      {
+        "fingerprint": "api-mcp-keys-unauth-access",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-01",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fmcp%2Fkeys::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "api/server.py#POST /api/mcp/keys",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Feature abuse and data leakage"
+    },
+    "surface": "api/server.py#POST /api/mcp/keys",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "api/server.py",
+      "api/mcp_keys.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant store, object link, export/backup or retention lifecycle exists; all state is single-operator local files and browser storage."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-api-bridge",
+    "reviewed_paths": [
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-api-bridge",
+        "reviewed_paths": [
+          "api/server.py"
+        ],
+        "invariant": "security_and_rate_limit_middleware authenticates only paths == '/mcp' or starting with '/mcp/', so the /api/mcp/keys routes are outside the authentication branch",
+        "method": "source",
+        "result": "Anonymous callers reach GET /api/mcp/keys (list), POST /api/mcp/keys (create) and DELETE /api/mcp/keys/{key_id} (revoke) with no credential and no rate limit",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "api-mcp-keys-unauth-access"
+    ],
+    "unresolved": [],
+    "hardening": [
+      "Key ids are listable anonymously, so an anonymous caller can target a specific operator key for revocation; key creation is unlimited and appends to artifacts/cache/mcp_api_keys.json."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "api-mcp-keys-unauth-access",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-01",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fmix::api%2Fserver.py%23MixRequest%20validators::api-bridge::Injection",
+    "canonical_refs": {
+      "surface": "api/server.py#POST /api/mix",
+      "boundary": "api/server.py#MixRequest validators",
+      "subsystem": "api-bridge",
+      "attack_class": "Injection"
+    },
+    "surface": "api/server.py#POST /api/mix",
+    "boundary": "api/server.py#MixRequest validators",
+    "subsystem": "api-bridge",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "api/server.py",
+      "api/services.py",
+      "api/catalog.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource accumulation attack classes",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "No multi-tenant store, export, or retention lifecycle exists; all state is single-operator local files and browser storage."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "candidate",
+    "agent_id": "hunter-bridge-routes",
+    "reviewed_paths": [
+      "api/server.py",
+      "api/services.py",
+      "api/catalog.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-bridge-routes",
+        "reviewed_paths": [
+          "api/server.py",
+          "api/services.py",
+          "api/catalog.py"
+        ],
+        "invariant": "MixRequest validators bound the request, the rate limit bounds request frequency, and the error paths do not disclose local state",
+        "method": "source",
+        "result": "MixRequest bounds drugs to 1-4 items of at most 500 characters and targets to 1-2 items of at most 4000 characters; no value reaches a path, shell or template. The per-client-IP rate limit covers /api/mix, but on the documented loopback deployment every local caller shares the 127.0.0.1 bucket, so one local caller can consume the operator's own allowance. The FileNotFoundError path repeats the predict route's detail=str(exc) pattern.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "mix-rate-limit-local",
+      "predict-error-path-disclosure"
+    ],
+    "unresolved": [
+      "Whether a local process that is not the operator can reach the bridge depends on the deployment's host binding and on who else runs on that machine.",
+      "The HTTPException detail from a caught FileNotFoundError may embed the absolute model checkpoint path."
+    ],
+    "hardening": [
+      "The rate limiter buckets by request.client.host, so every caller on the same host shares one bucket (127.0.0.1 on the documented deployment)."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "mix-rate-limit-local",
+        "verdict": "rejected",
+        "phase3_agent": "verifier-14",
+        "phase5_agent": "phase5-record-verifier"
+      },
+      {
+        "fingerprint": "predict-error-path-disclosure",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-15",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fpredict::api%2Fserver.py%23PredictRequest%20validators::api-bridge::Injection",
+    "canonical_refs": {
+      "surface": "api/server.py#POST /api/predict",
+      "boundary": "api/server.py#PredictRequest validators",
+      "subsystem": "api-bridge",
+      "attack_class": "Injection"
+    },
+    "surface": "api/server.py#POST /api/predict",
+    "boundary": "api/server.py#PredictRequest validators",
+    "subsystem": "api-bridge",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "api/server.py",
+      "ml/chem_filters.py",
+      "api/catalog.py",
+      "ml/features.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No gRPC, GraphQL, queue, broker, or webhook transport exists; the only RPC surface is MCP JSON-RPC covered by AI-AND-LLM blocks."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Input validation and normalization",
+        "reason": "WEB-PROTOCOL-AND-AUTH.md has no input-validation section; request-body validation is covered by the ordinary Injection attack-class block and by the target source itself."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-api-bridge",
+    "reviewed_paths": [
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-api-bridge",
+        "reviewed_paths": [
+          "api/server.py"
+        ],
+        "invariant": "PredictRequest validators bound and sanitize SMILES and protein sequence before the handler body runs",
+        "method": "source",
+        "result": "SMILES bounded to 500 chars and parsed with parse_and_canonicalize plus is_single_organic_fragment; protein bounded to 4000 chars, normalized and matched against AA_REGEX; neither value reaches a path, shell, or template",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": []
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23POST%20%2Fapi%2Fpredict::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "api/server.py#POST /api/predict",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Resource and file handling"
+    },
+    "surface": "api/server.py#POST /api/predict",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "api/server.py",
+      "api/services.py",
+      "api/catalog.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource accumulation attack classes",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, kernel, binary-loader, or unsafe-language code exists in the target; Python and TypeScript only."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-api-bridge",
+    "reviewed_paths": [
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-api-bridge",
+        "reviewed_paths": [
+          "api/server.py"
+        ],
+        "invariant": "failure paths do not leak internal filesystem paths to the client",
+        "method": "source",
+        "result": "predict_custom_pair and mix_regimen convert FileNotFoundError into HTTPException(503, detail=str(exc)); the checkpoint-missing message embeds the absolute model path",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "predict-error-path-disclosure"
+    ],
+    "unresolved": [],
+    "hardening": [],
+    "final_disposition": [
+      {
+        "fingerprint": "predict-error-path-disclosure",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-15",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fserver.py%23app.mount%28%27%2F%27%2C%20_MCP_HTTP_APP%29::api%2Fserver.py%23security_and_rate_limit_middleware::api-bridge::Access%20control",
+    "canonical_refs": {
+      "surface": "api/server.py#app.mount('/', _MCP_HTTP_APP)",
+      "boundary": "api/server.py#security_and_rate_limit_middleware",
+      "subsystem": "api-bridge",
+      "attack_class": "Access control"
+    },
+    "surface": "api/server.py#app.mount('/', _MCP_HTTP_APP)",
+    "boundary": "api/server.py#security_and_rate_limit_middleware",
+    "subsystem": "api-bridge",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "api/server.py",
+      "api/mcp_server.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key and mTLS attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud infrastructure, IAM, Kubernetes, or service-mesh configuration exists in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 2,
+    "status": "candidate",
+    "agent_id": "hunter-mcp-mount",
+    "reviewed_paths": [
+      "api/server.py",
+      "api/mcp_server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mcp-mount",
+        "reviewed_paths": [
+          "api/server.py",
+          "api/mcp_server.py"
+        ],
+        "invariant": "security_and_rate_limit_middleware authenticates only paths == '/mcp' or starting with '/mcp/', so the question is which paths the root-mounted MCP sub-application actually registers",
+        "method": "source",
+        "result": "The middleware skips authentication for every path that is not '/mcp' or '/mcp/*'; api/server.py creates the MCP sub-application with streamable_http_path='/mcp' and mounts it at '/' (api/server.py:145-153, 326-327), but the installed mcp package source is absent from this environment, so the mounted application's full route table cannot be enumerated from source",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "mcp-mount-unauth"
+    ],
+    "unresolved": [
+      "The installed mcp package source is not available in this environment, so the route table registered by FastMCP.streamable_http_app() cannot be enumerated from source; whether it registers any path outside '/mcp' is unknown."
+    ],
+    "hardening": [
+      "The authentication branch is path-based, so any additional route the MCP package registers would be unauthenticated; the CORS allow-list does not constrain non-browser clients and the '/mcp' path is not in RATE_LIMITED_PREFIXES."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "mcp-mount-unauth",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-09",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "api%2Fservices.py%23_InferenceState.ensure_loaded::ml%2Fconfig.py%23MODELS_DIR::ml-pipeline::Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "api/services.py#_InferenceState.ensure_loaded",
+      "boundary": "ml/config.py#MODELS_DIR",
+      "subsystem": "ml-pipeline",
+      "attack_class": "Resource and file handling"
+    },
+    "surface": "api/services.py#_InferenceState.ensure_loaded",
+    "boundary": "ml/config.py#MODELS_DIR",
+    "subsystem": "ml-pipeline",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "api/services.py",
+      "api/catalog.py",
+      "ml/config.py",
+      "scripts/reproduce_eval.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "Deserialization of Python pickle/joblib artifacts is reviewed as an artifact-integrity supply-chain issue, not as native memory unsafety."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-supply-chain",
+    "reviewed_paths": [
+      "api/services.py",
+      "ml/config.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply-chain",
+        "reviewed_paths": [
+          "api/services.py",
+          "ml/config.py"
+        ],
+        "invariant": "the deserialized checkpoint cannot be supplied by a lower-trust principal",
+        "method": "source",
+        "result": "joblib.load reads artifacts/models/openrepurpose_winner.joblib and artifacts/models/ddi_winner.joblib, which are gitignored, generated by the repository's own scripts, and writable only by the operator; no remote principal supplies them",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "No integrity check (hash or manifest) covers the checkpoints before joblib.load executes them; artifacts/run_manifest.json records a run fingerprint but is not verified against the model files. Same-operator integrity, so not a boundary violation."
+    ]
+  },
+  {
+    "coverage_id": "ml%2Fdata_loader.py%23_fetch_raw_davis_dataframe::ml%2Fddi_data_loader.py%23download_drugbank_ddi_raw::ml-pipeline::Wildcard",
+    "canonical_refs": {
+      "surface": "ml/data_loader.py#_fetch_raw_davis_dataframe",
+      "boundary": "ml/ddi_data_loader.py#download_drugbank_ddi_raw",
+      "subsystem": "ml-pipeline",
+      "attack_class": "Wildcard"
+    },
+    "surface": "ml/data_loader.py#_fetch_raw_davis_dataframe",
+    "boundary": "ml/ddi_data_loader.py#download_drugbank_ddi_raw",
+    "subsystem": "ml-pipeline",
+    "attack_class": "Wildcard",
+    "starting_paths": [
+      "ml/data_loader.py",
+      "ml/ddi_data_loader.py",
+      "scripts/precompute_screening.py",
+      "scripts/reproduce_eval.py",
+      "scripts/train_ddi.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency and build-input attack classes",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-supply-chain",
+    "reviewed_paths": [
+      "ml/data_loader.py",
+      "ml/ddi_data_loader.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply-chain",
+        "reviewed_paths": [
+          "ml/data_loader.py",
+          "ml/ddi_data_loader.py"
+        ],
+        "invariant": "downloaded third-party data is integrity-checked before it shapes published screening results",
+        "method": "source",
+        "result": "requests.get over https writes the response bytes straight to disk with no checksum or schema validation; the bytes then feed clean CSV artifacts that feed the precomputed screening results served by the studio",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "dataset-download-no-integrity-check"
+    ],
+    "unresolved": [
+      "Whether the published web/public/data artifacts in a given deployment were produced from these downloads, and whether the upstream mirrors are the canonical ones, cannot be observed from source."
+    ],
+    "hardening": [],
+    "final_disposition": [
+      {
+        "fingerprint": "dataset-download-no-integrity-check",
+        "verdict": "needs_validation",
+        "phase3_agent": "verifier-08",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "ml%2Fnovelty.py%23PubMedNoveltyChecker.check::api%2Fmcp_server.py%23tool_check_pubmed_novelty::ml-pipeline::Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "ml/novelty.py#PubMedNoveltyChecker.check",
+      "boundary": "api/mcp_server.py#tool_check_pubmed_novelty",
+      "subsystem": "ml-pipeline",
+      "attack_class": "Feature abuse and data leakage"
+    },
+    "surface": "ml/novelty.py#PubMedNoveltyChecker.check",
+    "boundary": "api/mcp_server.py#tool_check_pubmed_novelty",
+    "subsystem": "ml-pipeline",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "ml/novelty.py",
+      "api/mcp_server.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "AI-AND-LLM.md#Core discipline",
+      "AI-AND-LLM.md#MCP and sub-agent trust classes",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource accumulation attack classes",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-mcp-tools",
+    "reviewed_paths": [
+      "ml/novelty.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mcp-tools",
+        "reviewed_paths": [
+          "ml/novelty.py"
+        ],
+        "invariant": "the outbound PubMed request carries the operator's NCBI credential",
+        "method": "source",
+        "result": "NCBI_API_KEY is read from the environment and sent as the api_key query parameter of the E-utilities request, which is the scheme NCBI documents; the throttle is checker-local and the caller-controlled strings are URL-encoded",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "Any authenticated MCP client can drive outbound E-utilities traffic that spends the operator's NCBI quota; that caller is already covered by the unauthenticated key-minting candidate, so it is recorded here as an impact amplifier, not a separate root cause."
+    ]
+  },
+  {
+    "coverage_id": "repository%23tracked%20files%20and%20git%20history::repository%23secrets%20and%20credentials::repo-wide::Obvious%20things",
+    "canonical_refs": {
+      "surface": "repository#tracked files and git history",
+      "boundary": "repository#secrets and credentials",
+      "subsystem": "repo-wide",
+      "attack_class": "Obvious things"
+    },
+    "surface": "repository#tracked files and git history",
+    "boundary": "repository#secrets and credentials",
+    "subsystem": "repo-wide",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      ".env.example",
+      ".gitignore",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "api/mcp_keys.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Secrets handling",
+        "reason": "SUPPLY-CHAIN-AND-RELEASE.md has no secrets-handling section; credential exposure is covered by the ordinary Cryptography and secrets block (key store, client handling) and by the ordinary Obvious things block (repository secret search)."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-supply-chain",
+    "reviewed_paths": [
+      ".env.example",
+      ".gitignore",
+      "api/mcp_keys.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply-chain",
+        "reviewed_paths": [
+          ".env.example",
+          ".gitignore",
+          "api/mcp_keys.py"
+        ],
+        "invariant": "no credential is committed to the repository",
+        "method": "source",
+        "result": "No API key, password, token, or private key was found in the tracked tree; .env.example holds placeholders only, .gitignore excludes .env, .env.local, artifacts/, data/, and *.joblib, and the MCP key store persists only SHA-256 hashes",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": []
+  },
+  {
+    "coverage_id": "web%2Fsrc%2Fcomponents%2FCustomPredictModal.tsx%23dangerouslySetInnerHTML::web%2Fsrc%2Flib%2Fdata.ts%23fetchJson::web-client::Injection",
+    "canonical_refs": {
+      "surface": "web/src/components/CustomPredictModal.tsx#dangerouslySetInnerHTML",
+      "boundary": "web/src/lib/data.ts#fetchJson",
+      "subsystem": "web-client",
+      "attack_class": "Injection"
+    },
+    "surface": "web/src/components/CustomPredictModal.tsx#dangerouslySetInnerHTML",
+    "boundary": "web/src/lib/data.ts#fetchJson",
+    "subsystem": "web-client",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "web/src/components/CustomPredictModal.tsx",
+      "web/src/components/MixLabStage.tsx",
+      "web/src/lib/data.ts",
+      "ml/explain.py",
+      "ml/chem_filters.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#DOM and object-state attack classes",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-web-client",
+    "reviewed_paths": [
+      "web/src/components/CustomPredictModal.tsx",
+      "api/services.py",
+      "ml/explain.py",
+      "ml/chem_filters.py",
+      "web/src/components/MixLabStage.tsx",
+      "web/src/components/StudioApp.tsx",
+      "api/server.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-web-client",
+        "reviewed_paths": [
+          "web/src/components/CustomPredictModal.tsx",
+          "api/services.py",
+          "ml/explain.py",
+          "ml/chem_filters.py"
+        ],
+        "invariant": "the string inserted through dangerouslySetInnerHTML cannot carry script",
+        "method": "source",
+        "result": "The inserted string is the SVG produced by RDKit MolDraw2DSVG in ml/chem_filters.py render_2d_svg from a canonicalized molecule; the renderer emits structural markup and atom palette colours, with no user-supplied string embedded",
+        "artifact": null
+      },
+      {
+        "agent_id": "parent",
+        "reviewed_paths": [
+          "web/src/components/CustomPredictModal.tsx",
+          "web/src/components/MixLabStage.tsx",
+          "web/src/components/StudioApp.tsx",
+          "api/server.py"
+        ],
+        "invariant": "the HTML that is trusted as safe is only safe while the API response itself is trusted",
+        "method": "source",
+        "result": "CustomPredictModal.tsx:321 and MixLabStage.tsx:1081 insert the API response body as HTML; StudioApp.tsx sets API_BASE_URL from NEXT_PUBLIC_API_URL with no origin validation, so the trust of the inserted markup follows whatever host that variable names, and the studio origin is on the bridge CORS allow-list",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "web-svg-innerhtml-xss"
+    ],
+    "unresolved": [],
+    "hardening": [],
+    "final_disposition": [
+      {
+        "fingerprint": "web-svg-innerhtml-xss",
+        "verdict": "rejected",
+        "phase3_agent": "verifier-13",
+        "phase5_agent": null
+      }
+    ]
+  },
+  {
+    "coverage_id": "web%2Fsrc%2Fcomponents%2FMcpConnectModal.tsx%23handleGenerateKey::web%2Fsrc%2Flib%2Fdata.ts%23createMcpApiKey::web-client::Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "web/src/components/McpConnectModal.tsx#handleGenerateKey",
+      "boundary": "web/src/lib/data.ts#createMcpApiKey",
+      "subsystem": "web-client",
+      "attack_class": "Cryptography and secrets"
+    },
+    "surface": "web/src/components/McpConnectModal.tsx#handleGenerateKey",
+    "boundary": "web/src/lib/data.ts#createMcpApiKey",
+    "subsystem": "web-client",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "web/src/components/McpConnectModal.tsx",
+      "web/src/lib/data.ts",
+      "web/src/components/StudioApp.tsx",
+      "web/src/app/layout.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Cross-origin messaging and network attack classes",
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Browser-session attack classes",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-web-client",
+    "reviewed_paths": [
+      "web/src/components/McpConnectModal.tsx",
+      "web/src/lib/data.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-web-client",
+        "reviewed_paths": [
+          "web/src/components/McpConnectModal.tsx",
+          "web/src/lib/data.ts"
+        ],
+        "invariant": "the raw MCP credential does not leave the operator's control",
+        "method": "source",
+        "result": "The created api_key is held in React state, rendered into the DOM at McpConnectModal.tsx:346, embedded in a copyable JSON configuration, and written to the system clipboard by web/src/lib/clipboard.ts; it is never persisted to localStorage or logged",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "mcp-key-browser-exposure"
+    ],
+    "unresolved": [],
+    "hardening": [
+      "The clipboard fallback in web/src/lib/clipboard.ts uses document.execCommand('copy') with a temporary textarea, which leaves the secret briefly in the DOM and in the system clipboard history."
+    ],
+    "final_disposition": [
+      {
+        "fingerprint": "mcp-key-browser-exposure",
+        "verdict": "rejected",
+        "phase3_agent": "verifier-07",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  },
+  {
+    "coverage_id": "web%2Fsrc%2Flib%2FworkspaceState.ts%23parseWorkspaceHash::web%2Fsrc%2Flib%2FworkspaceState.ts%23localStorage%20keys::web-client::Business%20logic",
+    "canonical_refs": {
+      "surface": "web/src/lib/workspaceState.ts#parseWorkspaceHash",
+      "boundary": "web/src/lib/workspaceState.ts#localStorage keys",
+      "subsystem": "web-client",
+      "attack_class": "Business logic"
+    },
+    "surface": "web/src/lib/workspaceState.ts#parseWorkspaceHash",
+    "boundary": "web/src/lib/workspaceState.ts#localStorage keys",
+    "subsystem": "web-client",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "web/src/lib/workspaceState.ts",
+      "web/src/components/StudioApp.tsx",
+      "web/src/lib/clipboard.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Service-worker and browser-storage attack classes",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-web-client",
+    "reviewed_paths": [
+      "web/src/lib/workspaceState.ts",
+      "web/src/components/StudioApp.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-web-client",
+        "reviewed_paths": [
+          "web/src/lib/workspaceState.ts",
+          "web/src/components/StudioApp.tsx"
+        ],
+        "invariant": "attacker-controlled URL hash fields are validated before they change persisted studio state",
+        "method": "source",
+        "result": "parseWorkspaceHash accepts targetId, drugId, searchQuery, minPkd and boolean filters from the hash; stage and quickChip are allow-listed, but targetId, drugId and searchQuery are taken as free text and the resulting session is written to localStorage",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "web-hash-state-persistence"
+    ],
+    "unresolved": [],
+    "hardening": [],
+    "final_disposition": [
+      {
+        "fingerprint": "web-hash-state-persistence",
+        "verdict": "rejected",
+        "phase3_agent": "verifier-06",
+        "phase5_agent": "phase5-record-verifier"
+      }
+    ]
+  }
+]
