@@ -16,6 +16,8 @@ Usage:
 
 from __future__ import annotations
 
+import hmac
+import json
 import logging
 import os
 import time
@@ -47,8 +49,24 @@ from ml.features import extract_protein_embeddings
 logger = logging.getLogger("openrepurpose.api")
 
 RATE_LIMIT_MAX_REQUESTS = int(os.getenv("API_RATE_LIMIT_PER_MIN", "30"))
+KEY_MGMT_RATE_LIMIT_MAX_REQUESTS = int(os.getenv("KEY_MGMT_RATE_LIMIT_PER_MIN", "30"))
+MCP_RATE_LIMIT_MAX_REQUESTS = int(os.getenv("MCP_RATE_LIMIT_PER_MIN", "120"))
 RATE_LIMIT_WINDOW_SECONDS = 60.0
 RATE_LIMITED_PREFIXES = ("/api/predict", "/api/mix")
+
+_SECURITY_HEADERS: dict[str, str] = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+}
+_LOOPBACK_CLIENT_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
+_PROXY_FORWARD_HEADERS: tuple[str, ...] = (
+    "x-forwarded-for",
+    "forwarded",
+    "x-real-ip",
+    "cf-connecting-ip",
+)
 
 
 def _parse_allowed_origins() -> list[str]:
@@ -68,6 +86,116 @@ def _extract_mcp_token(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         return auth[7:].strip()
     return ""
+
+
+def _extract_admin_token(request: Request) -> str:
+    x_admin = request.headers.get("x-admin-token", "").strip()
+    if x_admin:
+        return x_admin
+    auth = request.headers.get("authorization", "").strip()
+    if auth.lower().startswith("bearer "):
+        return auth[7:].strip()
+    return ""
+
+
+def _json_error_response(status_code: int, detail: str) -> Response:
+    return Response(
+        content=json.dumps({"detail": detail}),
+        status_code=status_code,
+        media_type="application/json",
+        headers=_SECURITY_HEADERS,
+    )
+
+
+def _authorize_mcp_key_management(request: Request) -> Response | None:
+    """Protect /api/mcp/keys against remote, proxied/tunneled, and cross-origin access.
+
+    - When `OPENREPURPOSE_ADMIN_TOKEN` is set, every key-management call requires a constant-time
+      matching `X-Admin-Token` (or `Authorization: Bearer`) header.
+    - Otherwise (default local single-operator mode), key management is strictly restricted to
+      direct loopback callers (no proxy/tunnel forwarding headers) and allow-listed browser Origins.
+    """
+    admin_token = os.getenv("OPENREPURPOSE_ADMIN_TOKEN", "").strip()
+    if admin_token:
+        provided = _extract_admin_token(request)
+        if not provided or not hmac.compare_digest(provided, admin_token):
+            return _json_error_response(
+                401,
+                "Unauthorized MCP key management request. Provide a valid X-Admin-Token header.",
+            )
+        return None
+
+    if any(request.headers.get(h) for h in _PROXY_FORWARD_HEADERS):
+        return _json_error_response(
+            403,
+            "MCP key management through a reverse proxy or tunnel requires OPENREPURPOSE_ADMIN_TOKEN.",
+        )
+
+    client_host = (request.client.host if request.client else "").strip().lower()
+    if client_host not in _LOOPBACK_CLIENT_HOSTS:
+        return _json_error_response(
+            403,
+            "MCP key management is restricted to local loopback callers unless OPENREPURPOSE_ADMIN_TOKEN is configured.",
+        )
+
+    origin = request.headers.get("origin", "").strip()
+    if origin:
+        if origin not in _parse_allowed_origins():
+            return _json_error_response(
+                403,
+                "Request Origin is not allowed to manage local MCP API keys.",
+            )
+    else:
+        sec_fetch_site = request.headers.get("sec-fetch-site", "").strip().lower()
+        if sec_fetch_site == "cross-site":
+            return _json_error_response(
+                403,
+                "Cross-site browser requests cannot manage local MCP API keys.",
+            )
+    return None
+
+
+class _AuthenticatedMcpASGIApp:
+    """Fail-closed ASGI wrapper ensuring every route on the mounted MCP sub-app requires a valid key."""
+
+    def __init__(self, inner_app: Any, allowed_paths: tuple[str, ...] = ("/mcp", "/mcp/")) -> None:
+        self.inner_app = inner_app
+        self.allowed_paths = allowed_paths
+
+    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
+        if scope.get("type") != "http":
+            await self.inner_app(scope, receive, send)
+            return
+
+        path = str(scope.get("path", ""))
+        method = str(scope.get("method", "GET")).upper()
+
+        # Fail closed on any unexpected path registered by an upgraded MCP SDK
+        if path not in self.allowed_paths:
+            resp = _json_error_response(404, "Not found.")
+            await resp(scope, receive, send)
+            return
+
+        if method != "OPTIONS":
+            raw_headers = {
+                k.decode("latin-1").lower(): v.decode("latin-1").strip()
+                for k, v in (scope.get("headers") or [])
+            }
+            token = raw_headers.get("x-api-key", "")
+            if not token:
+                auth = raw_headers.get("authorization", "")
+                if auth.lower().startswith("bearer "):
+                    token = auth[7:].strip()
+            if not MCP_KEY_STORE.verify_key(token, update_last_used=False):
+                resp = _json_error_response(
+                    401,
+                    "Unauthorized MCP request. Provide a valid X-API-Key or "
+                    "Authorization: Bearer <key> header generated from OpenRepurpose Studio -> Connect MCP.",
+                )
+                await resp(scope, receive, send)
+                return
+
+        await self.inner_app(scope, receive, send)
 
 
 class PredictRequest(BaseModel):
@@ -175,65 +303,65 @@ app.add_middleware(
     allow_origins=_parse_allowed_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-API-Key", "Authorization", "Mcp-Session-Id"],
+    allow_headers=["Content-Type", "X-API-Key", "X-Admin-Token", "Authorization", "Mcp-Session-Id"],
 )
+
+
+def _check_rate_bucket(bucket_key: str, max_requests: int, now: float) -> bool:
+    bucket = _RATE_BUCKETS[bucket_key]
+    while bucket and (now - bucket[0]) > RATE_LIMIT_WINDOW_SECONDS:
+        bucket.popleft()
+    if len(bucket) >= max_requests:
+        return False
+    bucket.append(now)
+    return True
 
 
 @app.middleware("http")
 async def security_and_rate_limit_middleware(request: Request, call_next) -> Response:
     path = request.url.path
+    client_ip = request.client.host if request.client else "local"
+    now = time.monotonic()
 
-    # Authenticate Streamable HTTP MCP requests with Stitch-style X-API-Key or Bearer token
+    # 1. Authenticate Streamable HTTP MCP requests with Stitch-style X-API-Key or Bearer token
     if path == "/mcp" or path.startswith("/mcp/"):
         if request.method != "OPTIONS":
             token = _extract_mcp_token(request)
             if not MCP_KEY_STORE.verify_key(token):
-                return Response(
-                    content=(
-                        '{"detail":"Unauthorized MCP request. Provide a valid X-API-Key or '
-                        'Authorization: Bearer <key> header generated from OpenRepurpose Studio -> Connect MCP."}'
-                    ),
-                    status_code=401,
-                    media_type="application/json",
-                    headers={
-                        "X-Content-Type-Options": "nosniff",
-                        "X-Frame-Options": "DENY",
-                        "Referrer-Policy": "no-referrer",
-                        "Cache-Control": "no-store",
-                    },
+                return _json_error_response(
+                    401,
+                    "Unauthorized MCP request. Provide a valid X-API-Key or "
+                    "Authorization: Bearer <key> header generated from OpenRepurpose Studio -> Connect MCP.",
+                )
+            if not _check_rate_bucket(f"mcp:{client_ip}", MCP_RATE_LIMIT_MAX_REQUESTS, now):
+                return _json_error_response(
+                    429,
+                    f"Rate limit exceeded. Maximum {MCP_RATE_LIMIT_MAX_REQUESTS} MCP requests per minute.",
                 )
 
-    client_ip = request.client.host if request.client else "local"
-    now = time.monotonic()
-    bucket = _RATE_BUCKETS[client_ip]
-    while bucket and (now - bucket[0]) > RATE_LIMIT_WINDOW_SECONDS:
-        bucket.popleft()
+    # 2. Protect MCP key-management endpoints (loopback + Origin/CSRF or explicit X-Admin-Token)
+    if path == "/api/mcp/keys" or path.startswith("/api/mcp/keys/"):
+        if request.method != "OPTIONS":
+            denied = _authorize_mcp_key_management(request)
+            if denied is not None:
+                return denied
+            if not _check_rate_bucket(f"keys:{client_ip}", KEY_MGMT_RATE_LIMIT_MAX_REQUESTS, now):
+                return _json_error_response(
+                    429,
+                    f"Rate limit exceeded. Maximum {KEY_MGMT_RATE_LIMIT_MAX_REQUESTS} key-management requests per minute.",
+                )
 
-    is_limited_route = path.startswith(RATE_LIMITED_PREFIXES)
-    if is_limited_route and len(bucket) >= RATE_LIMIT_MAX_REQUESTS:
-        return Response(
-            content=(
-                f'{{"detail":"Rate limit exceeded. Maximum {RATE_LIMIT_MAX_REQUESTS} '
-                'inference requests per minute."}'
-            ),
-            status_code=429,
-            media_type="application/json",
-            headers={
-                "X-Content-Type-Options": "nosniff",
-                "X-Frame-Options": "DENY",
-                "Referrer-Policy": "no-referrer",
-                "Cache-Control": "no-store",
-            },
-        )
-
-    if is_limited_route:
-        bucket.append(now)
+    # 3. Rate limit compute-heavy live inference routes
+    if path.startswith(RATE_LIMITED_PREFIXES):
+        if not _check_rate_bucket(client_ip, RATE_LIMIT_MAX_REQUESTS, now):
+            return _json_error_response(
+                429,
+                f"Rate limit exceeded. Maximum {RATE_LIMIT_MAX_REQUESTS} inference requests per minute.",
+            )
 
     response: Response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Cache-Control"] = "no-store"
+    for hdr, val in _SECURITY_HEADERS.items():
+        response.headers[hdr] = val
     return response
 
 
@@ -254,6 +382,12 @@ def catalog_search(
     return CATALOG.search(query=q, kind=kind, limit=limit)
 
 
+_MISSING_MODEL_DETAIL = (
+    "Required ML model artifacts are unavailable on this server. "
+    "Run the local training pipeline and restart the API bridge."
+)
+
+
 @app.post("/api/predict")
 def predict_custom_pair(req: PredictRequest) -> dict[str, Any]:
     try:
@@ -266,7 +400,8 @@ def predict_custom_pair(req: PredictRequest) -> dict[str, Any]:
             protein_embedder=extract_protein_embeddings,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        logger.error("Model artifact missing during /api/predict: %s", exc)
+        raise HTTPException(status_code=503, detail=_MISSING_MODEL_DETAIL) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -284,7 +419,8 @@ def mix_regimen(req: MixRequest) -> dict[str, Any]:
             protein_embedder=extract_protein_embeddings,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        logger.error("Model artifact missing during /api/mix: %s", exc)
+        raise HTTPException(status_code=503, detail=_MISSING_MODEL_DETAIL) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -304,7 +440,10 @@ def list_mcp_keys(request: Request) -> dict[str, Any]:
 
 @app.post("/api/mcp/keys")
 def create_mcp_key(req: CreateMcpKeyRequest, request: Request) -> dict[str, Any]:
-    created = MCP_KEY_STORE.create_key(label=req.label)
+    try:
+        created = MCP_KEY_STORE.create_key(label=req.label)
+    except ValueError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     base_url = str(request.base_url).rstrip("/")
     return {
         **created,
@@ -321,7 +460,7 @@ def revoke_mcp_key(key_id: str) -> dict[str, Any]:
     return {"revoked": True, "id": key_id}
 
 
-# Mount Streamable HTTP MCP directly at root AFTER explicit FastAPI routes so `/mcp` serves
-# with zero 307 trailing-slash redirect for all remote MCP clients!
+# Mount Streamable HTTP MCP wrapped in fail-closed ASGI auth guard AFTER explicit FastAPI routes
+# so `/mcp` serves with zero 307 redirect and no sub-app path can ever bypass API-key verification.
 if _MCP_HTTP_APP is not None:
-    app.mount("/", _MCP_HTTP_APP)
+    app.mount("/", _AuthenticatedMcpASGIApp(_MCP_HTTP_APP))

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -363,6 +364,54 @@ MCP_TOOLS_SUMMARY: tuple[dict[str, str], ...] = (
 )
 
 
+def _build_http_transport_security():
+    """Build DNS-rebinding-protected TransportSecuritySettings for Streamable HTTP MCP.
+
+    Enabled by default for loopback hosts (`127.0.0.1`, `localhost`, `[::1]`).
+    Operators deploying behind a reverse proxy or custom domain can extend allowed hosts via
+    `MCP_ALLOWED_HOSTS` (comma-separated) without disabling Host/Origin validation.
+    """
+    from mcp.server.transport_security import TransportSecuritySettings
+
+    disable_flag = os.getenv("MCP_DISABLE_DNS_REBINDING_PROTECTION", "").strip().lower()
+    if disable_flag in ("1", "true", "yes"):
+        logger.warning(
+            "MCP_DISABLE_DNS_REBINDING_PROTECTION is enabled; Host/Origin validation is bypassed."
+        )
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+    allowed_hosts: list[str] = [
+        "127.0.0.1:*",
+        "localhost:*",
+        "[::1]:*",
+        "127.0.0.1",
+        "localhost",
+        "[::1]",
+    ]
+    extra_hosts_raw = os.getenv("MCP_ALLOWED_HOSTS", "")
+    for item in extra_hosts_raw.split(","):
+        host = item.strip()
+        if host and host != "*" and host not in allowed_hosts:
+            allowed_hosts.append(host)
+
+    allowed_origins: list[str] = [
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://[::1]:*",
+    ]
+    extra_origins_raw = os.getenv("API_ALLOWED_ORIGINS", "")
+    for item in extra_origins_raw.split(","):
+        origin = item.strip()
+        if origin and origin != "*" and origin not in allowed_origins:
+            allowed_origins.append(origin)
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    )
+
+
 def create_mcp_server(
     *,
     stateless_http: bool = False,
@@ -371,15 +420,9 @@ def create_mcp_server(
 ):
     """Instantiate and register all 6 OpenRepurpose grounded scientific tools on FastMCP."""
     from mcp.server.fastmcp import FastMCP
-    from mcp.server.transport_security import TransportSecuritySettings
 
-    # Remote Streamable HTTP `/mcp` is protected by cryptographic API-key middleware in api/server.py;
-    # disabling localhost-only Host-header lock allows both local & tunneled/deployed MCP clients.
-    transport_sec = (
-        TransportSecuritySettings(enable_dns_rebinding_protection=False)
-        if stateless_http
-        else None
-    )
+    # Enable DNS-rebinding protection (Host + Origin validation) by default for Streamable HTTP.
+    transport_sec = _build_http_transport_security() if stateless_http else None
 
     server = FastMCP(
         "OpenRepurpose",

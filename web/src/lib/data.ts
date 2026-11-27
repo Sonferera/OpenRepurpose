@@ -114,10 +114,15 @@ export async function postRegimenMix(
 
 export async function fetchMcpKeys(apiBaseUrl: string): Promise<McpKeysListResponse> {
   const res = await fetch(`${apiBaseUrl}/api/mcp/keys`);
+  const body = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(`Failed to fetch MCP keys (HTTP ${res.status})`);
+    throw new Error(
+      body && typeof body.detail === "string"
+        ? body.detail
+        : `Failed to fetch MCP keys (HTTP ${res.status})`
+    );
   }
-  return (await res.json()) as McpKeysListResponse;
+  return body as McpKeysListResponse;
 }
 
 export async function createMcpApiKey(
@@ -145,7 +150,12 @@ export async function revokeMcpApiKey(apiBaseUrl: string, keyId: string): Promis
     method: "DELETE",
   });
   if (!res.ok) {
-    throw new Error(`Failed to revoke MCP key (HTTP ${res.status})`);
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      body && typeof body.detail === "string"
+        ? body.detail
+        : `Failed to revoke MCP key (HTTP ${res.status})`
+    );
   }
 }
 

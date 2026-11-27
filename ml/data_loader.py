@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +35,16 @@ BROAD_REPURPOSING_SAMPLES_URL = (
     "https://s3.amazonaws.com/data.clue.io/repurposing/downloads/repurposing_samples_20200324.txt"
 )
 
+# Pinned canonical SHA-256 digests for verified upstream benchmark archives
+PINNED_RAW_DATASET_SHA256: dict[str, str] = {
+    "davis_raw.tab": "7242d7cdb873dada6a0fc0bbd2474c1580a22a2091bb672eea42c5d45430d8ce",
+    "bindingdb_kd_raw.tab": "b72a38ae07a75d5d4c269d2776b6e62e0edde29ff7cf8a323158c08951f808d1",
+    "repurposing_drugs_20200324.txt": "9c3a08b9d4369fe4257dc9aa763d682fc5ef6b7dd0615534bb44f92b48bc287b",
+    "repurposing_samples_20200324.txt": "3324dfac93d19ceaeafbe7d9e466127709328777cb2f6c5a465740cd327088e9",
+    "drugbank_ddi.tab": "3a7668b590ebca56c1eaef0dff291bbd8c2aebfea1fd148c04e11ea3c2c73ecb",
+}
+DEFAULT_MAX_DATASET_BYTES = 250 * 1024 * 1024
+
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -44,6 +56,80 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _skip_checksum_verification() -> bool:
+    return os.getenv("OPENREPURPOSE_SKIP_DATASET_CHECKSUM", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def download_verified_file(
+    url: str,
+    dest_path: Path,
+    expected_sha256: str | None = None,
+    *,
+    timeout: int = 120,
+    max_bytes: int = DEFAULT_MAX_DATASET_BYTES,
+    force: bool = False,
+) -> tuple[Path, str]:
+    """Download or validate a cached dataset file with atomic SHA-256 integrity verification.
+
+    Downloaded bytes are streamed into a temporary file, hashed incrementally, size-bounded,
+    and verified against `expected_sha256` BEFORE moving into `dest_path`.
+    """
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    expected = (expected_sha256 or "").strip().lower()
+    verify = bool(expected) and not _skip_checksum_verification()
+
+    if dest_path.exists() and not force:
+        actual = sha256_file(dest_path)
+        if verify and actual != expected:
+            raise ValueError(
+                f"Cached dataset integrity check failed for {dest_path.name}: "
+                f"expected SHA-256 {expected}, got {actual}."
+            )
+        return dest_path, actual
+
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(dest_path.parent),
+        prefix=f".{dest_path.name}_",
+        suffix=".tmp",
+    )
+    tmp_path = Path(tmp_name)
+    hasher = hashlib.sha256()
+    total_bytes = 0
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            with requests.get(url, stream=True, timeout=timeout) as resp:
+                resp.raise_for_status()
+                for chunk in resp.iter_content(chunk_size=1 << 20):
+                    if not chunk:
+                        continue
+                    total_bytes += len(chunk)
+                    if total_bytes > max_bytes:
+                        raise ValueError(
+                            f"Downloaded payload for {dest_path.name} exceeded max size ({max_bytes} bytes)."
+                        )
+                    fh.write(chunk)
+                    hasher.update(chunk)
+
+        actual = hasher.hexdigest()
+        if verify and actual != expected:
+            raise ValueError(
+                f"Downloaded dataset integrity check failed for {dest_path.name}: "
+                f"expected SHA-256 {expected}, got {actual}."
+            )
+        os.replace(tmp_path, dest_path)
+        return dest_path, actual
+    except Exception:
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
 
 
 def kd_nm_to_pkd(values: np.ndarray) -> np.ndarray:
@@ -74,10 +160,12 @@ def _fetch_raw_davis_dataframe(raw_dir: Path) -> tuple[pd.DataFrame, str]:
         logger.warning("PyTDC DAVIS download failed (%s); falling back to TDC Harvard Dataverse.", tdc_err)
 
     raw_tab = raw_dir / "davis_raw.tab"
-    if not raw_tab.exists():
-        resp = requests.get(DAVIS_TDC_DATAVERSE_URL, timeout=120)
-        resp.raise_for_status()
-        raw_tab.write_bytes(resp.content)
+    download_verified_file(
+        DAVIS_TDC_DATAVERSE_URL,
+        raw_tab,
+        expected_sha256=PINNED_RAW_DATASET_SHA256["davis_raw.tab"],
+        timeout=120,
+    )
     df = pd.read_csv(raw_tab, sep="\t")
     return df, f"TDC-HarvardDataverse:{DAVIS_TDC_DATAVERSE_URL}"
 
@@ -227,13 +315,15 @@ def load_davis_dataset(
 
 
 def _fetch_raw_bindingdb_kd_dataframe(raw_dir: Path) -> tuple[pd.DataFrame, str]:
-    """Download official TDC BindingDB_Kd dataset from Harvard Dataverse."""
+    """Download official TDC BindingDB_Kd dataset from Harvard Dataverse with SHA-256 check."""
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_tab = raw_dir / "bindingdb_kd_raw.tab"
-    if not raw_tab.exists():
-        resp = requests.get(BINDINGDB_KD_TDC_DATAVERSE_URL, timeout=180)
-        resp.raise_for_status()
-        raw_tab.write_bytes(resp.content)
+    download_verified_file(
+        BINDINGDB_KD_TDC_DATAVERSE_URL,
+        raw_tab,
+        expected_sha256=PINNED_RAW_DATASET_SHA256["bindingdb_kd_raw.tab"],
+        timeout=180,
+    )
     df = pd.read_csv(raw_tab, sep="\t")
     return df, f"TDC-HarvardDataverse:{BINDINGDB_KD_TDC_DATAVERSE_URL}"
 
@@ -317,14 +407,18 @@ def _fetch_broad_launched_drugs(raw_dir: Path) -> list[dict[str, Any]]:
     drugs_path = raw_dir / "repurposing_drugs_20200324.txt"
     samples_path = raw_dir / "repurposing_samples_20200324.txt"
 
-    if not drugs_path.exists():
-        resp = requests.get(BROAD_REPURPOSING_DRUGS_URL, timeout=60)
-        resp.raise_for_status()
-        drugs_path.write_bytes(resp.content)
-    if not samples_path.exists():
-        resp = requests.get(BROAD_REPURPOSING_SAMPLES_URL, timeout=60)
-        resp.raise_for_status()
-        samples_path.write_bytes(resp.content)
+    download_verified_file(
+        BROAD_REPURPOSING_DRUGS_URL,
+        drugs_path,
+        expected_sha256=PINNED_RAW_DATASET_SHA256["repurposing_drugs_20200324.txt"],
+        timeout=60,
+    )
+    download_verified_file(
+        BROAD_REPURPOSING_SAMPLES_URL,
+        samples_path,
+        expected_sha256=PINNED_RAW_DATASET_SHA256["repurposing_samples_20200324.txt"],
+        timeout=60,
+    )
 
     drugs_df = pd.read_csv(drugs_path, sep="\t", comment="!")
     samples_df = pd.read_csv(samples_path, sep="\t", comment="!")
