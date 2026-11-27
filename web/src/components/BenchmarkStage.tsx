@@ -493,20 +493,20 @@ export default function BenchmarkStage({
   }
 
   const isDark = theme === "dark";
-  const gridStroke = isDark ? "#2E3545" : "#D5CFC2";
-  const axisTickColor = isDark ? "#E6EAF2" : "#262320";
-  const refLineColor = isDark ? "#94A3B8" : "#57534E";
-  const ensembleLineColor = isDark ? "#C7D2FE" : "#3730A3";
-  const hybridLineColor = isDark ? "#FDBA74" : "#9A3412";
-  const ligandLineColor = isDark ? "#93C5FD" : "#1E40AF";
-  const inactiveDotColor = isDark ? "#8E9BB5" : "#78716C";
+  const gridStroke = isDark ? "#2A2F3A" : "#D5CFC2";
+  const axisTickColor = isDark ? "#F0ECE4" : "#161412";
+  const refLineColor = isDark ? "#8B877F" : "#666057";
+  const ensembleLineColor = isDark ? "#7AA6F0" : "#1E3A6D";
+  const hybridLineColor = isDark ? "#E08A5E" : "#9A4322";
+  const ligandLineColor = isDark ? "#A3B8D8" : "#4A6FA5";
+  const inactiveDotColor = isDark ? "#7B8499" : "#7C766D";
 
   const simplexColors: Record<string, { label: string; color: string }> = {
-    model_two_tower_mlp: { label: "Two-Tower MLP", color: isDark ? "#A5B4FC" : "#3730A3" },
-    model_xgboost: { label: "XGBoost CUDA", color: isDark ? "#93C5FD" : "#1E40AF" },
-    model_lgbm: { label: "LightGBM", color: isDark ? "#D8B4FE" : "#6D28D9" },
-    baseline_ridge: { label: "Ridge Linear", color: isDark ? "#FDBA74" : "#9A3412" },
-    model_catboost: { label: "CatBoost", color: isDark ? "#CBD5E1" : "#475569" },
+    model_two_tower_mlp: { label: "Two-Tower MLP", color: isDark ? "#7AA6F0" : "#1E3A6D" },
+    model_xgboost: { label: "XGBoost CUDA", color: isDark ? "#9EBDF2" : "#345995" },
+    model_lgbm: { label: "LightGBM", color: isDark ? "#E08A5E" : "#9A4322" },
+    baseline_ridge: { label: "Ridge Linear", color: isDark ? "#C99A7E" : "#B86B43" },
+    model_catboost: { label: "CatBoost", color: isDark ? "#B8B4AC" : "#5B534B" },
   };
 
   if (benchKey === "drugbank_ddi" && ddiEvalResults) {
@@ -568,8 +568,22 @@ export default function BenchmarkStage({
 
   return (
     <div className="space-y-4">
-      {/* Benchmark & Split Controls + Plain-Language Guide */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3">
+      {/* Editorial Validation Dossier Header */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-5 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
+          <div className="space-y-1">
+            <div className="mono-num text-[10px] uppercase tracking-[0.14em] text-[var(--review)] font-semibold">
+              Archival Validation Ledger · Seed 42 · Zero Test-Set Peeking
+            </div>
+            <h1 className="font-serif-editorial text-2xl sm:text-3xl font-normal text-[var(--ink-primary)] leading-tight">
+              Model Validation &amp; Generalization Benchmarks
+            </h1>
+          </div>
+          <span className="mono-num text-[11px] px-2.5 py-1 rounded bg-[var(--accent-soft)] border border-[var(--accent-border)] text-[var(--accent-ink)] font-semibold">
+            {benchmark.label}
+          </span>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <div

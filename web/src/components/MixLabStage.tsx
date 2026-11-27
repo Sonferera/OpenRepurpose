@@ -360,12 +360,15 @@ export default function MixLabStage({
   return (
     <div className="flex-1 space-y-4">
       {/* Header & Live Engine Status Strip */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-5 flex flex-wrap items-start justify-between gap-3">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-5 flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-base font-bold text-[var(--ink-primary)]">
+          <div className="mono-num text-[10px] uppercase tracking-[0.14em] text-[var(--review)] font-semibold">
+            Dual-Engine Regimen Workbench
+          </div>
+          <h1 className="font-serif-editorial text-2xl sm:text-3xl font-normal text-[var(--ink-primary)] leading-tight">
             Mix &amp; Regimen Lab
-          </h2>
-          <p className="text-sm text-[var(--ink-secondary)]">
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--ink-secondary)]">
             Evaluate 1–4 drugs across 1–2 targets with separate Model 1 binding affinity and Model 2
             pairwise DDI safety — never a fabricated composite pKd.
           </p>
