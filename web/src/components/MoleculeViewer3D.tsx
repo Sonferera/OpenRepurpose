@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { StudioTheme } from "./LeftNavigatorRail";
+import type { StudioTheme } from "@/lib/types";
 
 interface ThreeDMolAtom {
   elem?: string;

@@ -143,21 +143,28 @@ export default function CustomPredictModal({
       aria-modal="true"
       aria-labelledby="custom-predict-title"
       className="no-print fixed inset-0 z-50 bg-black/65 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto studio-scroll">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
           <div>
-            <h2 id="custom-predict-title" className="text-base font-bold text-[var(--ink-primary)]">
-              Score Custom FASTA + SMILES (Local FastAPI Bridge)
+            <h2
+              id="custom-predict-title"
+              className="font-serif-editorial text-xl font-medium tracking-tight text-[var(--ink-primary)]"
+            >
+              Score Custom FASTA + SMILES
             </h2>
             <p className="text-xs text-[var(--ink-secondary)] mt-0.5">
-              Runs live ESM-2 (fp16) + RDKit + 5-Model Ensemble + 32-Protein Delta-pKd locally.
+              Runs live ESM-2 (fp16) + RDKit + 5-Model Ensemble + 32-Protein Delta-pKd on the local
+              FastAPI bridge.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] px-3.5 py-1.5 text-sm font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] rounded-lg"
+            className="shrink-0 min-h-[34px] px-3 py-1 text-xs font-semibold bg-[var(--bg-subtle)] border border-[var(--border-control)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] rounded-lg"
           >
             Close (Esc)
           </button>
@@ -317,7 +324,9 @@ export default function CustomPredictModal({
                     2D Attribution SVG
                   </div>
                   <div
-                    className="w-full overflow-hidden rounded border border-[var(--border-subtle)] [&_svg]:w-full [&_svg]:h-auto"
+                    className={`w-full overflow-hidden rounded-lg border border-[var(--border-subtle)] [&_svg]:w-full [&_svg]:h-auto ${
+                      theme === "dark" ? "bg-[#14171F]" : "bg-[#F7F5EF]"
+                    }`}
                     dangerouslySetInnerHTML={{ __html: activeSvgMarkup }}
                   />
                 </div>

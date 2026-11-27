@@ -76,6 +76,11 @@ export default function McpConnectModal({
   const [rechecking, setRechecking] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Optional in-memory Admin Token for deployments behind a tunnel/proxy with OPENREPURPOSE_ADMIN_TOKEN
+  const [adminToken, setAdminToken] = useState<string>("");
+  const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false);
+  const [revealAdminToken, setRevealAdminToken] = useState<boolean>(false);
+
   const [copyKeyLabel, setCopyKeyLabel] = useState<string>("Copy Key");
   const [copyConfigLabel, setCopyConfigLabel] = useState<string>("Copy Config JSON");
   const [copyCmdLabel, setCopyCmdLabel] = useState<string>("Copy Command");
@@ -86,25 +91,33 @@ export default function McpConnectModal({
     ? ".venv\\Scripts\\python.exe -m uvicorn api.server:app --host 127.0.0.1 --port 8000"
     : ".venv/bin/python -m uvicorn api.server:app --host 127.0.0.1 --port 8000";
 
-  const loadKeys = useCallback(async () => {
-    if (!apiOnline) return;
-    setLoadingKeys(true);
-    setErrorMsg(null);
-    try {
-      const data = await fetchMcpKeys(apiBaseUrl);
-      setKeys(data.keys || []);
-      if (data.tools && data.tools.length > 0) {
-        setTools(data.tools);
+  const loadKeys = useCallback(
+    async (tokenOverride?: string) => {
+      if (!apiOnline) return;
+      const effectiveToken = tokenOverride !== undefined ? tokenOverride : adminToken;
+      setLoadingKeys(true);
+      setErrorMsg(null);
+      try {
+        const data = await fetchMcpKeys(apiBaseUrl, effectiveToken);
+        setKeys(data.keys || []);
+        if (data.tools && data.tools.length > 0) {
+          setTools(data.tools);
+        }
+        if (data.mcp_endpoint_url) {
+          setEndpointUrl(data.mcp_endpoint_url);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unable to load MCP keys.";
+        setErrorMsg(msg);
+        if (msg.includes("OPENREPURPOSE_ADMIN_TOKEN") || msg.includes("X-Admin-Token")) {
+          setShowAdminPanel(true);
+        }
+      } finally {
+        setLoadingKeys(false);
       }
-      if (data.mcp_endpoint_url) {
-        setEndpointUrl(data.mcp_endpoint_url);
-      }
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Unable to load MCP keys.");
-    } finally {
-      setLoadingKeys(false);
-    }
-  }, [apiBaseUrl, apiOnline]);
+    },
+    [apiBaseUrl, apiOnline, adminToken]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -128,12 +141,20 @@ export default function McpConnectModal({
     setCreating(true);
     setErrorMsg(null);
     try {
-      const created = await createMcpApiKey(apiBaseUrl, labelInput.trim() || "AI Client");
+      const created = await createMcpApiKey(
+        apiBaseUrl,
+        labelInput.trim() || "AI Client",
+        adminToken
+      );
       setNewlyCreated(created);
       setEndpointUrl(created.mcp_endpoint_url || `${apiBaseUrl}/mcp`);
       await loadKeys();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to create API key.");
+      const msg = err instanceof Error ? err.message : "Failed to create API key.";
+      setErrorMsg(msg);
+      if (msg.includes("OPENREPURPOSE_ADMIN_TOKEN") || msg.includes("X-Admin-Token")) {
+        setShowAdminPanel(true);
+      }
     } finally {
       setCreating(false);
     }
@@ -143,13 +164,17 @@ export default function McpConnectModal({
     setRevokingId(keyId);
     setErrorMsg(null);
     try {
-      await revokeMcpApiKey(apiBaseUrl, keyId);
+      await revokeMcpApiKey(apiBaseUrl, keyId, adminToken);
       if (newlyCreated?.id === keyId) {
         setNewlyCreated(null);
       }
       await loadKeys();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to revoke API key.");
+      const msg = err instanceof Error ? err.message : "Failed to revoke API key.";
+      setErrorMsg(msg);
+      if (msg.includes("OPENREPURPOSE_ADMIN_TOKEN") || msg.includes("X-Admin-Token")) {
+        setShowAdminPanel(true);
+      }
     } finally {
       setRevokingId(null);
     }
@@ -240,16 +265,19 @@ export default function McpConnectModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-2xl w-full p-5 shadow-xl space-y-5 max-h-[90vh] overflow-y-auto studio-scroll">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto studio-scroll">
         {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h2 id="mcp-connect-title" className="text-base font-bold text-[var(--ink-primary)]">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2
+                id="mcp-connect-title"
+                className="font-serif-editorial text-xl font-medium tracking-tight text-[var(--ink-primary)]"
+              >
                 Connect OpenRepurpose MCP
               </h2>
               <span
-                className={`mono-num text-[11px] font-semibold px-2 py-0.5 rounded border ${
+                className={`mono-num text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
                   apiOnline
                     ? "bg-[var(--selective-soft)] text-[var(--selective)] border-[var(--selective-border)]"
                     : "bg-[var(--bg-subtle)] text-[var(--ink-muted)] border-[var(--border-subtle)]"
@@ -258,15 +286,15 @@ export default function McpConnectModal({
                 {apiOnline ? "HTTP MCP Live" : "Local API Offline"}
               </span>
             </div>
-            <p className="text-xs text-[var(--ink-secondary)]">
-              Generate an API key and paste the MCP config into Antigravity, Cursor, or Claude so AI
-              agents call validated local ML predictions instead of guessing.
+            <p className="text-xs text-[var(--ink-secondary)] leading-relaxed">
+              Generate a SHA-256 hashed API key and paste the MCP config into Antigravity, Cursor,
+              or Claude so AI agents call validated local ML predictions instead of guessing.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[34px] px-3 py-1 text-xs font-semibold rounded-lg border border-[var(--border-control)] bg-[var(--bg-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+            className="shrink-0 min-h-[34px] px-3 py-1 text-xs font-semibold rounded-lg border border-[var(--border-control)] bg-[var(--bg-subtle)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
           >
             Close (Esc)
           </button>
@@ -274,12 +302,62 @@ export default function McpConnectModal({
 
         {/* Step 1: Generate / Manage API Keys */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--ink-secondary)]">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
               1. Generate API Key
             </h3>
-            <span className="mono-num text-[11px] text-[var(--ink-muted)]">{endpointUrl}</span>
+            <div className="flex items-center gap-2.5">
+              {apiOnline && (
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPanel((v) => !v)}
+                  className="text-[11px] font-semibold text-[var(--accent-ink)] hover:underline"
+                >
+                  {showAdminPanel ? "Hide Admin Token" : adminToken ? "Admin Token Active" : "Admin Token (Optional)"}
+                </button>
+              )}
+              <span className="mono-num text-[11px] text-[var(--ink-muted)]">{endpointUrl}</span>
+            </div>
           </div>
+
+          {apiOnline && showAdminPanel && (
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-subtle)]/60 p-3 space-y-2 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label htmlFor="mcp-admin-token" className="font-semibold text-[var(--ink-primary)]">
+                  X-Admin-Token (for tunneled / proxied deployments)
+                </label>
+                <span className="text-[11px] text-[var(--ink-muted)]">
+                  Memory-only · never stored in browser storage
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="mcp-admin-token"
+                  type={revealAdminToken ? "text" : "password"}
+                  value={adminToken}
+                  onChange={(e) => setAdminToken(e.target.value)}
+                  placeholder="Matches server OPENREPURPOSE_ADMIN_TOKEN"
+                  autoComplete="off"
+                  className="flex-1 min-w-[200px] min-h-[34px] px-2.5 py-1 mono-num text-xs bg-[var(--bg-canvas)] border border-[var(--border-control)] rounded-lg text-[var(--ink-primary)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRevealAdminToken((v) => !v)}
+                  className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[var(--border-control)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] font-semibold hover:bg-[var(--bg-hover)]"
+                >
+                  {revealAdminToken ? "Hide" : "Show"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadKeys(adminToken)}
+                  disabled={loadingKeys}
+                  className="min-h-[34px] px-3 py-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold"
+                >
+                  Apply &amp; Refresh
+                </button>
+              </div>
+            </div>
+          )}
 
           {!apiOnline ? (
             <div className="rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-subtle)] p-3.5 space-y-2.5 text-xs">
