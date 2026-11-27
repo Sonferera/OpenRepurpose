@@ -15,7 +15,7 @@ type GuideChapter = "overview" | "workspace" | "glossary" | "mix_mcp" | "safety"
 
 const CHAPTER_TABS: readonly [GuideChapter, string][] = [
   ["overview", "Overview & ML"],
-  ["workspace", "All 6 Tabs"],
+  ["workspace", "Workspace Views"],
   ["glossary", "Metrics & Chemistry"],
   ["mix_mcp", "Mix Lab & MCP"],
   ["safety", "Safety & Rigor"],
@@ -51,16 +51,19 @@ export default function GuideModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto studio-scroll">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-control)] rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto studio-scroll">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-3.5">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
           <div className="space-y-1">
-            <h2 id="guide-modal-title" className="text-lg font-bold text-[var(--ink-primary)]">
-              OpenRepurpose Complete Platform Guide
+            <h2
+              id="guide-modal-title"
+              className="font-serif-editorial text-xl sm:text-2xl font-medium tracking-tight text-[var(--ink-primary)]"
+            >
+              OpenRepurpose Platform Guide
             </h2>
             <p className="text-xs sm:text-sm text-[var(--ink-secondary)]">
-              Everything you need to understand the Dual-Engine ML pipeline, workspace stages,
-              chemical &amp; benchmark metrics, Mix Lab, MCP Server, and clinical boundaries.
+              Everything you need to navigate Studio v2, the Dual-Engine ML pipeline, chemical &amp;
+              benchmark metrics, Mix Lab, Remote HTTP MCP, and clinical boundaries.
             </p>
           </div>
           <button
@@ -79,8 +82,8 @@ export default function GuideModal({
               Interactive 10-Step Spotlight Live Tour
             </div>
             <p className="text-xs text-[var(--ink-secondary)]">
-              Walks automatically through every pane, all 6 workspace stages, Mix Lab, Benchmarks,
-              and MCP Connect with live highlights (supports ← / → / Esc keys).
+              Walks automatically through Screening Table &amp; Network Graph, the Molecular
+              Dossier, Mix Lab, Benchmarks, Errors &amp; Risks, and MCP Connect (← / → / Esc keys).
             </p>
           </div>
           <button
@@ -347,12 +350,13 @@ export default function GuideModal({
               </h3>
               <ol className="list-decimal pl-4 space-y-1">
                 <li>
-                  Discover a candidate in <strong>Branching Graph</strong>,{" "}
-                  <strong>Compare Matrix</strong>, or your starred <strong>Shortlist</strong>.
+                  Discover a candidate in the <strong>Screening Table</strong>,{" "}
+                  <strong>Network Graph</strong>, or your starred <strong>Shortlist</strong>.
                 </li>
                 <li>
-                  Click <strong>+ Send to Mix Lab</strong> (Inspector), <strong>+ Mix</strong>{" "}
-                  (Matrix row), or <strong>Send to Mix Lab</strong> (Print Triage Shortlist).
+                  Click <strong>+ Send to Mix Lab</strong> in the{" "}
+                  <strong>Molecular Dossier</strong>, <strong>+ Mix</strong> on a candidate row, or{" "}
+                  <strong>Send to Mix Lab</strong> inside the A4 <strong>Print Triage Sheet</strong>.
                 </li>
                 <li>
                   In <strong>Mix &amp; Regimen Lab</strong>, add partner drugs (1–4) from all{" "}
@@ -468,7 +472,7 @@ export default function GuideModal({
                 </div>
                 <div className="p-2.5 rounded bg-[var(--bg-canvas)] border border-[var(--border-subtle)]">
                   <div className="text-[var(--ink-muted)] font-sans font-semibold mb-0.5">
-                    Zero-Leakage, API &amp; MCP Tests
+                    45 Zero-Leakage, API, MCP &amp; Security Tests
                   </div>
                   pytest ml/tests/ -v
                 </div>

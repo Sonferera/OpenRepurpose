@@ -21,7 +21,7 @@ import type {
   ScatterSamplesPayload,
 } from "@/lib/types";
 import DDIBenchmarkPanel from "./DDIBenchmarkPanel";
-import type { StudioTheme } from "./LeftNavigatorRail";
+import type { StudioTheme } from "@/lib/types";
 
 interface BenchmarkStageProps {
   theme: StudioTheme;

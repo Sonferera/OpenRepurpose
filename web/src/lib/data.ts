@@ -112,8 +112,22 @@ export async function postRegimenMix(
   return body as MixApiResponse;
 }
 
-export async function fetchMcpKeys(apiBaseUrl: string): Promise<McpKeysListResponse> {
-  const res = await fetch(`${apiBaseUrl}/api/mcp/keys`);
+function buildAdminHeaders(adminToken?: string, extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra || {}) };
+  const cleanToken = (adminToken || "").trim();
+  if (cleanToken) {
+    headers["X-Admin-Token"] = cleanToken;
+  }
+  return headers;
+}
+
+export async function fetchMcpKeys(
+  apiBaseUrl: string,
+  adminToken?: string
+): Promise<McpKeysListResponse> {
+  const res = await fetch(`${apiBaseUrl}/api/mcp/keys`, {
+    headers: buildAdminHeaders(adminToken),
+  });
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(
@@ -127,11 +141,12 @@ export async function fetchMcpKeys(apiBaseUrl: string): Promise<McpKeysListRespo
 
 export async function createMcpApiKey(
   apiBaseUrl: string,
-  label: string
+  label: string,
+  adminToken?: string
 ): Promise<McpCreateKeyResponse> {
   const res = await fetch(`${apiBaseUrl}/api/mcp/keys`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAdminHeaders(adminToken, { "Content-Type": "application/json" }),
     body: JSON.stringify({ label }),
   });
   const body = await res.json().catch(() => null);
@@ -145,9 +160,14 @@ export async function createMcpApiKey(
   return body as McpCreateKeyResponse;
 }
 
-export async function revokeMcpApiKey(apiBaseUrl: string, keyId: string): Promise<void> {
+export async function revokeMcpApiKey(
+  apiBaseUrl: string,
+  keyId: string,
+  adminToken?: string
+): Promise<void> {
   const res = await fetch(`${apiBaseUrl}/api/mcp/keys/${encodeURIComponent(keyId)}`, {
     method: "DELETE",
+    headers: buildAdminHeaders(adminToken),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
