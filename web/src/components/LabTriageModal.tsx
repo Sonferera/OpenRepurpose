@@ -256,16 +256,16 @@ export default function LabTriageModal({
               <div className="col-span-8 flex items-start gap-2.5 min-w-0">
                 <div
                   aria-hidden="true"
-                  className="w-8 h-8 rounded-md bg-[#312E81] text-[#FFFFFF] font-bold text-[11px] tracking-wider flex items-center justify-center shrink-0 mt-0.5"
+                  className="w-8 h-8 rounded-md bg-[#1E3A6D] text-[#FFFFFF] font-bold text-[11px] tracking-wider flex items-center justify-center shrink-0 mt-0.5"
                 >
                   OR
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="mono-num text-[9px] font-bold uppercase tracking-[0.12em] text-[#312E81]">
+                    <span className="mono-num text-[9px] font-bold uppercase tracking-[0.12em] text-[#1E3A6D]">
                       OpenRepurpose Molecular Triage Studio
                     </span>
-                    <span className="mono-num text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-[#EEF0FA] border border-[#C3C9EA] text-[#312E81] whitespace-nowrap">
+                    <span className="mono-num text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-[#DFE7F4] border border-[#B4C6E3] text-[#1E3A6D] whitespace-nowrap">
                       {isUsingShortlist
                         ? `Curated Shortlist · ${compoundCount}`
                         : `Auto Top ${compoundCount} · Selectivity`}

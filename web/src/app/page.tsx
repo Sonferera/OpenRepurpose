@@ -1,5 +1,5 @@
-import StudioApp from "@/components/StudioApp";
+import LandingPage from "@/components/LandingPage";
 
 export default function HomePage() {
-  return <StudioApp />;
+  return <LandingPage />;
 }

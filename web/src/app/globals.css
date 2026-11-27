@@ -3,64 +3,74 @@
 :root,
 html[data-theme="paper"] {
   color-scheme: light;
-  --bg-canvas: #edeae2;
-  --bg-rail: #f2efe9;
-  --bg-surface: #f7f5f0;
-  --bg-subtle: #eae6dc;
-  --bg-hover: #e4dfd3;
-  --ink-primary: #121110;
-  --ink-secondary: #262320;
-  --ink-muted: #45403b;
+  /* Zero-Glare Warm Archival Paper Surfaces */
+  --bg-canvas: #efece4;
+  --bg-rail: #f3f0e8;
+  --bg-surface: #f6f3ec;
+  --bg-subtle: #e7e2d6;
+  --bg-hover: #dfd9ca;
+  /* Archival Espresso & Warm Charcoal Ink */
+  --ink-primary: #161412;
+  --ink-secondary: #3f3b35;
+  --ink-muted: #666057;
+  /* Crisp 1px Stone Hairlines */
   --border-subtle: #d5cfc2;
-  --border-control: #736c66;
-  --accent: #3730a3;
-  --accent-hover: #312e81;
-  --accent-ink: #312e81;
-  --accent-on-solid: #ffffff;
-  --accent-soft: #e4e6f5;
-  --accent-border: #b5bce6;
-  --selective: #1e40af;
-  --selective-soft: #e2ebf8;
-  --selective-border: #adc5f0;
-  --review: #9a3412;
-  --review-soft: #f9ebdd;
-  --review-border: #ebc298;
+  --border-control: #8e8679;
+  /* Deep Prussian Cobalt Primary Accent (Zero Green) */
+  --accent: #1e3a6d;
+  --accent-hover: #152b54;
+  --accent-ink: #1e3a6d;
+  --accent-on-solid: #f8f5ef;
+  --accent-soft: #dfe7f4;
+  --accent-border: #b4c6e3;
+  /* Semantic Scientific States (Cobalt / Burnished Terracotta / Archival Crimson) */
+  --selective: #1e3a6d;
+  --selective-soft: #dfe7f4;
+  --selective-border: #b4c6e3;
+  --review: #9a4322;
+  --review-soft: #f5e5dc;
+  --review-border: #dfb7a3;
   --alert: #991b1b;
-  --alert-soft: #f9e3e3;
-  --alert-border: #e9b3b3;
-  --range-track: #c9c2b4;
-  --scroll-thumb: #bab2a3;
+  --alert-soft: #f7dfdf;
+  --alert-border: #e3b2b2;
+  --range-track: #cfc8b8;
+  --scroll-thumb: #bfb7a7;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #111318;
-  --bg-rail: #161920;
-  --bg-surface: #1c2029;
-  --bg-subtle: #14171f;
-  --bg-hover: #252b38;
-  --ink-primary: #ffffff;
-  --ink-secondary: #e6eaf2;
-  --ink-muted: #c4cdde;
-  --border-subtle: #2e3545;
-  --border-control: #7a869f;
-  --accent: #4338ca;
-  --accent-hover: #4f46e5;
-  --accent-ink: #c7d2fe;
-  --accent-on-solid: #ffffff;
-  --accent-soft: #232846;
-  --accent-border: #47508a;
-  --selective: #93c5fd;
-  --selective-soft: #192841;
-  --selective-border: #335080;
-  --review: #fdba74;
-  --review-soft: #332216;
-  --review-border: #684426;
-  --alert: #fca5a5;
-  --alert-soft: #361b1f;
-  --alert-border: #6e3139;
-  --range-track: #3b4457;
-  --scroll-thumb: #49546b;
+  /* Obsidian Lab Dark Matte Slate Surfaces */
+  --bg-canvas: #111317;
+  --bg-rail: #14171d;
+  --bg-surface: #181b22;
+  --bg-subtle: #13161c;
+  --bg-hover: #212631;
+  /* Warm Alabaster & Stone Ink */
+  --ink-primary: #f0ece4;
+  --ink-secondary: #c5c0b7;
+  --ink-muted: #8b877f;
+  /* Architectural Graphite Hairlines */
+  --border-subtle: #2a2f3a;
+  --border-control: #525a6c;
+  /* Prussian & Steel Cobalt Accent (Zero Green, Zero Neon Glow) */
+  --accent: #284b8c;
+  --accent-hover: #325ba6;
+  --accent-ink: #7aa6f0;
+  --accent-on-solid: #f0ece4;
+  --accent-soft: #1b2639;
+  --accent-border: #334d7a;
+  /* Semantic Scientific States (Steel Cobalt / Burnished Copper / Crimson Rose) */
+  --selective: #7aa6f0;
+  --selective-soft: #1b2639;
+  --selective-border: #334d7a;
+  --review: #e08a5e;
+  --review-soft: #2b1e18;
+  --review-border: #5c3a2b;
+  --alert: #eb7a7a;
+  --alert-soft: #2e191c;
+  --alert-border: #663138;
+  --range-track: #343b4a;
+  --scroll-thumb: #434c5e;
 }
 
 @layer base {
@@ -121,6 +131,10 @@ html[data-theme="dark"] {
     outline: 2px solid var(--accent-ink);
     outline-offset: 2px;
   }
+}
+
+.font-serif-editorial {
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
 }
 
 .mono-num {

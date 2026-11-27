@@ -181,12 +181,12 @@ export default function BranchingGraphStage({
   const crossSpacing = Math.min(54, Math.floor(300 / Math.max(crossDisplay.length, 1)));
 
   return (
-    <div className="space-y-4">
+    <div className="flex-1 flex flex-col gap-4">
       <div className={`rounded-lg border-l-[3px] px-3.5 py-2.5 text-[13px] font-medium ${bannerStyle}`}>
         {bannerMessage}
       </div>
 
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-3.5">
+      <div className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 flex flex-col justify-between gap-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-subtle)] text-xs text-[var(--ink-secondary)]">
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-bold text-[var(--ink-primary)] text-sm">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchApiHealth,
@@ -42,20 +43,19 @@ import {
 import { copyText } from "@/lib/clipboard";
 import BenchmarkStage from "./BenchmarkStage";
 import BranchingGraphStage, { type GraphSubMode } from "./BranchingGraphStage";
-import CompareMatrixStage from "./CompareMatrixStage";
 import CustomPredictModal from "./CustomPredictModal";
 import GuideModal from "./GuideModal";
 import LabTriageModal from "./LabTriageModal";
-import LeftNavigatorRail from "./LeftNavigatorRail";
 import LiveTourOverlay, { LIVE_TOUR_STEPS } from "./LiveTourOverlay";
 import McpConnectModal from "./McpConnectModal";
 import MixLabStage from "./MixLabStage";
+import MoleculeDossierPane from "./MoleculeDossierPane";
 import MoleculeViewer3D from "./MoleculeViewer3D";
-import RightMoleculeDock from "./RightMoleculeDock";
 import SafetyRisksStage from "./SafetyRisksStage";
+import ScreeningTablePane from "./ScreeningTablePane";
 
 const DEFAULT_SESSION: StudioSession = {
-  stageMode: "graph",
+  stageMode: "matrix",
   targetId: "mtb_pknb",
   drugId: null,
   quickChip: "all",
@@ -95,7 +95,7 @@ export default function StudioApp() {
 
   const [activeTargetId, setActiveTargetId] = useState<string>("mtb_pknb");
   const [selectedDrugId, setSelectedDrugId] = useState<string>("");
-  const [stageMode, setStageMode] = useState<CenterStageMode>("graph");
+  const [stageMode, setStageMode] = useState<CenterStageMode>("matrix");
   const [graphSubMode, setGraphSubMode] = useState<GraphSubMode>("outcome");
 
   const [quickChip, setQuickChip] = useState<QuickFilterChip>("all");
@@ -113,8 +113,6 @@ export default function StudioApp() {
   const [tourOpen, setTourOpen] = useState<boolean>(false);
   const [tourStep, setTourStep] = useState<number>(0);
   const [localApiOnline, setLocalApiOnline] = useState<boolean>(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
 
   // Triage shortlist state (F1)
   const [shortlist, setShortlist] = useState<TriageShortlistEntry[]>(() => loadShortlist());
@@ -138,7 +136,6 @@ export default function StudioApp() {
     if (attr === "dark" || attr === "paper") {
       setTheme(attr);
     }
-    setInspectorOpen(window.matchMedia("(min-width: 1280px)").matches);
     setStorageAvailable(isStorageAvailable());
   }, []);
 
@@ -235,6 +232,22 @@ export default function StudioApp() {
       allCandidatesMap[tid] = sp.candidates;
     }
 
+    // Query params from Landing Page (/studio/?tab=mix, ?tab=benchmark, ?mcp=1, ?guide=1) take top priority
+    const searchParams =
+      typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const tabParam = searchParams?.get("tab");
+    const validTabs: CenterStageMode[] = ["matrix", "graph", "3d", "mix", "benchmark", "risks"];
+    const queryStageMode =
+      tabParam && validTabs.includes(tabParam as CenterStageMode)
+        ? (tabParam as CenterStageMode)
+        : undefined;
+    if (searchParams?.get("mcp") === "1") {
+      setMcpModalOpen(true);
+    }
+    if (searchParams?.get("guide") === "1") {
+      setGuideModalOpen(true);
+    }
+
     // URL state wins over the stored session; the stored session fills what the URL omits
     const stored = loadStoredSession();
     const fromUrl =
@@ -242,7 +255,13 @@ export default function StudioApp() {
         ? parseWorkspaceHash(window.location.hash)
         : null;
     const restoredSession: Partial<StudioSession> | null =
-      fromUrl || stored ? { ...(stored ?? {}), ...(fromUrl ?? {}) } : null;
+      queryStageMode || fromUrl || stored
+        ? {
+            ...(stored ?? {}),
+            ...(fromUrl ?? {}),
+            ...(queryStageMode ? { stageMode: queryStageMode } : {}),
+          }
+        : null;
 
     if (restoredSession && restoredSession.stageMode) {
       // Validate targetId exists in loaded candidates
@@ -719,12 +738,6 @@ export default function StudioApp() {
       const clamped = Math.max(0, Math.min(LIVE_TOUR_STEPS.length - 1, nextIndex));
       const step = LIVE_TOUR_STEPS[clamped];
       setTourStep(clamped);
-      if (step.ensureSidebarExpanded) {
-        setSidebarCollapsed(false);
-      }
-      if (typeof step.ensureInspectorOpen === "boolean") {
-        setInspectorOpen(step.ensureInspectorOpen);
-      }
       if (step.stageMode) {
         if (step.stageMode === "mix" && mixTargets.length === 0 && activeTarget) {
           setMixTargets([
@@ -819,423 +832,603 @@ export default function StudioApp() {
     ? crossTargetByDrugId[selectedCandidate.drug_id] || []
     : [];
 
+  const isScreeningTab = stageMode === "matrix" || stageMode === "graph" || stageMode === "3d";
+  const inDomainTargets = targetsIndex.targets.filter(
+    (t) => t.in_domain && !t.is_positive_control
+  );
+  const posControlTargets = targetsIndex.targets.filter((t) => t.is_positive_control);
+  const oodTargets = targetsIndex.targets.filter((t) => !t.in_domain && !t.is_positive_control);
+
+  const handleExportScreeningCsv = () => {
+    const header = [
+      "SelRank",
+      "RawRank",
+      "DrugName",
+      "DrugID",
+      "Indication",
+      "Predicted_pKd",
+      "Estimated_Kd_nM",
+      "Delta_pKd",
+      "QED",
+      "MW",
+      "Ro5Violations",
+      "PAINS",
+      "PubMedCount",
+      "InTraining",
+      "SMILES",
+    ];
+    const escapeCsv = (val: string | number | boolean | null | undefined) => {
+      const s = String(val ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = filteredCandidates.map((c) =>
+      [
+        c.rank_by_selectivity,
+        c.rank,
+        c.drug_name,
+        c.drug_id,
+        c.known_indication,
+        c.predicted_pkd.toFixed(3),
+        c.estimated_kd_nm.toFixed(1),
+        c.target_selectivity_delta.toFixed(3),
+        c.medchem.qed.toFixed(2),
+        c.medchem.mol_wt.toFixed(1),
+        c.medchem.ro5_violations,
+        c.medchem.has_pains ? "ALERT" : "Clear",
+        c.novelty.pubmed_count ?? 0,
+        c.in_training_corpus,
+        c.canonical_smiles,
+      ]
+        .map(escapeCsv)
+        .join(",")
+    );
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `openrepurpose_${activeTarget.id}_screening.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div
       id="app-root"
-      className={`min-h-dvh print:block print:min-h-0 print:bg-white grid grid-cols-1 ${
-        sidebarCollapsed
-          ? "md:grid-cols-[56px_minmax(0,1fr)] lg:grid-cols-[56px_minmax(0,1fr)]"
-          : "md:grid-cols-[304px_minmax(0,1fr)] lg:grid-cols-[316px_minmax(0,1fr)]"
-      } ${
-        inspectorOpen
-          ? sidebarCollapsed
-            ? "xl:grid-cols-[56px_minmax(0,1fr)_356px]"
-            : "xl:grid-cols-[328px_minmax(0,1fr)_356px]"
-          : sidebarCollapsed
-            ? "xl:grid-cols-[56px_minmax(0,1fr)]"
-            : "xl:grid-cols-[320px_minmax(0,1fr)]"
-      } items-start bg-[var(--bg-canvas)] text-[var(--ink-primary)]`}
+      className="min-h-dvh print:block print:min-h-0 print:bg-white flex flex-col bg-[var(--bg-canvas)] text-[var(--ink-primary)]"
     >
-      {/* PANE 1: LEFT NAVIGATOR RAIL */}
-      <LeftNavigatorRail
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        targets={targetsIndex.targets}
-        activeTargetId={activeTarget.id}
-        onSelectTarget={handleSelectTarget}
-        candidates={filteredCandidates}
-        selectedDrugId={selectedCandidate?.drug_id || ""}
-        onSelectDrug={(id) => setSelectedDrugId(id)}
-        quickChip={quickChip}
-        onChangeQuickChip={handleChangeQuickChip}
-        sortOrder={sortOrder}
-        onToggleSortOrder={() =>
-          setSortOrder((prev) => (prev === "delta" ? "raw" : "delta"))
-        }
-        searchQuery={searchQuery}
-        onChangeSearchQuery={setSearchQuery}
-        onResetFilters={handleResetFilters}
-        onOpenCustomModal={() => setCustomModalOpen(true)}
-        totalScreened={targetsIndex.fda_library.n_clean_drugs}
-        shortlistDrugIds={shortlistDrugIds}
-        onToggleShortlist={handleToggleShortlist}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-      />
+      {/* 1. CALM SINGLE-ROW GLOBAL TOP BAR (60px, Stitch v2 Architecture) */}
+      <header className="no-print sticky top-0 z-30 bg-[var(--bg-surface)] border-b border-[var(--border-subtle)]">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 min-h-[60px] py-2 flex flex-wrap items-center justify-between gap-3">
+          {/* Left: Brand Mark (Link back to Landing) + Target Selector Pill */}
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/"
+              title="Back to OpenRepurpose Overview"
+              className="w-8 h-8 rounded bg-[var(--accent)] text-[var(--accent-on-solid)] mono-num text-xs font-bold flex items-center justify-center shrink-0 hover:bg-[var(--accent-hover)] transition-colors"
+            >
+              OR
+            </Link>
 
-      {/* PANE 2: CENTER SPATIAL STAGE */}
-      <main
-        id="main-stage"
-        className="no-print w-full min-w-0 bg-[var(--bg-canvas)] p-4 sm:p-5 flex flex-col gap-4"
-      >
-        {/* Streamlined Single-Row Top Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-1 min-h-[46px]">
-          {/* Left: Stage Switcher Tabs */}
+            <div className="flex items-center gap-2 min-w-0">
+              <label htmlFor="studio-target-select" className="sr-only">
+                Active Pathogen Target
+              </label>
+              <select
+                id="studio-target-select"
+                value={activeTarget.id}
+                onChange={(e) => handleSelectTarget(e.target.value)}
+                className="min-h-[34px] max-w-[235px] sm:max-w-[270px] px-2.5 py-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-canvas)] text-xs sm:text-[13px] font-semibold text-[var(--ink-primary)] truncate focus:border-[var(--accent-ink)]"
+              >
+                <optgroup label="In-Domain NTD Kinases">
+                  {inDomainTargets.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.disease}: {t.short_name} ({t.uniprot_id})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Positive Control Benchmark">
+                  {posControlTargets.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.short_name} ({t.uniprot_id})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Out-of-Domain Stress Tests">
+                  {oodTargets.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.disease}: {t.short_name} ({t.uniprot_id})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+
+              <span
+                className={`hidden md:inline-block mono-num text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border whitespace-nowrap shrink-0 ${
+                  activeTarget.is_positive_control
+                    ? "bg-[var(--accent-soft)] border-[var(--accent-border)] text-[var(--accent-ink)]"
+                    : activeTarget.in_domain
+                      ? "bg-[var(--selective-soft)] border-[var(--selective-border)] text-[var(--selective)]"
+                      : "bg-[var(--review-soft)] border-[var(--review-border)] text-[var(--review)]"
+                }`}
+              >
+                {activeTarget.is_positive_control
+                  ? "Pos Control"
+                  : activeTarget.in_domain
+                    ? "In-Domain"
+                    : "Out-of-Domain"}
+              </span>
+            </div>
+          </div>
+
+          {/* Center: Clean 4-Item Primary Navigation with Crisp Bottom Underline */}
           <nav
             role="tablist"
-            aria-label="Workspace stage views"
-            className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-1"
+            aria-label="Primary studio sections"
+            className="flex items-center gap-1 sm:gap-5 overflow-x-auto no-scrollbar"
           >
             {(
               [
-                ["graph", "Branching Graph"],
-                ["3d", "3D Stage"],
-                ["matrix", "Compare Matrix"],
-                ["mix", mixDrugs.length > 0 ? `Mix Lab (${mixDrugs.length})` : "Mix Lab"],
-                ["benchmark", "Benchmarks"],
-                ["risks", "Errors & Risks"],
+                ["screening", "Screening", isScreeningTab],
+                [
+                  "mix",
+                  mixDrugs.length > 0 ? `Mix Lab (${mixDrugs.length})` : "Mix Lab",
+                  stageMode === "mix",
+                ],
+                ["benchmark", "Benchmarks", stageMode === "benchmark"],
+                ["risks", "Errors & Risks", stageMode === "risks"],
               ] as const
-            ).map(([mode, label]) => (
+            ).map(([tabKey, label, isActive]) => (
               <button
-                key={mode}
+                key={tabKey}
                 type="button"
                 role="tab"
-                aria-selected={stageMode === mode}
-                onClick={() => handleChangeStage(mode)}
-                className={`min-h-[32px] px-2.5 py-1 text-xs whitespace-nowrap rounded-md font-semibold transition-colors ${
-                  stageMode === mode
-                    ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
-                    : "text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
+                aria-selected={isActive}
+                onClick={() => {
+                  if (tabKey === "screening") {
+                    if (!isScreeningTab) handleChangeStage("matrix");
+                  } else {
+                    handleChangeStage(tabKey);
+                  }
+                }}
+                className={`relative min-h-[40px] px-2.5 py-2 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                  isActive
+                    ? "text-[var(--accent-ink)]"
+                    : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
                 }`}
               >
                 {label}
+                {isActive && (
+                  <span
+                    className="absolute left-1 right-1 bottom-0 h-[2px] bg-[var(--accent-ink)] rounded-full"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
             ))}
           </nav>
 
-          {/* Right: Actions & Panel Controls */}
-          <div data-tour="top-actions" className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {/* Primary Action: Print Triage */}
-            <button
-              type="button"
-              onClick={() => setPrintModalOpen(true)}
-              className="text-xs min-h-[32px] inline-flex items-center px-3 py-1 rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] font-semibold whitespace-nowrap transition-colors"
-            >
-              Print Triage{activeShortlistEntries.length > 0 ? ` (${activeShortlistEntries.length})` : ""}
-            </button>
-
-            {/* Ghost Action: Score Custom FASTA + SMILES */}
-            <button
-              type="button"
-              onClick={() => setCustomModalOpen(true)}
-              title="Score custom FASTA target sequence and SMILES molecules"
-              className="text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3.5 h-3.5 text-[var(--accent-ink)]"
-                aria-hidden="true"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Score Custom</span>
-            </button>
-
-            {/* Ghost Action: Copy Shareable Link */}
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              title="Copy link to current workspace selection"
-              className="text-xs min-h-[32px] inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3.5 h-3.5"
-                aria-hidden="true"
-              >
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
-              <span>{copyLinkLabel}</span>
-            </button>
-
-            {/* Ghost Action: Local API status */}
-            <button
-              type="button"
-              onClick={() => setCustomModalOpen(true)}
-              title={`Local Python API: ${localApiOnline ? "Online" : "Offline"}`}
-              className={`text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors ${
-                localApiOnline ? "text-[var(--selective)]" : "text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]"
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  localApiOnline ? "bg-[var(--selective)]" : "bg-[var(--ink-muted)]"
-                }`}
-                aria-hidden="true"
-              />
-              <span className="mono-num text-[11px]">API</span>
-            </button>
-
-            {/* Ghost Action: Connect MCP (API Key & Config) */}
-            <button
-              data-tour="mcp-connect"
-              type="button"
-              onClick={() => setMcpModalOpen(true)}
-              title="Generate MCP API Key and copy AI client configuration"
-              className="text-xs min-h-[32px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
-            >
-              <span className="mono-num text-[11px] text-[var(--accent-ink)]">MCP</span>
-              <span>Connect</span>
-            </button>
-
-            {/* Ghost Action: Platform Guide & Interactive Live Tour */}
+          {/* Right: 3 Clean Utility Actions + Theme Toggle */}
+          <div data-tour="top-actions" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setGuideModalOpen(true)}
               title="Open complete platform guide and 10-step interactive live tour"
-              className="text-xs min-h-[32px] inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-semibold whitespace-nowrap transition-colors"
+              className="min-h-[34px] px-2.5 py-1 rounded text-xs font-semibold text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
             >
               <span
-                className="w-4 h-4 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] inline-flex items-center justify-center text-[10px] font-bold mono-num"
+                className="w-4 h-4 rounded-full border border-[var(--border-control)] text-[10px] font-bold mono-num inline-flex items-center justify-center"
                 aria-hidden="true"
               >
                 ?
               </span>
-              <span>Guide &amp; Tour</span>
+              <span>Guide</span>
             </button>
 
-            {/* Ghost Action: GitHub Repo */}
-            <a
-              href="https://github.com/Sonferera/OpenRepurpose"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View OpenRepurpose source on GitHub"
-              className="text-xs min-h-[32px] inline-flex items-center px-2 py-1 rounded-md text-[var(--ink-muted)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] font-medium whitespace-nowrap transition-colors"
+            <button
+              data-tour="mcp-connect"
+              type="button"
+              onClick={() => setMcpModalOpen(true)}
+              title={`MCP Connect & Local API (${localApiOnline ? "Online" : "Offline"})`}
+              className="min-h-[34px] px-2.5 py-1 rounded text-xs font-semibold text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] inline-flex items-center gap-1.5 whitespace-nowrap transition-colors"
             >
-              GitHub
-            </a>
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  localApiOnline ? "bg-[var(--selective)]" : "bg-[var(--ink-muted)]"
+                }`}
+                aria-hidden="true"
+              />
+              <span className="mono-num">MCP</span>
+            </button>
 
-            <div className="w-[1px] h-4 bg-[var(--border-subtle)] mx-0.5" aria-hidden="true" />
-
-            {/* Inspector Toggle Button: At the far right corner */}
             <button
               type="button"
-              onClick={() => setInspectorOpen((prev) => !prev)}
-              aria-pressed={inspectorOpen}
-              aria-label="Toggle Molecule Inspector"
-              title={inspectorOpen ? "Hide Inspector (◫)" : "Show Inspector (◫)"}
-              className={`min-h-[32px] px-2.5 py-1 rounded-md border text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors ${
-                inspectorOpen
-                  ? "bg-[var(--bg-surface)] border-[var(--border-control)] text-[var(--ink-primary)]"
-                  : "bg-transparent border-transparent text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
-              }`}
+              onClick={() => setPrintModalOpen(true)}
+              className="min-h-[34px] px-3.5 py-1 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-on-solid)] text-xs font-semibold whitespace-nowrap transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3.5 h-3.5"
-                aria-hidden="true"
-              >
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M15 3v18" />
-              </svg>
-              <span>Inspector</span>
+              Print A4{activeShortlistEntries.length > 0 ? ` (${activeShortlistEntries.length})` : ""}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleToggleTheme(theme === "paper" ? "dark" : "paper")}
+              aria-label={
+                theme === "paper"
+                  ? "Switch to Obsidian Lab Dark theme"
+                  : "Switch to Warm Archival Paper theme"
+              }
+              title={
+                theme === "paper" ? "Switch to Obsidian Lab Dark" : "Switch to Warm Archival Paper"
+              }
+              className="w-[34px] h-[34px] rounded border border-[var(--border-subtle)] bg-[var(--bg-canvas)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] flex items-center justify-center transition-colors shrink-0"
+            >
+              {theme === "paper" ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Active Center Stage Content */}
-        <div data-tour="stage-area" className="flex-1 flex flex-col min-w-0">
-        {stageMode === "graph" && selectedCandidate && (
-          <BranchingGraphStage
-            target={activeTarget}
-            candidate={selectedCandidate}
-            crossEdges={activeCrossEdges}
-            subMode={graphSubMode}
-            onChangeSubMode={setGraphSubMode}
-            onSelectCrossTarget={handleSelectCrossTarget}
-          />
-        )}
+      {/* 2. MAIN WORKSPACE CONTAINER */}
+      <main
+        id="main-stage"
+        className="no-print flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-4"
+      >
+        {/* SCREENING CONTROL STRIP (Visible on Screening Tab: Table / Graph / 3D) */}
+        {isScreeningTab && (
+          <div
+            data-tour="left-rail"
+            className="flex flex-wrap items-center justify-between gap-2.5 pb-1"
+          >
+            {/* Left: Search + Single-Line Quick Filters + Sort */}
+            <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+              <div className="relative w-full sm:w-auto">
+                <label htmlFor="studio-drug-search" className="sr-only">
+                  Search approved drugs or indications
+                </label>
+                <input
+                  id="studio-drug-search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${targetsIndex.fda_library.n_clean_drugs.toLocaleString()} FDA drugs or indications...`}
+                  className="w-full sm:w-64 min-h-[36px] px-3 py-1.5 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-xs text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-ink)] focus:outline-none"
+                />
+              </div>
 
-        {stageMode === "graph" && !selectedCandidate && (
-          <div className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-2.5">
-            <p className="text-xs text-[var(--ink-secondary)]">
-              No candidate selected under the current filter set.
-            </p>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="min-h-[40px] px-3.5 py-1.5 text-xs font-semibold bg-[var(--accent)] text-[var(--accent-on-solid)] rounded-lg"
-            >
-              Reset all filters
-            </button>
+              <div
+                className="inline-flex items-center rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5"
+                role="group"
+                aria-label="Quick candidate filters"
+              >
+                {(
+                  [
+                    ["all", "All"],
+                    ["novel", "0 PubMed"],
+                    ["selective", "High ΔpKd"],
+                    ["bias", "Bias Demo"],
+                  ] as const
+                ).map(([chipKey, chipLabel]) => (
+                  <button
+                    key={chipKey}
+                    type="button"
+                    aria-pressed={quickChip === chipKey}
+                    onClick={() => handleChangeQuickChip(chipKey)}
+                    className={`min-h-[30px] px-2.5 py-1 rounded-[3px] text-xs font-semibold whitespace-nowrap transition-colors ${
+                      quickChip === chipKey
+                        ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                        : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+                    }`}
+                  >
+                    {chipLabel}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSortOrder((prev) => (prev === "delta" ? "raw" : "delta"))}
+                title="Toggle ranking between selectivity Delta-pKd and raw predicted pKd"
+                className="min-h-[36px] px-2.5 py-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] mono-num text-xs font-semibold text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] whitespace-nowrap transition-colors"
+              >
+                Sort: {sortOrder === "delta" ? "ΔpKd ↓" : "Raw pKd ↓"}
+              </button>
+            </div>
+
+            {/* Right: Canvas View Switcher (Table / Graph / 3D) + Custom + Shortlist + CSV */}
+            <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+              <div
+                className="inline-flex items-center rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5"
+                role="group"
+                aria-label="Screening canvas view"
+              >
+                {(
+                  [
+                    ["matrix", "Table"],
+                    ["graph", "Graph"],
+                    ["3d", "3D"],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={stageMode === mode}
+                    onClick={() => handleChangeStage(mode)}
+                    className={`min-h-[30px] px-3 py-1 rounded-[3px] text-xs font-semibold whitespace-nowrap transition-colors ${
+                      stageMode === mode
+                        ? "bg-[var(--accent)] text-[var(--accent-on-solid)]"
+                        : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCustomModalOpen(true)}
+                className="min-h-[36px] px-3 py-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-xs font-semibold text-[var(--ink-primary)] whitespace-nowrap transition-colors"
+              >
+                + Custom
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPrintModalOpen(true)}
+                className="min-h-[36px] px-3 py-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-xs font-semibold text-[var(--ink-primary)] whitespace-nowrap transition-colors"
+              >
+                Shortlist ({activeShortlistEntries.length})
+              </button>
+
+              {stageMode === "matrix" && (
+                <button
+                  type="button"
+                  onClick={handleExportScreeningCsv}
+                  title="Download filtered screening table as CSV"
+                  className="min-h-[36px] px-2.5 py-1 rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] mono-num text-xs font-medium text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] whitespace-nowrap transition-colors"
+                >
+                  CSV
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                title="Copy shareable link to current selection"
+                className="min-h-[36px] px-2.5 py-1 rounded text-xs font-medium text-[var(--ink-muted)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-hover)] whitespace-nowrap transition-colors"
+              >
+                {copyLinkLabel}
+              </button>
+            </div>
           </div>
         )}
 
-        {stageMode === "3d" && selectedCandidate && (
-          <div className="flex-1 flex flex-col space-y-3">
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div>
-                <h2 className="font-bold text-[var(--ink-primary)]">
-                  Full-Stage 3D Molecular Conformer: {selectedCandidate.drug_name}
-                </h2>
-                <p className="text-[var(--ink-muted)] mt-0.5">
-                  Drag to rotate in 3D space. Use your mouse scroll wheel or the +/- controls in
-                  the bottom-right corner to zoom cleanly.
-                </p>
-              </div>
-              <span className="mono-num text-[11px] px-2.5 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-border)] font-semibold">
-                ETKDGv3 + MMFF94
-              </span>
+        {/* SCREENING 2-COLUMN SPLIT MASTER-DETAIL WORKSPACE (Equal-Height Paired Cards) */}
+        {isScreeningTab && (
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.26fr)_minmax(380px,0.92fr)] gap-5 items-stretch">
+            <div data-tour="stage-area" className="min-w-0 self-stretch flex flex-col">
+              {stageMode === "matrix" && (
+                <ScreeningTablePane
+                  target={activeTarget}
+                  candidates={filteredCandidates}
+                  selectedDrugId={selectedCandidate?.drug_id || ""}
+                  onSelectDrug={(id) => setSelectedDrugId(id)}
+                  sortOrder={sortOrder}
+                  totalScreened={targetsIndex.fda_library.n_clean_drugs}
+                  ro5Only={ro5Only}
+                  onChangeRo5Only={setRo5Only}
+                  noPains={noPains}
+                  onChangeNoPains={setNoPains}
+                  excludeInTrain={excludeInTrain}
+                  onChangeExcludeInTrain={setExcludeInTrain}
+                  onResetFilters={handleResetFilters}
+                  shortlistDrugIds={shortlistDrugIds}
+                  onToggleShortlist={handleToggleShortlist}
+                />
+              )}
+
+              {stageMode === "graph" && selectedCandidate && (
+                <BranchingGraphStage
+                  target={activeTarget}
+                  candidate={selectedCandidate}
+                  crossEdges={activeCrossEdges}
+                  subMode={graphSubMode}
+                  onChangeSubMode={setGraphSubMode}
+                  onSelectCrossTarget={handleSelectCrossTarget}
+                />
+              )}
+
+              {stageMode === "graph" && !selectedCandidate && (
+                <div className="flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-10 flex flex-col items-center justify-center text-center space-y-2.5">
+                  <p className="text-sm font-semibold text-[var(--ink-primary)]">
+                    No candidate selected under the current filter set.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="px-3.5 py-1.5 rounded bg-[var(--accent)] text-[var(--accent-on-solid)] text-xs font-semibold"
+                  >
+                    Reset all filters
+                  </button>
+                </div>
+              )}
+
+              {stageMode === "3d" && selectedCandidate && (
+                <div className="flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs pb-2 border-b border-[var(--border-subtle)]">
+                    <div>
+                      <h2 className="font-bold text-[var(--ink-primary)]">
+                        Full-Stage 3D Conformer: {selectedCandidate.drug_name}
+                      </h2>
+                      <p className="text-[var(--ink-muted)] mt-0.5">
+                        Drag to rotate in 3D space. Scroll or use +/- controls to inspect functional
+                        groups.
+                      </p>
+                    </div>
+                    <span className="mono-num text-[11px] px-2.5 py-1 rounded bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-border)] font-semibold">
+                      ETKDGv3 + MMFF94
+                    </span>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center">
+                    <MoleculeViewer3D
+                      sdfUrl={selectedCandidate.assets.sdf_3d}
+                      moleculeName={selectedCandidate.drug_name}
+                      theme={theme}
+                      heightClass="h-[560px]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <MoleculeViewer3D
-              sdfUrl={selectedCandidate.assets.sdf_3d}
-              moleculeName={selectedCandidate.drug_name}
+
+            {/* Right Pane: Guided 3-Part Molecular Dossier */}
+            <MoleculeDossierPane
               theme={theme}
-              heightClass="h-[490px]"
+              target={activeTarget}
+              candidate={selectedCandidate}
+              isShortlisted={
+                selectedCandidate ? shortlistDrugIds.includes(selectedCandidate.drug_id) : false
+              }
+              onToggleShortlist={handleToggleShortlist}
+              isInMixQueue={
+                selectedCandidate ? mixQueueDrugIds.includes(selectedCandidate.drug_id) : false
+              }
+              onSendToMixLab={(c) => handleSendCandidateToMix(c, true)}
+              onExpand3DStage={() => handleChangeStage("3d")}
             />
           </div>
         )}
 
-        {stageMode === "matrix" && activeScreening && (
-          <CompareMatrixStage
-            target={activeTarget}
-            candidates={filteredCandidates}
-            selectedDrugId={selectedCandidate?.drug_id || ""}
-            onSelectCandidate={(id) => {
-              setSelectedDrugId(id);
-            }}
-            sortOrder={sortOrder}
-            onSetSortOrder={setSortOrder}
-            minPkd={minPkd}
-            onChangeMinPkd={setMinPkd}
-            ro5Only={ro5Only}
-            onChangeRo5Only={setRo5Only}
-            noPains={noPains}
-            onChangeNoPains={setNoPains}
-            excludeInTrain={excludeInTrain}
-            onChangeExcludeInTrain={setExcludeInTrain}
-            onResetFilters={handleResetFilters}
-            referenceControls={activeScreening.reference_control_ranks}
-            onSendToMixLab={(c) => handleSendCandidateToMix(c, false)}
-            mixQueueDrugIds={mixQueueDrugIds}
-          />
-        )}
+        {/* FULL-WIDTH DEDICATED STAGES: MIX LAB, BENCHMARKS, ERRORS & RISKS */}
+        {!isScreeningTab && (
+          <div data-tour="stage-area" className="flex-1 flex flex-col min-w-0">
+            {stageMode === "mix" && (
+              <MixLabStage
+                theme={theme}
+                apiBaseUrl={API_BASE_URL}
+                apiOnline={localApiOnline}
+                apiHealth={apiHealth}
+                onRecheckApi={checkLocalApi}
+                targets={targetsIndex.targets}
+                screeningsByTarget={screeningsByTarget}
+                activeTarget={activeTarget}
+                selectedCandidate={selectedCandidate}
+                mixDrugs={mixDrugs}
+                mixTargets={mixTargets}
+                onAddDrug={handleAddMixDrug}
+                onRemoveDrug={handleRemoveMixDrug}
+                onAddTarget={handleAddMixTarget}
+                onRemoveTarget={handleRemoveMixTarget}
+                onClearQueue={handleClearMixQueue}
+                onLoadPresetExample={handleLoadMixPreset}
+                onChainToStudio={handleChainFromMixToStudio}
+              />
+            )}
 
-        {stageMode === "mix" && (
-          <MixLabStage
-            theme={theme}
-            apiBaseUrl={API_BASE_URL}
-            apiOnline={localApiOnline}
-            apiHealth={apiHealth}
-            onRecheckApi={checkLocalApi}
-            targets={targetsIndex.targets}
-            screeningsByTarget={screeningsByTarget}
-            activeTarget={activeTarget}
-            selectedCandidate={selectedCandidate}
-            mixDrugs={mixDrugs}
-            mixTargets={mixTargets}
-            onAddDrug={handleAddMixDrug}
-            onRemoveDrug={handleRemoveMixDrug}
-            onAddTarget={handleAddMixTarget}
-            onRemoveTarget={handleRemoveMixTarget}
-            onClearQueue={handleClearMixQueue}
-            onLoadPresetExample={handleLoadMixPreset}
-            onChainToStudio={handleChainFromMixToStudio}
-          />
-        )}
+            {stageMode === "benchmark" && (
+              <BenchmarkStage
+                theme={theme}
+                evalResults={evalResults}
+                scatterSamples={scatterSamples}
+                ddiEvalResults={ddiEvalResults}
+                loading={evalLoading}
+                error={evalError}
+                onRetry={loadEvaluationArtifacts}
+              />
+            )}
 
-        {stageMode === "benchmark" && (
-          <BenchmarkStage
-            theme={theme}
-            evalResults={evalResults}
-            scatterSamples={scatterSamples}
-            ddiEvalResults={ddiEvalResults}
-            loading={evalLoading}
-            error={evalError}
-            onRetry={loadEvaluationArtifacts}
-          />
-        )}
-
-        {stageMode === "risks" && (
-          <SafetyRisksStage
-            errorAnalysis={errorAnalysis}
-            loading={evalLoading}
-            error={evalError}
-            onRetry={loadEvaluationArtifacts}
-          />
-        )}
-        </div>
-
-        {/* Provenance of the scores on screen */}
-        {provenanceLine && (
-          <div className="border-t border-[var(--border-subtle)] pt-2 text-xs text-[var(--ink-secondary)] flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="mono-num">
-                <span className="font-medium text-[var(--ink-primary)]">Model:</span>{" "}
-                {provenanceLine.modelKey}
-              </span>
-              <span className="mono-num">
-                <span className="font-medium text-[var(--ink-primary)]">Seed:</span>{" "}
-                {provenanceLine.seed}
-              </span>
-              <span className="mono-num">
-                <span className="font-medium text-[var(--ink-primary)]">Generated:</span>{" "}
-                {new Date(provenanceLine.generatedAt).toUTCString()}
-              </span>
-              <span className="text-[var(--ink-muted)] hidden md:inline">|</span>
-              <span className="text-[var(--ink-secondary)] text-[11px]">
-                <strong className="text-[var(--review)] font-semibold">Research triage only:</strong> single-target pKd estimates require 3D docking & wet-lab validation.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyProvenance}
-              className="mono-num text-[var(--accent-ink)] hover:underline text-[13px] font-medium"
-            >
-              {provenanceCopyLabel}
-            </button>
+            {stageMode === "risks" && (
+              <SafetyRisksStage
+                errorAnalysis={errorAnalysis}
+                loading={evalLoading}
+                error={evalError}
+                onRetry={loadEvaluationArtifacts}
+              />
+            )}
           </div>
         )}
       </main>
 
-      {/* PANE 3: COLLAPSIBLE RIGHT MOLECULE INSPECTOR */}
-      {inspectorOpen && (
-        <>
-          <div
-            className="no-print xl:hidden fixed inset-0 z-30 bg-black/40"
-            aria-hidden="true"
-            onClick={() => setInspectorOpen(false)}
-          />
-          <RightMoleculeDock
-            theme={theme}
-            target={activeTarget}
-            candidate={selectedCandidate}
-            onExpand3DStage={() => {
-              handleChangeStage("3d");
-              if (typeof window !== "undefined" && !window.matchMedia("(min-width: 1280px)").matches) {
-                setInspectorOpen(false);
-              }
-            }}
-            onSendToMixLab={(c) => handleSendCandidateToMix(c, true)}
-            isInMixQueue={
-              selectedCandidate ? mixQueueDrugIds.includes(selectedCandidate.drug_id) : false
-            }
-            onClose={() => setInspectorOpen(false)}
-          />
-        </>
+      {/* 3. CLEAN STUDIO PROVENANCE FOOTER */}
+      {provenanceLine && (
+        <footer className="no-print mt-auto border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--ink-muted)]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mono-num">
+              <span>
+                <strong className="text-[var(--ink-primary)]">Model:</strong>{" "}
+                {provenanceLine.modelKey}
+              </span>
+              <span>
+                <strong className="text-[var(--ink-primary)]">Seed:</strong> {provenanceLine.seed}
+              </span>
+              <span>
+                <strong className="text-[var(--ink-primary)]">Target:</strong>{" "}
+                {activeTarget.short_name} ({activeTarget.uniprot_id})
+              </span>
+              <span className="hidden lg:inline text-[var(--review)] font-sans font-medium">
+                · Pre-clinical triage only — verify with 3D docking &amp; wet-lab assays
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={handleCopyProvenance}
+                className="mono-num text-[var(--accent-ink)] hover:underline font-medium"
+              >
+                {provenanceCopyLabel}
+              </button>
+              <a
+                href="https://github.com/Sonferera/OpenRepurpose"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[var(--ink-primary)] font-medium"
+              >
+                GitHub
+              </a>
+              <span className="hidden sm:inline mono-num">
+                {theme === "paper" ? "Archival Paper · Zero-Glare" : "Obsidian Lab Dark"}
+              </span>
+            </div>
+          </div>
+        </footer>
       )}
 
-      {/* MODALS */}
+      {/* MODALS & LIVE TOUR */}
       <LabTriageModal
         open={printModalOpen}
         onClose={() => setPrintModalOpen(false)}
